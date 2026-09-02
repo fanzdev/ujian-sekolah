@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import fs from 'node:fs'
 import path from 'node:path'
 
-const BASE_PATH = '/ujian/'
+const BASE_PATH = '/'
 
 const GH_REDIRECT_SCRIPT =
   '<script>(function(){try{var p=location.pathname;if(p.indexOf("' +
