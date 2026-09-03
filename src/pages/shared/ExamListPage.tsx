@@ -49,6 +49,33 @@ export default function ExamListPage() {
 
   const handlePublishToggle = async (exam: Exam) => {
     const publishing = exam.status !== 'published'
+    if (publishing) {
+      try {
+        const { supabase } = await import('@/services/client')
+        const [qRes, pRes, tRes] = await Promise.all([
+          supabase.from('exam_questions').select('question_id', { count: 'exact', head: true }).eq('exam_id', exam.id),
+          supabase.from('exam_participants').select('student_id', { count: 'exact', head: true }).eq('exam_id', exam.id).eq('is_removed', false),
+          supabase.from('exam_targets').select('id', { count: 'exact', head: true }).eq('exam_id', exam.id),
+        ])
+        const hasQuestions = (qRes.count ?? 0) > 0
+        const participants = pRes.count ?? 0
+        const targets = tRes.count ?? 0
+        if (!hasQuestions) {
+          toast.error('Ujian belum memiliki soal. Tambahkan soal terlebih dahulu sebelum diaktifkan.')
+          return
+        }
+        if (participants === 0 && targets === 0) {
+          const proceed = await confirmDialog.confirm({
+            title: 'Ujian Belum Ada Peserta',
+            message: 'Ujian ini belum memiliki target kelas/jurusan atau peserta. Jika diaktifkan, tidak ada siswa yang bisa melihatnya. Tetap aktifkan?',
+            confirmText: 'Tetap Aktifkan',
+          })
+          if (!proceed) return
+        }
+      } catch {
+        // jika cek gagal, tetap lanjutkan konfirmasi publish
+      }
+    }
     const ok = await confirmDialog.confirm({
       title: publishing ? 'Aktifkan Ujian?' : 'Nonaktifkan Ujian?',
       message: publishing
@@ -125,7 +152,7 @@ export default function ExamListPage() {
             {exams.map((exam) => {
               const phase = examPhase(exam)
               return (
-                <div key={exam.id} className="flex flex-wrap items-center gap-4 px-4 py-4 transition-colors hover:bg-slate-50/70 sm:px-5">
+                <div key={exam.id} className="flex flex-wrap items-center gap-4 px-4 py-4 transition-colors hover:bg-slate-50/70 sm:px-5 dark:hover:bg-slate-800 dark:bg-slate-800 dark:text-slate-200">
                   <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
                     phase === 'ongoing' && exam.status === 'published'
                       ? 'bg-emerald-50 text-emerald-600 animate-pulse-soft'
@@ -137,10 +164,13 @@ export default function ExamListPage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <Link to={`./${exam.id}/edit`} className="truncate text-sm font-semibold text-slate-800 hover:text-primary-600">
+                      <Link to={`./${exam.id}/edit`} className="truncate text-sm font-semibold text-slate-800 hover:text-primary-600 dark:hover:text-primary-300">
                         {exam.title}
                       </Link>
                       <Badge tone={STATUS_TONES[exam.status]}>{EXAM_STATUS_LABELS[exam.status]}</Badge>
+                      {exam.status === 'published' && Number(exam.total_points) === 0 && (
+                        <Badge tone="red">Tanpa Soal</Badge>
+                      )}
                     </div>
                     <p className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-400">
                       <span>{exam.subjects?.name ?? 'Tanpa mapel'}</span>
@@ -149,6 +179,9 @@ export default function ExamListPage() {
                       <span>{exam.duration_minutes} menit</span>
                       <span>{exam.total_points} poin</span>
                     </p>
+                    {exam.status === 'published' && Number(exam.total_points) === 0 && (
+                      <p className="mt-1 text-xs font-medium text-rose-600">Ujian aktif tanpa soal — siswa tidak akan melihatnya. Tambahkan soal.</p>
+                    )}
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center gap-1.5">
                     <Link to={`./${exam.id}/participants`} title="Peserta & monitoring">
@@ -165,7 +198,7 @@ export default function ExamListPage() {
                         )}
                       </>
                     )}
-                    <Link to={`./${exam.id}/edit`} className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-sky-50 hover:text-sky-600" title="Ubah">
+                    <Link to={`./${exam.id}/edit`} className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-500/10 dark:hover:text-sky-400" title="Ubah">
                       <Pencil className="h-4 w-4" />
                     </Link>
                     <button
@@ -185,7 +218,7 @@ export default function ExamListPage() {
                           toast.error(err instanceof Error ? err.message : 'Gagal menghapus ujian.')
                         }
                       }}
-                      className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
+                      className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10 dark:hover:text-rose-400"
                       title="Hapus"
                     >
                       <Trash2 className="h-4 w-4" />

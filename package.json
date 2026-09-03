@@ -6,11 +6,11 @@
   "description": "SMK AL-FATA CBT - Computer Based Test system (static frontend + Supabase)",
   "scripts": {
     "dev": "vite",
-    "dev:host": "vite --host 0.0.0.0 --port 5173",
-    "dev:ngrok": "vite --host 0.0.0.0 --port 5173",
+    "dev:host": "vite --host 0.0.0.0 --port 3000",
+    "dev:ngrok": "vite --host 0.0.0.0 --port 3000",
     "build": "tsc --noEmit -p tsconfig.app.json && vite build",
     "preview": "vite preview",
-    "preview:host": "vite preview --host 0.0.0.0 --port 4173",
+    "preview:host": "vite preview --host 0.0.0.0 --port 3000",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "lint": "eslint src"
   },

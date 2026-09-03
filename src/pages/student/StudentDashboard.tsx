@@ -164,10 +164,10 @@ export default function StudentDashboard() {
               subtitle="Daftar ujian sesuai kelas & jurusan"
               action={
                 <div className="flex items-center gap-2">
-                  <Link to="/student/card" className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 transition-colors hover:bg-slate-50 hover:text-primary-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-primary-400 sm:text-xs">
+                  <Link to="/student/card" className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 transition-colors hover:bg-slate-50 hover:text-primary-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-primary-400 sm:text-xs dark:hover:bg-slate-800 dark:hover:text-primary-300">
                     <IdCard className="h-3.5 w-3.5" /> Cetak
                   </Link>
-                  <Link to="/student/exams" className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700">Semua <CalendarDays className="h-3 w-3" /></Link>
+                  <Link to="/student/exams" className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 dark:hover:text-primary-300">Semua <CalendarDays className="h-3 w-3" /></Link>
                 </div>
               }
             />
@@ -179,7 +179,7 @@ export default function StudentDashboard() {
               <ul className="divide-y divide-slate-50 dark:divide-slate-800">
                 {[...canStart, ...upcoming].slice(0, 5).map((exam) => (
                   <li key={exam.id}>
-                    <Link to={`/student/exams/${exam.id}`} className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
+                    <Link to={`/student/exams/${exam.id}`} className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40 dark:bg-slate-800 dark:text-slate-200">
                       <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
                         exam.status_for_me === 'resume' ? 'bg-rose-50 text-rose-500 animate-pulse-soft'
                           : exam.status_for_me === 'can_start' ? 'bg-emerald-50 text-emerald-500'
@@ -203,7 +203,7 @@ export default function StudentDashboard() {
         </div>
 
           <Card className="h-fit">
-          <CardHeader title="Riwayat Terakhir" action={<Link to="/student/history" className="text-xs font-semibold text-primary-600 hover:text-primary-700">Detail</Link>} />
+          <CardHeader title="Riwayat Terakhir" action={<Link to="/student/history" className="text-xs font-semibold text-primary-600 hover:text-primary-700 dark:hover:text-primary-300">Detail</Link>} />
           {(d?.attempts ?? []).length === 0 ? (
             <p className="px-5 py-10 text-center text-sm text-slate-400">Belum ada riwayat ujian.</p>
           ) : (

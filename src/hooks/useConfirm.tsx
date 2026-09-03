@@ -54,7 +54,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
             <p className="mt-1 text-sm leading-relaxed text-slate-500">{options?.message}</p>
           </div>
         </div>
-        <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4">
+        <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:bg-slate-800 dark:text-slate-200">
           <Button variant="ghost" onClick={() => close(false)}>
             {options?.cancelText ?? 'Batal'}
           </Button>

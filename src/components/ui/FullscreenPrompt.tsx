@@ -66,7 +66,7 @@ export function FullscreenPrompt({ role }: { role: UserRole }) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-fade-in">
       <div className="mx-4 w-full max-w-xs rounded-2xl bg-white p-5 text-center shadow-2xl dark:bg-slate-900 animate-scale-in">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-500/15">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-500/15 dark:text-white">
           <Maximize className="h-6 w-6" />
         </div>
         <h2 className="mt-3 text-base font-bold text-slate-900 dark:text-slate-100">Mode Layar Penuh</h2>

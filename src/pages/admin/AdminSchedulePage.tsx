@@ -161,10 +161,10 @@ export default function AdminSchedulePage() {
                           <Badge tone="blue" className="!text-[10px]">
                             {formatTime(s.start_time)} - {formatTime(s.end_time)}
                           </Badge>
-                          <button onClick={() => { setEditing(s); setFormOpen(true) }} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-sky-600">
+                          <button onClick={() => { setEditing(s); setFormOpen(true) }} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-sky-600 dark:hover:bg-slate-700 dark:hover:text-sky-400 dark:bg-slate-700 dark:text-slate-200 dark:text-white">
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
-                          <button onClick={() => void handleDelete(s.id, s.title)} className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600">
+                          <button onClick={() => void handleDelete(s.id, s.title)} className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10 dark:hover:text-rose-400">
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>

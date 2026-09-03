@@ -121,7 +121,7 @@ export function RichTextEditor({ value, onChange, placeholder, minHeight = 120 }
           <div className="mx-4 w-full max-w-md rounded-xl border border-slate-200 bg-white p-4 shadow-xl dark:border-slate-700 dark:bg-slate-900">
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Sisipkan Tautan</p>
-              <button onClick={() => setLinkOpen(false)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300" aria-label="Tutup">
+              <button onClick={() => setLinkOpen(false)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300 dark:hover:bg-slate-700 dark:bg-slate-700 dark:text-slate-200" aria-label="Tutup">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -136,7 +136,7 @@ export function RichTextEditor({ value, onChange, placeholder, minHeight = 120 }
             />
             {linkError && <p className="mt-1.5 text-xs text-rose-500 dark:text-rose-400">{linkError}</p>}
             <div className="mt-3 flex justify-end gap-2">
-              <button onClick={() => setLinkOpen(false)} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+              <button onClick={() => setLinkOpen(false)} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:bg-slate-700 dark:bg-slate-700 dark:text-slate-200">
                 Batal
               </button>
               <button onClick={confirmLink} className="inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-700">

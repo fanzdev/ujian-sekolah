@@ -1,9 +1,24 @@
+import { useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import { Loader2 } from 'lucide-react'
 import { RefreshCw, InboxIcon } from 'lucide-react'
 
+function useThemeColor(): string {
+  return useMemo(() => {
+    try {
+      const raw = localStorage.getItem('cbt-branding')
+      if (raw) {
+        const b = JSON.parse(raw) as { primary_color?: string }
+        if (b.primary_color && /^#[0-9a-fA-F]{6}$/.test(b.primary_color)) return b.primary_color
+      }
+    } catch { void 0 }
+    return '#0D868F'
+  }, [])
+}
+
 export function Spinner({ className }: { className?: string }) {
-  return <Loader2 className={cn('h-5 w-5 animate-spin text-primary-500', className)} />
+  const color = useThemeColor()
+  return <Loader2 className={cn('h-5 w-5 animate-spin', className)} style={{ color }} />
 }
 
 export function PageLoader({ label = 'Memuat...' }: { label?: string }) {
@@ -71,7 +86,7 @@ export function ErrorState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 px-6 py-12 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-500">!</div>
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 dark:bg-rose-600 dark:text-white dark:text-white">!</div>
       <div>
         <h3 className="text-sm font-semibold text-slate-800">Gagal memuat data</h3>
         <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-slate-400">{message}</p>
@@ -79,7 +94,7 @@ export function ErrorState({
       {onRetry && (
         <button
           onClick={onRetry}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:bg-slate-800"
         >
           <RefreshCw className="h-3.5 w-3.5" /> Coba Lagi
         </button>

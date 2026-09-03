@@ -253,7 +253,7 @@ function QuestionCard({
       </header>
 
       {question.media_url && (
-        <div className="mb-5 overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
+        <div className="mb-5 overflow-hidden rounded-xl border border-slate-100 bg-slate-50 dark:bg-slate-800 dark:text-slate-200">
           <MediaBlock url={question.media_url} type={question.media_type} />
         </div>
       )}
@@ -361,7 +361,7 @@ function AnswerInput({
           {(question.left_items ?? []).map((left) => (
             <div key={left.k} className="flex flex-col gap-2 rounded-xl border border-slate-200 p-3 sm:flex-row sm:items-center">
               <p className="min-w-0 flex-1 text-sm">
-                <span className="mr-2 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">{left.k}</span>
+                <span className="mr-2 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-200">{left.k}</span>
                 {left.text}
               </p>
               <select
@@ -384,7 +384,7 @@ function AnswerInput({
               </select>
             </div>
           ))}
-          <div className="rounded-xl bg-slate-50 p-3">
+          <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800 dark:text-slate-200">
             <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">Kolom Pasangan:</p>
             <ol className="space-y-1 text-xs text-slate-500">
               {(question.right_items ?? []).map((r) => (

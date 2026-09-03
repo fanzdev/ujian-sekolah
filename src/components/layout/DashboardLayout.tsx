@@ -68,14 +68,14 @@ export function DashboardLayout() {
         <BrandMark appName={branding?.app_name} schoolName={branding?.school_name} />
       </div>
       <SidebarNav items={items} onNavigate={() => setDrawerOpen(false)} />
-      <Link to={`/${profile.role}/profile`} onClick={() => setDrawerOpen(false)} className="block border-t border-slate-100 bg-slate-50/80 px-4 py-3 transition-colors hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-800/40 dark:hover:bg-slate-800 group">
+      <Link to={`/${profile.role}/profile`} onClick={() => setDrawerOpen(false)} className="block border-t border-slate-100 bg-slate-50/80 px-4 py-3 transition-colors hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-800/40 dark:hover:bg-slate-800 group dark:hover:bg-slate-700">
         <div className="flex items-center gap-3">
           <Avatar name={profile.full_name} src={profile.avatar_url} size="sm" shape="xl" className="shadow-sm" />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-bold leading-none text-slate-900 dark:text-slate-100">{profile.full_name}</p>
             <p className="truncate text-[11px] leading-tight text-slate-500 dark:text-slate-400" title={extra.email ?? `@${profile.username}`}>{extra.email ?? `@${profile.username}`}</p>
           </div>
-          <span className="hidden h-7 w-7 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 group-hover:text-primary-600 dark:bg-slate-800 dark:ring-slate-700 dark:text-slate-500 sm:flex">
+          <span className="hidden h-7 w-7 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 group-hover:text-primary-600 dark:bg-slate-800 dark:ring-slate-700 dark:text-slate-500 sm:flex dark:hover:text-primary-300 dark:group-hover:text-primary-300">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
           </span>
         </div>
@@ -100,7 +100,7 @@ export function DashboardLayout() {
             <button
               onClick={() => setDrawerOpen(false)}
               aria-label="Tutup"
-              className="absolute top-4 right-3 rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="absolute top-4 right-3 rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:bg-slate-700 dark:bg-slate-700 dark:text-slate-200"
             >
               <X className="h-5 w-5" />
             </button>
@@ -125,5 +125,5 @@ export function DashboardLayout() {
 }
 
 export function SimpleLayout({ children }: { children: ReactNode }) {
-  return <div className="min-h-dvh bg-slate-50">{children}</div>
+  return <div className="min-h-dvh bg-slate-50 dark:bg-slate-800 dark:text-slate-200">{children}</div>
 }

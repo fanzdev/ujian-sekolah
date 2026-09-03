@@ -334,10 +334,10 @@ export function ChatAiCard({
           </div>
         </div>
         <div className="flex items-center gap-1 ml-auto">
-          <button onClick={() => setMessages([{ role: 'assistant', content: 'Riwayat dibersihkan. Ada yang bisa dibantu?' }])} className="rounded-lg p-1.5 text-white/80 hover:bg-white/15" aria-label="Bersihkan chat">
+          <button onClick={() => setMessages([{ role: 'assistant', content: 'Riwayat dibersihkan. Ada yang bisa dibantu?' }])} className="rounded-lg p-1.5 text-white/80 hover:bg-white/15 dark:hover:bg-slate-800" aria-label="Bersihkan chat">
             <Trash2 className="h-4 w-4" />
           </button>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-white/80 hover:bg-white/15" aria-label="Tutup">
+          <button onClick={onClose} className="rounded-lg p-1.5 text-white/80 hover:bg-white/15 dark:hover:bg-slate-800" aria-label="Tutup">
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
@@ -349,7 +349,7 @@ export function ChatAiCard({
       <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50 p-3 scrollbar-thin dark:bg-slate-950">
         {messages.map((m, i) => (
           <div key={i} className={`flex gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            {m.role === 'assistant' && <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-500/20"><Bot className="h-3.5 w-3.5" /></span>}
+            {m.role === 'assistant' && <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-500/20 dark:text-white"><Bot className="h-3.5 w-3.5" /></span>}
             <div className={`max-w-[78%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed shadow-sm ${m.role === 'user' ? 'bg-primary-600 text-white rounded-br-sm' : 'bg-white text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 rounded-bl-sm'}`}>
               {m.content}
             </div>
@@ -358,7 +358,7 @@ export function ChatAiCard({
         ))}
         {sending && (
           <div className="flex gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-500/20"><Bot className="h-3.5 w-3.5" /></span>
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-500/20 dark:text-white"><Bot className="h-3.5 w-3.5" /></span>
             <div className="rounded-2xl bg-white px-3.5 py-2.5 text-xs text-slate-400 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 flex items-center gap-1.5">
               <Loader2 className="h-3.5 w-3.5 animate-spin" /> Mengetik&hellip;
             </div>
@@ -395,7 +395,7 @@ export function ChatAiCard({
                   onClick={() => setModelMenuOpen((o) => !o)}
                   aria-haspopup="listbox"
                   aria-expanded={modelMenuOpen}
-                  className="flex w-full items-center justify-between gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 transition-colors hover:border-slate-300 hover:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700/60"
+                  className="flex w-full items-center justify-between gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 transition-colors hover:border-slate-300 hover:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700/60 dark:hover:bg-slate-800"
                 >
                   <span className="flex min-w-0 items-center gap-1.5">
                     <Sparkles className="h-3 w-3 shrink-0 text-primary-500" />

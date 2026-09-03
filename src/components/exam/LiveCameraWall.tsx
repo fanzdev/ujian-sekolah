@@ -24,12 +24,26 @@ export function LiveCameraWall({ examId }: { examId?: string }) {
     const load = async () => {
       setLoading(true)
       try {
-        const { data: files, error } = await supabase
-          .from('media_files')
-          .select('path, owner_id, created_at')
-          .eq('purpose', 'exam-snapshot')
-          .order('created_at', { ascending: false })
-          .limit(30)
+        let ownerIdsFilter: string[] | null = null
+        if (examId) {
+          const { data: participants } = await supabase.from('exam_participants').select('student_id').eq('exam_id', examId).eq('is_removed', false).limit(500)
+          const sIds = (participants ?? []).map((p: { student_id: string }) => p.student_id).filter(Boolean) as string[]
+          if (sIds.length > 0) {
+            const { data: stuProfiles } = await supabase.from('students').select('profile_id').in('id', sIds)
+            ownerIdsFilter = (stuProfiles ?? []).map((s: { profile_id: string }) => s.profile_id).filter(Boolean) as string[]
+          } else {
+            ownerIdsFilter = []
+          }
+        }
+        let query = supabase.from('media_files').select('path, owner_id, created_at').eq('purpose', 'exam-snapshot').order('created_at', { ascending: false }).limit(30)
+        if (ownerIdsFilter && ownerIdsFilter.length > 0) {
+          query = (query as unknown as { in: (col: string, vals: string[]) => typeof query }).in('owner_id', ownerIdsFilter)
+        } else if (ownerIdsFilter && ownerIdsFilter.length === 0) {
+          setSnapshots([])
+          setLoading(false)
+          return
+        }
+        const { data: files, error } = await query
         if (error) throw error
         if (!active) return
         if (!files || files.length === 0) {
@@ -51,8 +65,6 @@ export function LiveCameraWall({ examId }: { examId?: string }) {
             createdAt: f.created_at as string,
           }
         })
-        // jika examId diberikan, biarkan semua snapshot — filtering presisi butuh attempt_id yang belum disimpan (future)
-        void examId
         setSnapshots(mapped)
       } catch {
         if (active) setSnapshots([])
@@ -73,7 +85,7 @@ export function LiveCameraWall({ examId }: { examId?: string }) {
     <Card className="mt-5 overflow-hidden">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
         <div className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-white">
             <Camera className="h-4 w-4" />
           </span>
           <div>

@@ -28,26 +28,51 @@ function NetworkPing() {
   useEffect(() => {
     let active = true
     const check = async () => {
-      if (!navigator.onLine) {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
         setOnline(false)
         setPing(null)
         return
       }
       const start = performance.now()
+      const url = new URL('logo.webp', window.location.origin).toString()
+      const doFetch = async (method: 'HEAD' | 'GET') => {
+        const ctrl = new AbortController()
+        const t = window.setTimeout(() => ctrl.abort(), 2500)
+        try {
+          const res = await fetch(url, { cache: 'no-store', method, signal: ctrl.signal })
+          return res.ok
+        } finally {
+          window.clearTimeout(t)
+        }
+      }
       try {
-        await fetch(`${import.meta.env.BASE_URL}favicon.svg`, { cache: 'no-store', method: 'HEAD' })
+        let ok = await doFetch('HEAD')
+        if (!ok) ok = await doFetch('GET')
         if (!active) return
-        setPing(Math.round(performance.now() - start))
-        setOnline(true)
+        if (ok) {
+          setPing(Math.round(performance.now() - start))
+          setOnline(true)
+        } else {
+          setPing(null)
+          setOnline(typeof navigator !== 'undefined' ? navigator.onLine : true)
+        }
       } catch {
-        if (active) setPing(null)
+        if (!active) return
+        // fallback: if offline API says online, treat as online with no ping
+        const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true
+        setOnline(isOnline)
+        setPing(isOnline ? 0 : null)
       }
     }
     check()
-    const id = window.setInterval(check, 3500)
+    const id = window.setInterval(check, 4000)
+    // also re-check on visibility change
+    const onVis = () => { if (document.visibilityState === 'visible') check() }
+    document.addEventListener('visibilitychange', onVis)
     return () => {
       active = false
       window.clearInterval(id)
+      document.removeEventListener('visibilitychange', onVis)
     }
   }, [])
   const label = !online ? 'Offline' : ping === null ? '…' : `${ping}ms`
@@ -199,7 +224,7 @@ export function Topbar({
       <button
         onClick={onMenuClick}
         aria-label="Buka menu"
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-700 transition-colors hover:bg-slate-100 active:bg-slate-200 tap-target dark:text-slate-300 dark:hover:bg-slate-800 sm:rounded-xl lg:hidden"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-700 transition-colors hover:bg-slate-100 active:bg-slate-200 tap-target dark:text-slate-300 dark:hover:bg-slate-800 sm:rounded-xl lg:hidden dark:hover:bg-slate-700 dark:bg-slate-700 dark:text-slate-200"
       >
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
@@ -223,7 +248,7 @@ export function Topbar({
             }}
             aria-label="Chat AI"
             aria-expanded={chatOpen}
-            className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 sm:rounded-xl sm:border sm:border-slate-200 sm:bg-white sm:hover:border-slate-300 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 sm:dark:border-slate-700 sm:dark:bg-slate-900 sm:dark:hover:border-slate-600"
+            className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 sm:rounded-xl sm:border sm:border-slate-200 sm:bg-white sm:hover:border-slate-300 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 sm:dark:border-slate-700 sm:dark:bg-slate-900 sm:dark:hover:border-slate-600 dark:hover:bg-slate-700"
           >
             <MessageSquare className="h-[18px] w-[18px]" />
           </button>
@@ -239,7 +264,7 @@ export function Topbar({
           }}
           aria-label="Notifikasi"
           aria-expanded={notifOpen}
-          className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 sm:rounded-xl sm:border sm:border-slate-200 sm:bg-white sm:hover:border-slate-300 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 sm:dark:border-slate-700 sm:dark:bg-slate-900 sm:dark:hover:border-slate-600"
+          className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 sm:rounded-xl sm:border sm:border-slate-200 sm:bg-white sm:hover:border-slate-300 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 sm:dark:border-slate-700 sm:dark:bg-slate-900 sm:dark:hover:border-slate-600 dark:hover:bg-slate-700"
         >
           <Bell className="h-[18px] w-[18px]" />
           {unread > 0 && (
@@ -272,7 +297,7 @@ export function Topbar({
                     await markAllNotificationsRead()
                     setNotifs((prev) => prev.map((n) => ({ ...n, is_read: true })))
                   }}
-                  className="rounded-lg p-1.5 text-white/80 hover:bg-white/15"
+                  className="rounded-lg p-1.5 text-white/80 hover:bg-white/15 dark:hover:bg-slate-800"
                   aria-label="Tandai semua dibaca"
                 >
                   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -282,7 +307,7 @@ export function Topbar({
               )}
               <button
                 onClick={() => setNotifOpen(false)}
-                className="rounded-lg p-1.5 text-white/80 hover:bg-white/15"
+                className="rounded-lg p-1.5 text-white/80 hover:bg-white/15 dark:hover:bg-slate-800"
                 aria-label="Tutup"
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -332,7 +357,7 @@ export function Topbar({
           }}
           aria-expanded={menuOpen}
           aria-label="Menu akun"
-          className="flex items-center justify-center p-0.5 transition-colors rounded-full sm:gap-2.5 sm:rounded-xl sm:border sm:border-transparent sm:p-1.5 sm:hover:border-slate-200 sm:hover:bg-slate-100 sm:dark:border-transparent sm:dark:hover:border-slate-700 sm:dark:hover:bg-slate-800"
+          className="flex items-center justify-center p-0.5 transition-colors rounded-full sm:gap-2.5 sm:rounded-xl sm:border sm:border-transparent sm:p-1.5 sm:hover:border-slate-200 sm:hover:bg-slate-100 sm:dark:border-transparent sm:dark:hover:border-slate-700 sm:dark:hover:bg-slate-800 dark:hover:bg-slate-700 dark:bg-slate-700 dark:text-slate-200"
         >
           <Avatar name={profile.full_name} src={profile.avatar_url} size="sm" shape="full" className="sm:!rounded-xl" />
           <span className="hidden text-left md:block">
@@ -353,7 +378,7 @@ export function Topbar({
                 navigate(`/${profile.role === 'admin' ? 'admin' : profile.role}/profile`)
                 setMenuOpen(false)
               }}
-              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 transition-colors hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
+              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 transition-colors hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800 dark:bg-slate-800 dark:text-slate-200"
             >
               Profil Saya
             </button>
@@ -376,9 +401,22 @@ export function Topbar({
 }
 
 export function BrandMark({ appName, schoolName }: { appName?: string; schoolName?: string }) {
+  const [logo, setLogo] = useState<string | null>(null)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('cbt-branding')
+      if (raw) {
+        const b = JSON.parse(raw) as { logo_url?: string }
+        if (b.logo_url) setLogo(b.logo_url)
+      }
+    } catch (_e) { void _e }
+    import('@/services/settings.service').then(({ fetchSchoolSettings }) =>
+      fetchSchoolSettings().then((s) => { if (s.logo_url) setLogo(s.logo_url) }).catch(() => undefined),
+    )
+  }, [])
   return (
     <div className="flex items-center gap-3 px-2">
-      <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="Logo" className="h-9 w-9 shrink-0 rounded-lg" width={36} height={36} />
+      <img src={logo || `${import.meta.env.BASE_URL}logo.webp`} alt="Logo" className="h-9 w-9 shrink-0 rounded-lg bg-white object-contain p-1 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700" width={36} height={36} />
       <div className="min-w-0 leading-tight">
         <p className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{schoolName ?? 'SMK AL-FATA'}</p>
         <p className="truncate text-[11px] font-medium text-slate-500 dark:text-slate-400">{appName ?? 'SMK AL-FATA CBT'}</p>

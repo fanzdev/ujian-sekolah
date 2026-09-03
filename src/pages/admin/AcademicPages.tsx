@@ -63,7 +63,7 @@ export function ClassesPage() {
                 header: '',
                 render: (c) => (
                   <div className="flex justify-end gap-1">
-                    <button onClick={() => setEditing({ id: c.id, name: c.name, level: c.level, department_id: c.department_id, homeroom_teacher_id: '' })} className="rounded-lg p-2 text-slate-400 hover:bg-sky-50 hover:text-sky-600" aria-label="Ubah kelas">
+                    <button onClick={() => setEditing({ id: c.id, name: c.name, level: c.level, department_id: c.department_id, homeroom_teacher_id: '' })} className="rounded-lg p-2 text-slate-400 hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-500/10 dark:hover:text-sky-400" aria-label="Ubah kelas">
                       <Pencil className="h-4 w-4" />
                     </button>
                     <button
@@ -78,7 +78,7 @@ export function ClassesPage() {
                           toast.error(friendlyError(err))
                         }
                       }}
-                      className="rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                      className="rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10 dark:hover:text-rose-400"
                       aria-label="Hapus kelas"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -100,7 +100,7 @@ export function ClassesPage() {
               <Select label="Tingkat *" value={String(editing.level)} onChange={(e) => setEditing({ ...editing, level: Number(e.target.value) })} options={LEVEL_OPTIONS} />
               <Select label="Jurusan *" placeholder={teachers.length ? 'Pilih jurusan' : 'Buat jurusan dulu'} required value={editing.department_id} onChange={(e) => setEditing({ ...editing, department_id: e.target.value })} options={(query.data?.[1] ?? []).map((d) => ({ value: d.id, label: `${d.code} · ${d.name}` }))} />
             </div>
-            <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4">
+            <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:bg-slate-800 dark:text-slate-200">
               <Button variant="ghost" onClick={() => setEditing(null)}>Batal</Button>
               <Button
                 loading={false}
@@ -178,7 +178,7 @@ export function DepartmentsPage() {
               <div className="flex items-start justify-between">
                 <Badge tone="blue">{d.code}</Badge>
                 <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                  <button onClick={() => setEditing({ id: d.id, code: d.code, name: d.name, description: d.description ?? '' })} className="rounded-lg p-1.5 text-slate-400 hover:bg-sky-50 hover:text-sky-600" aria-label="Ubah jurusan">
+                  <button onClick={() => setEditing({ id: d.id, code: d.code, name: d.name, description: d.description ?? '' })} className="rounded-lg p-1.5 text-slate-400 hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-500/10 dark:hover:text-sky-400" aria-label="Ubah jurusan">
                     <Pencil className="h-4 w-4" />
                   </button>
                   <button
@@ -193,7 +193,7 @@ export function DepartmentsPage() {
                         toast.error(friendlyError(err))
                       }
                     }}
-                    className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                    className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10 dark:hover:text-rose-400"
                     aria-label="Hapus jurusan"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -216,7 +216,7 @@ export function DepartmentsPage() {
               <Input label="Nama Jurusan *" placeholder="cth: Rekayasa Perangkat Lunak" value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} required />
               <Input label="Deskripsi" className="sm:col-span-2" value={editing.description} onChange={(e) => setEditing({ ...editing, description: e.target.value })} />
             </div>
-            <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4">
+            <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:bg-slate-800 dark:text-slate-200">
               <Button variant="ghost" onClick={() => setEditing(null)}>Batal</Button>
               <Button
                 onClick={async () => {

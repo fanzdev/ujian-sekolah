@@ -493,7 +493,7 @@ function AddStudentModal({
                   setAdding(null)
                 }
               }}
-              className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-2.5 text-left transition-colors hover:border-primary-300 hover:bg-primary-50/40 dark:border-slate-700 dark:hover:border-primary-600 dark:hover:bg-primary-500/10"
+              className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-2.5 text-left transition-colors hover:border-primary-300 hover:bg-primary-50/40 dark:border-slate-700 dark:hover:border-primary-600 dark:hover:bg-primary-500/10 dark:hover:bg-primary-500/15"
             >
               <span>
                 <span className="block text-sm font-medium text-slate-700 dark:text-slate-200">{Array.isArray(s.profiles) ? s.profiles[0]?.full_name : s.profiles?.full_name}</span>

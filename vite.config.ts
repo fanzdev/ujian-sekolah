@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import fs from 'node:fs'
 import path from 'node:path'
 
-const BASE_PATH = '/'
+const BASE_PATH = ''
 
 const GH_REDIRECT_SCRIPT =
   '<script>(function(){try{var p=location.pathname;if(p.indexOf("' +
@@ -45,13 +45,13 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 3000,
     strictPort: false,
     cors: true,
   },
   preview: {
     host: '0.0.0.0',
-    port: 4173,
+    port: 3000,
     strictPort: false,
     cors: true,
   },

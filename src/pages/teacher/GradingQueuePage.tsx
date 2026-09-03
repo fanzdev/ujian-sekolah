@@ -62,7 +62,7 @@ export default function GradingQueuePage() {
         ) : (
           <div className="divide-y divide-slate-100">
             {rows.map((r) => (
-              <button key={r.answer_id} onClick={() => setActiveItem(r)} className="flex w-full items-center gap-4 px-4 py-3.5 text-left transition-colors hover:bg-slate-50 sm:px-5">
+              <button key={r.answer_id} onClick={() => setActiveItem(r)} className="flex w-full items-center gap-4 px-4 py-3.5 text-left transition-colors hover:bg-slate-50 sm:px-5 dark:hover:bg-slate-800 dark:bg-slate-800 dark:text-slate-200">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[13px] font-semibold text-slate-800">
                     {r.student_name}
@@ -159,7 +159,7 @@ function GradingModal({ item, onClose, onSaved }: { item: QueueItem; onClose: ()
       <div className="space-y-5 px-6 py-5">
         <div>
           <p className="label-base">Soal</p>
-          <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-700">{detail.questionText.replace(/<[^>]*>/g, '')}</div>
+          <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-700 dark:bg-slate-800 dark:text-slate-200">{detail.questionText.replace(/<[^>]*>/g, '')}</div>
         </div>
 
         <div>
@@ -197,7 +197,7 @@ function GradingModal({ item, onClose, onSaved }: { item: QueueItem; onClose: ()
         )}
       </div>
 
-      <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4">
+      <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:bg-slate-800 dark:text-slate-200">
         <Button variant="ghost" onClick={onClose}>Batal</Button>
         <Button onClick={saveFinal} loading={saving} icon={<Save className="h-4 w-4" />}>Simpan Nilai Final</Button>
       </div>

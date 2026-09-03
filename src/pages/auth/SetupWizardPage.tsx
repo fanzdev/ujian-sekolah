@@ -21,7 +21,7 @@ export default function SetupWizardPage() {
 
   if (status.loading) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-slate-50">
+      <div className="flex min-h-dvh items-center justify-center bg-slate-50 dark:bg-slate-800 dark:text-slate-200">
         <Spinner className="h-8 w-8" />
       </div>
     )
@@ -33,7 +33,7 @@ export default function SetupWizardPage() {
         <ShieldCheck className="h-12 w-12 text-primary-400" />
         <div>
           <h1 className="text-lg font-bold text-slate-800">Setup Awal Belum Dapat Dimuat</h1>
-          <p className="mx-auto mt-2 max-w-md rounded-xl bg-slate-100 px-4 py-3 text-sm leading-relaxed text-slate-600">
+          <p className="mx-auto mt-2 max-w-md rounded-xl bg-slate-100 px-4 py-3 text-sm leading-relaxed text-slate-600 dark:bg-slate-700 dark:text-slate-200">
             {status.error}
           </p>
         </div>
@@ -49,7 +49,7 @@ export default function SetupWizardPage() {
     return (
       <Shell>
         <div className="card w-full max-w-md p-8 text-center animate-fade-in">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-700 dark:text-slate-200">
             <Lock className="h-8 w-8" />
           </div>
           <h1 className="mt-5 text-xl font-extrabold tracking-tight text-slate-900">Wizard Terkunci</h1>
@@ -164,7 +164,7 @@ function SetupWizard() {
     <Shell>
       <div className="w-full max-w-xl">
         <div className="mb-6 text-center animate-fade-in">
-          <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="" width={64} height={64} className="mx-auto h-16 w-16 rounded-2xl shadow-lg" />
+          <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="" width={64} height={64} className="mx-auto h-16 w-16 rounded-2xl shadow-lg" />
           <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-white">Setup Awal Sistem</h1>
           <p className="mt-1.5 text-sm text-primary-200">
             Belum ada akun admin. Lengkapi wizard ini <strong>sekali saja</strong> untuk mengaktifkan sistem ujian.

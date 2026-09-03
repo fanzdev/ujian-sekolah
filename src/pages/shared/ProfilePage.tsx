@@ -15,6 +15,8 @@ import { uploadMedia, deleteMedia } from '@/services/storage.service'
 import { friendlyError } from '@/lib/errors'
 import { formatDateTime } from '@/lib/datetime'
 import { supabase } from '@/services/client'
+import { fetchSchoolSettings } from '@/services/settings.service'
+import { useAsync } from '@/hooks/useAsync'
 import type { Student } from '@/types/models'
 
 export default function ProfilePage({ tab = 'profile' }: { tab?: string }) {
@@ -53,6 +55,9 @@ function ProfileHero() {
   const toast = useToast()
   const fileRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
+  const brandingQuery = useAsync(() => fetchSchoolSettings(), [])
+  const pc = brandingQuery.data?.primary_color || '#0D868F'
+  const sc = brandingQuery.data?.secondary_color || '#0CBCC9'
 
   if (!profile) return null
 
@@ -85,7 +90,7 @@ function ProfileHero() {
 
   return (
     <div className="card overflow-hidden animate-fade-in">
-      <div className="relative bg-gradient-to-br from-primary-500 via-primary-600 to-indigo-700 px-6 py-8 text-center">
+      <div className="relative px-6 py-8 text-center" style={{ background: `linear-gradient(135deg, ${pc}, ${sc})` }}>
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 20% 80%, rgba(255,255,255,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.2) 0%, transparent 50%)' }} />
         <div className="relative flex flex-col items-center">
           <div className="relative">
@@ -93,7 +98,7 @@ function ProfileHero() {
             <button
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
-              className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-white text-primary-600 shadow-lg transition-transform hover:scale-110 dark:bg-slate-800"
+              className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-white text-primary-600 shadow-lg transition-transform hover:scale-110 dark:bg-slate-800 dark:text-white"
               title="Ubah foto profil"
             >
               {uploading ? <Spinner className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
@@ -306,7 +311,7 @@ function SecuritySection({ onNavigate }: { onNavigate: () => void }) {
       <CardBody className="p-0">
         <button
           onClick={onNavigate}
-          className="flex w-full items-center gap-4 px-4 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
+          className="flex w-full items-center gap-4 px-4 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 dark:text-slate-200"
         >
           <KeyRound className="h-5 w-5 shrink-0 text-slate-400" />
           <div className="min-w-0 flex-1">

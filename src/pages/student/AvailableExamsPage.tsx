@@ -14,6 +14,13 @@ import { AVAILABLE_EXAM_STATUS_LABELS } from '@/lib/constants'
 export default function AvailableExamsPage() {
   useDocumentTitle('Ujian Tersedia')
   const query = useAsync(() => listAvailableExams(), [])
+  const meQuery = useAsync(async () => {
+    const { supabase } = await import('@/services/client')
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return null
+    const { data: stu } = await supabase.from('students').select('class_id, classes(name)').eq('profile_id', user.id).maybeSingle()
+    return stu as { class_id: string | null; classes: { name: string } | null } | null
+  }, [])
 
   if (query.error) return <ErrorState message={query.error} onRetry={query.reload} />
 
@@ -38,7 +45,15 @@ export default function AvailableExamsPage() {
       {query.loading ? (
         <TableSkeleton rows={4} cols={3} />
       ) : exams.length === 0 ? (
-        <EmptyState icon={<CalendarDays className="h-6 w-6" />} title="Belum ada ujian" description="Ujian akan muncul di sini sesuai kelas dan jurusan Anda." />
+        <EmptyState
+          icon={<CalendarDays className="h-6 w-6" />}
+          title={meQuery.data && !meQuery.data.class_id ? 'Kelas Belum Ditentukan' : 'Belum ada ujian'}
+          description={
+            meQuery.data && !meQuery.data.class_id
+              ? 'Akun Anda belum terhubung ke kelas. Hubungi admin untuk menetapkan kelas agar ujian dapat muncul.'
+              : 'Ujian akan muncul di sini sesuai kelas dan jurusan Anda. Jika ujian sudah aktif tapi tidak muncul, pastikan admin telah menambahkan soal dan mengatur target kelas/jurusan.'
+          }
+        />
       ) : (
         <div className="space-y-8">
           <ExamGroup icon={<AlertCircle className="h-4 w-4" />} title="Lanjutkan Pengerjaan" tone="red" items={groups.resume} highlight />
@@ -74,7 +89,7 @@ function ExamGroup({
     <section className="animate-fade-in">
       <div className={`mb-3 flex items-center gap-2 text-sm font-bold ${tone === 'red' ? 'text-rose-600' : tone === 'green' ? 'text-emerald-600' : tone === 'sky' ? 'text-sky-600' : 'text-slate-500'} ${muted ? 'opacity-60' : ''}`}>
         {icon} {title}
-        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-400">{items.length}</span>
+        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-400 dark:bg-slate-700 dark:text-slate-200">{items.length}</span>
       </div>
       <div className={`grid gap-4 sm:grid-cols-2 ${highlight ? 'sm:grid-cols-1 lg:grid-cols-2' : ''}`}>
         {items.map((exam) => (

@@ -16,10 +16,10 @@ export async function fetchSchoolSettings(): Promise<SchoolSettings> {
     normalized ?? {
       app_name: 'SMK AL-FATA CBT',
       school_name: 'SMK AL-FATA',
-      logo_url: null,
-      favicon_url: null,
-      primary_color: '#2563eb',
-      secondary_color: '#0ea5e9',
+      logo_url: `${import.meta.env.BASE_URL}logo.webp`,
+      favicon_url: `${import.meta.env.BASE_URL}logo.webp`,
+      primary_color: '#0D868F',
+      secondary_color: '#0CBCC9',
       extra_colors: [],
       address: null,
       city: null,
@@ -64,7 +64,7 @@ export function hexToRgbTriplet(hex: string): string {
   if (RGB_CACHE[hex]) return RGB_CACHE[hex]
   let h = hex.replace('#', '').trim()
   if (h.length === 3) h = h.split('').map((c) => c + c).join('')
-  if (!/^[0-9a-fA-F]{6}$/.test(h)) return '37 99 235'
+  if (!/^[0-9a-fA-F]{6}$/.test(h)) return '13 134 143'
   const r = parseInt(h.slice(0, 2), 16)
   const g = parseInt(h.slice(2, 4), 16)
   const b = parseInt(h.slice(4, 6), 16)
@@ -127,5 +127,5 @@ export function applyBranding(settings: SchoolSettings): void {
     faviconLink.rel = 'icon'
     document.head.appendChild(faviconLink)
   }
-  faviconLink.href = settings.favicon_url || settings.logo_url || `${import.meta.env.BASE_URL}favicon.svg`
+  faviconLink.href = settings.favicon_url || settings.logo_url || `${import.meta.env.BASE_URL}logo.webp`
 }

@@ -259,7 +259,7 @@ function QuestionAnalysis({ stats }: { stats: QuestionStat[] }) {
                 <p className="line-clamp-2 text-[13px] leading-snug text-slate-700">{q.text.replace(/<[^>]*>/g, '').slice(0, 160)}</p>
                 <Badge tone={pct >= 70 ? 'green' : pct >= 40 ? 'amber' : 'red'}>{formatNumber(pct, 0)}% terjawab</Badge>
               </div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700 dark:text-slate-200">
                 <div
                   className={`h-full rounded-full transition-all ${pct >= 70 ? 'bg-emerald-500' : pct >= 40 ? 'bg-amber-400' : 'bg-rose-400'}`}
                   style={{ width: `${Math.max(2, pct)}%` }}

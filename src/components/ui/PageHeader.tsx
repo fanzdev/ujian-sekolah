@@ -16,7 +16,7 @@ export function PageHeader({
     <div className="mb-6 flex flex-wrap items-center justify-between gap-4 animate-fade-in">
       <div className="flex items-center gap-3">
         {icon && (
-          <div className="hidden h-11 w-11 items-center justify-center rounded-xl bg-primary-50 text-primary-600 sm:flex">
+          <div className="hidden h-11 w-11 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-600 dark:text-white dark:ring-1 dark:ring-primary-500/30 shadow-sm sm:flex">
             {icon}
           </div>
         )}
@@ -44,11 +44,11 @@ export function StatCard({
   hint?: string
 }) {
   const tones = {
-    blue: 'bg-primary-50 text-primary-600',
-    green: 'bg-emerald-50 text-emerald-600',
-    amber: 'bg-amber-50 text-amber-600',
-    rose: 'bg-rose-50 text-rose-600',
-    purple: 'bg-violet-50 text-violet-600',
+    blue: 'bg-primary-50 text-primary-600 dark:bg-primary-600 dark:text-white dark:ring-1 dark:ring-primary-500/20',
+    green: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-600 dark:text-white dark:ring-1 dark:ring-emerald-500/20',
+    amber: 'bg-amber-50 text-amber-600 dark:bg-amber-600 dark:text-white dark:ring-1 dark:ring-amber-500/20',
+    rose: 'bg-rose-50 text-rose-600 dark:bg-rose-600 dark:text-white dark:ring-1 dark:ring-rose-500/20',
+    purple: 'bg-violet-50 text-violet-600 dark:bg-violet-600 dark:text-white dark:ring-1 dark:ring-violet-500/20',
   }
   return (
     <div className="card p-3 transition-all hover:shadow-card-hover animate-fade-in sm:p-5">

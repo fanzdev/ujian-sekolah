@@ -57,7 +57,7 @@ export function Breadcrumb() {
         <li className="shrink-0">
           <Link
             to={`/${segments[0]}`}
-            className="flex items-center gap-1.5 rounded-md px-1.5 py-1 font-semibold text-slate-500 transition-colors hover:bg-slate-100 hover:text-primary-600 dark:text-slate-300 dark:hover:bg-slate-800"
+            className="flex items-center gap-1.5 rounded-md px-1.5 py-1 font-semibold text-slate-500 transition-colors hover:bg-slate-100 hover:text-primary-600 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:bg-slate-700 dark:hover:text-primary-300 dark:bg-slate-700 dark:text-slate-200"
           >
             <Home className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">{crumbs[0].label}</span>
@@ -74,7 +74,7 @@ export function Breadcrumb() {
               ) : (
                 <Link
                   to={c.path}
-                  className="block truncate rounded-md px-1.5 py-1 font-medium text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                  className="block truncate rounded-md px-1.5 py-1 font-medium text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 dark:hover:bg-slate-700 dark:bg-slate-700 dark:text-slate-200"
                 >
                   {c.label}
                 </Link>

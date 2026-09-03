@@ -1,10 +1,9 @@
-const CACHE_NAME = 'cbt-v1';
+const CACHE_NAME = 'cbt-v2';
 const OFFLINE_URL = '/ujian/index.html';
 const ASSETS = [
   '/ujian/',
   '/ujian/index.html',
-  '/ujian/favicon.svg',
-  '/ujian/logo.svg',
+  '/ujian/logo.webp',
 ];
 
 self.addEventListener('install', (event) => {
@@ -25,7 +24,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
   // Network first for API/supabase, cache first for static
-  if (url.pathname.startsWith('/ujian/assets/') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css') || url.pathname.endsWith('.woff2') || url.pathname.endsWith('.svg')) {
+  if (url.pathname.startsWith('/ujian/assets/') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css') || url.pathname.endsWith('.woff2') || url.pathname.endsWith('.svg') || url.pathname.endsWith('.webp')) {
     event.respondWith(
       caches.match(req).then((cached) => {
         const fetched = fetch(req)

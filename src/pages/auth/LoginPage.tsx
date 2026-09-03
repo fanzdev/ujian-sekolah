@@ -47,7 +47,7 @@ export default function LoginPage() {
   if (!isEnvConfigured()) return <Navigate to="/env-required" replace />
   if (setupCheck.loading && !setupCheck.error) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-slate-50">
+      <div className="flex min-h-dvh items-center justify-center bg-slate-50 dark:bg-slate-800 dark:text-slate-200">
         <Spinner className="h-8 w-8" />
       </div>
     )
@@ -80,7 +80,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-slate-50 lg:grid lg:min-h-dvh lg:grid-cols-[1.05fr_0.95fr]">
+    <div className="min-h-dvh bg-slate-50 lg:grid lg:min-h-dvh lg:grid-cols-[1.05fr_0.95fr] dark:bg-slate-800 dark:text-slate-200">
       <div
         ref={leftRef}
         onMouseMove={handleMouseMove}
@@ -102,8 +102,8 @@ export default function LoginPage() {
         />
         <div className="relative flex h-full flex-col justify-between text-white transition-transform duration-700 ease-out will-change-transform" style={{ transform: `translate(${(mouse.x - 0.5) * 12}px, ${(mouse.y - 0.5) * 12}px)` }}>
           <div className="flex items-center gap-3 transition-transform duration-700 ease-out" style={{ transform: `translate(${(mouse.x - 0.5) * -8}px, ${(mouse.y - 0.5) * -8}px)` }}>
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white p-2 shadow-lg transition-transform duration-500 group-hover:scale-105 group-hover:shadow-xl">
-              <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="Logo" className="h-8 w-8 object-contain" width={32} height={32} />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white p-2 shadow-lg transition-transform duration-500 group-hover:scale-105 group-hover:shadow-xl dark:bg-white">
+              <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="Logo" className="h-8 w-8 object-contain" width={32} height={32} />
             </div>
             <div>
               <p className="text-[15px] font-extrabold tracking-tight leading-none">{branding?.app_name ?? 'SMK AL-FATA CBT'}</p>
@@ -142,14 +142,14 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <div className="flex min-h-dvh flex-col bg-slate-50 lg:min-h-0 lg:justify-center lg:bg-[#f8fafc] lg:p-8 xl:p-10">
+      <div className="flex min-h-dvh flex-col bg-slate-50 lg:min-h-0 lg:justify-center lg:bg-[#f8fafc] dark:bg-slate-900 lg:dark:bg-slate-900 lg:p-8 xl:p-10">
         <div className="flex flex-1 flex-col lg:flex-none lg:justify-center">
           <div className="relative overflow-hidden bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900 px-6 pb-10 pt-8 lg:hidden">
             <div className="absolute -top-20 -right-20 h-64 w-64 rounded-full bg-white/10 blur-3xl animate-pulse" style={{ animationDuration: '3s' }} />
             <div className="absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-sky-400/15 blur-3xl animate-pulse" style={{ animationDuration: '4s', animationDelay: '0.5s' }} />
             <div className="relative flex flex-col items-center text-center text-white">
-              <div className="flex h-[72px] w-[72px] items-center justify-center rounded-[18px] bg-white shadow-xl">
-                <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="Logo" className="h-11 w-11 object-contain" width={44} height={44} />
+              <div className="flex h-[72px] w-[72px] items-center justify-center rounded-[18px] bg-white shadow-xl dark:bg-white">
+                <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="Logo" className="h-11 w-11 object-contain" width={44} height={44} />
               </div>
               <h1 className="mt-4 text-xl font-extrabold tracking-tight">{branding?.app_name ?? 'SMK AL-FATA CBT'}</h1>
               <p className="mt-1 text-[13px] font-medium text-white/80">{branding?.school_name ?? 'SMK AL-FATA'} • CBT</p>
@@ -157,7 +157,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="flex-1 bg-slate-50 px-4 pb-8 pt-6 lg:bg-white lg:p-0">
+          <div className="flex-1 bg-slate-50 px-4 pb-8 pt-6 lg:bg-white lg:p-0 dark:bg-slate-900 lg:dark:bg-slate-900">
             <div className="mx-auto w-full max-w-sm animate-fade-in">
               <div className="hidden lg:block">
                 <h1 className="text-2xl font-bold tracking-tight text-slate-900">Selamat Datang Kembali</h1>
@@ -178,7 +178,7 @@ export default function LoginPage() {
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4 rounded-[24px] border border-slate-200/60 bg-white p-5 shadow-sm sm:p-6 lg:mt-6 lg:rounded-2xl lg:p-6 lg:shadow-sm">
+              <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4 rounded-[24px] border border-slate-200/60 bg-white p-5 shadow-sm sm:p-6 lg:mt-6 lg:rounded-2xl lg:p-6 lg:shadow-sm dark:bg-slate-900 dark:border-slate-700">
                 <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-slate-200 lg:hidden" aria-hidden />
                 {error && (
                   <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 animate-fade-in">
@@ -208,7 +208,7 @@ export default function LoginPage() {
                 <Button type="submit" loading={loading} size="lg" icon={<LogIn className="h-4 w-4" />} className="mt-2 w-full rounded-xl shadow-md">
                   Masuk Sekarang
                 </Button>
-                <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-3 text-xs leading-relaxed text-slate-500">
+                <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-3 text-xs leading-relaxed text-slate-500 dark:bg-slate-800 dark:text-slate-200">
                   <LockKeyhole className="h-4 w-4 shrink-0 text-slate-400" />
                   Akun dibuat admin • hubungi admin jika lupa password
                 </div>

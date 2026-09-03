@@ -55,7 +55,11 @@ function BrandingPanel() {
 
   useEffect(() => {
     if (query.data) {
-      const normalized = { ...query.data, extra_colors: Array.isArray(query.data.extra_colors) ? query.data.extra_colors : [] } as SchoolSettings
+      const normalized = {
+        ...query.data,
+        extra_colors: Array.isArray(query.data.extra_colors) ? query.data.extra_colors : [],
+        primary_color: query.data.primary_color || '#0D868F',
+      } as SchoolSettings
       setForm(normalized)
     }
   }, [query.data])
@@ -63,22 +67,21 @@ function BrandingPanel() {
   if (query.error) return <ErrorState message={query.error} onRetry={query.reload} />
   if (!form) return <div className="flex justify-center py-14"><Spinner /></div>
 
-  const palette = [form.primary_color, form.secondary_color, ...(form.extra_colors ?? [])].filter((c): c is string => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c))
-  const setPalette = (next: string[]) => {
-    const [p, s, ...rest] = next
-    setForm({ ...form, primary_color: p ?? '#2563eb', secondary_color: s ?? p ?? '#0ea5e9', extra_colors: rest })
-  }
-
   const save = async () => {
+    if (!form.app_name?.trim() || !form.school_name?.trim()) {
+      toast.error('Nama Aplikasi dan Nama Sekolah wajib diisi.')
+      return
+    }
     setSaving(true)
     try {
       const payload: Partial<SchoolSettings> = {
-        app_name: form.app_name,
-        school_name: form.school_name,
-        primary_color: form.primary_color,
-        secondary_color: form.secondary_color,
+        app_name: form.app_name.trim(),
+        school_name: form.school_name.trim(),
+        primary_color: form.primary_color || '#0D868F',
+        secondary_color: form.secondary_color || '#0CBCC9',
         extra_colors: form.extra_colors ?? [],
         logo_url: form.logo_url,
+        favicon_url: form.favicon_url,
         address: form.address,
         city: form.city,
         headmaster: form.headmaster,
@@ -86,8 +89,8 @@ function BrandingPanel() {
         semester: form.semester,
       }
       await updateSchoolSettings(payload)
-      applyBranding({ ...form, extra_colors: form.extra_colors ?? [] })
-      toast.success(palette.length > 1 ? `Branding gradasi ${palette.length} warna tersimpan & diterapkan.` : 'Branding tersimpan & diterapkan.')
+      applyBranding({ ...form, primary_color: form.primary_color || '#0D868F', secondary_color: form.secondary_color || '#0D868F', extra_colors: form.extra_colors ?? [] })
+      toast.success('Branding tersimpan & diterapkan.')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Gagal menyimpan.')
     } finally {
@@ -100,7 +103,7 @@ function BrandingPanel() {
     try {
       const { uploadMedia } = await import('@/services/storage.service')
       const result = await uploadMedia(file, 'logo')
-      setForm((f) => ({ ...f!, logo_url: result.url }))
+      setForm((f) => ({ ...f!, logo_url: result.url, favicon_url: result.url }))
       toast.success('Logo terunggah. Klik Simpan untuk menerapkan.')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Gagal mengunggah.')
@@ -109,77 +112,79 @@ function BrandingPanel() {
     }
   }
 
-  return (
-    <Card>
-      <CardHeader title="Identitas Sekolah" subtitle="Diterapkan pada seluruh aplikasi termasuk halaman login." />
-      <CardBody className="space-y-5">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Input label="Nama Aplikasi" value={form.app_name} onChange={(e) => setForm({ ...form, app_name: e.target.value })} />
-          <Input label="Nama Sekolah" value={form.school_name} onChange={(e) => setForm({ ...form, school_name: e.target.value })} />
-          <Input label="Tahun Ajaran" placeholder="cth: 2026/2027" value={form.academic_year ?? ''} onChange={(e) => setForm({ ...form, academic_year: e.target.value })} />
-          <Input label="Semester" placeholder="Ganjil / Genap" value={form.semester ?? ''} onChange={(e) => setForm({ ...form, semester: e.target.value })} />
-          <Input label="Kepala Sekolah" value={form.headmaster ?? ''} onChange={(e) => setForm({ ...form, headmaster: e.target.value })} />
-          <Input label="Kota" value={form.city ?? ''} onChange={(e) => setForm({ ...form, city: e.target.value })} />
-        </div>
-        <Input label="Alamat" value={form.address ?? ''} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+  const useDefaultLogo = () => {
+    setForm((f) => ({ ...f!, logo_url: `${import.meta.env.BASE_URL}logo.webp`, favicon_url: `${import.meta.env.BASE_URL}logo.webp` }))
+    toast.success('Logo default (logo.webp) diterapkan. Klik Simpan untuk menyimpan.')
+  }
 
-        <div className="grid gap-5 sm:grid-cols-2">
-          <div>
-            <label className="label-base">Logo Sekolah</label>
-            <div className="group relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/50 p-4 transition-colors hover:border-primary-400 hover:bg-primary-50/40 dark:border-slate-700 dark:bg-slate-800/30 dark:hover:border-primary-500/50 dark:hover:bg-slate-800">
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader title="Identitas Sekolah" subtitle="Diterapkan pada seluruh aplikasi termasuk halaman login & splash screen." />
+        <CardBody className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input label="Nama Aplikasi" value={form.app_name} onChange={(e) => setForm({ ...form, app_name: e.target.value })} required placeholder="VCBT SMK AL-FATA" />
+            <Input label="Nama Sekolah" value={form.school_name} onChange={(e) => setForm({ ...form, school_name: e.target.value })} required placeholder="SMK AL-FATA" />
+            <Input label="Tahun Ajaran" placeholder="cth: 2026/2027" value={form.academic_year ?? ''} onChange={(e) => setForm({ ...form, academic_year: e.target.value })} />
+            <Input label="Semester" placeholder="Ganjil / Genap" value={form.semester ?? ''} onChange={(e) => setForm({ ...form, semester: e.target.value })} />
+            <Input label="Kepala Sekolah" value={form.headmaster ?? ''} onChange={(e) => setForm({ ...form, headmaster: e.target.value })} placeholder="Nama Kepala Sekolah" />
+            <Input label="Kota" value={form.city ?? ''} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Kota / Kabupaten" />
+          </div>
+          <Input label="Alamat" value={form.address ?? ''} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Alamat lengkap sekolah" />
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-700 dark:bg-slate-800/40">
+            <p className="mb-3 text-xs font-semibold text-slate-700 dark:text-slate-200">Warna Tema</p>
+            <div className="h-8 w-full rounded-lg border border-slate-200 shadow-inner dark:border-slate-700" style={{ background: `linear-gradient(90deg, ${form.primary_color || '#0D868F'}, ${form.secondary_color || '#0CBCC9'})` }} aria-hidden />
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
+                <input type="color" aria-label="Warna Utama" value={/^#[0-9a-fA-F]{6}$/.test(form.primary_color || '') ? form.primary_color! : '#0D868F'} onChange={(e) => setForm({ ...form, primary_color: e.target.value })} className="h-8 w-10 cursor-pointer rounded-md border-0 bg-transparent p-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-medium text-slate-500">Warna Utama</p>
+                  <input type="text" value={form.primary_color || '#0D868F'} onChange={(e) => setForm({ ...form, primary_color: e.target.value })} className="w-full bg-transparent font-mono text-xs outline-none dark:text-slate-100" maxLength={7} placeholder="#000000" />
+                </div>
+              </div>
+              <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
+                <input type="color" aria-label="Warna Sekunder" value={/^#[0-9a-fA-F]{6}$/.test(form.secondary_color || '') ? form.secondary_color! : '#0CBCC9'} onChange={(e) => setForm({ ...form, secondary_color: e.target.value })} className="h-8 w-10 cursor-pointer rounded-md border-0 bg-transparent p-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-medium text-slate-500">Warna Sekunder</p>
+                  <input type="text" value={form.secondary_color || '#0CBCC9'} onChange={(e) => setForm({ ...form, secondary_color: e.target.value })} className="w-full bg-transparent font-mono text-xs outline-none dark:text-slate-100" maxLength={7} placeholder="#000000" />
+                </div>
+              </div>
+            </div>
+            <p className="mt-2 text-[11px] text-slate-400">Gradasi warna diterapkan pada header, tombol utama, splash screen, dan profil.</p>
+          </div>
+
+          <div className="space-y-3">
+            <label className="label-base">Logo Aplikasi</label>
+            <div className="flex items-center gap-4">
               <div className="relative">
-                <img src={form.logo_url || `${import.meta.env.BASE_URL}logo.svg`} alt="Logo" className="h-20 w-20 rounded-xl border border-slate-200 bg-white object-contain shadow-sm dark:border-slate-700 dark:bg-slate-900" width={80} height={80} />
-                <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-primary-600 text-white shadow-md ring-2 ring-white dark:ring-slate-900">
-                  <span className="text-sm font-bold leading-none">{logoUploading ? '…' : '+'}</span>
+                <img src={form.logo_url || `${import.meta.env.BASE_URL}logo.webp`} alt="Logo" className="h-20 w-20 rounded-xl border border-slate-200 bg-white object-contain p-2 shadow-sm dark:border-slate-700 dark:bg-slate-900" width={80} height={80} />
+                <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm ring-2 ring-white dark:ring-slate-900">
+                  <span className="text-xs font-bold leading-none">{logoUploading ? '…' : '+'}</span>
                 </span>
               </div>
-              <label className="cursor-pointer rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-primary-600 shadow-sm ring-1 ring-slate-200 hover:bg-primary-50 dark:bg-slate-900 dark:text-primary-300 dark:ring-slate-700">
-                {logoUploading ? 'Mengunggah…' : '+ Pilih Logo'}
-                <input type="file" accept="image/*" className="hidden" disabled={logoUploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadLogo(f); e.target.value = '' }} />
-              </label>
-              <p className="text-[11px] text-slate-400">PNG/SVG, maks 2MB — tampil di login & header</p>
-            </div>
-          </div>
-          <div className="space-y-3">
-            <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 dark:border-slate-700 dark:bg-slate-800/40">
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">Palet Warna Tema {palette.length > 1 && <span className="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">Gradasi {palette.length} warna</span>}</p>
-                <Button size="xs" variant="outline" onClick={() => setPalette([...palette, '#6366f1'])}>+ Tambah Warna</Button>
+              <div className="flex flex-col gap-2">
+                <label className="cursor-pointer rounded-lg bg-primary-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-primary-700">
+                  {logoUploading ? 'Mengunggah…' : 'Upload Logo'}
+                  <input type="file" accept="image/*" className="hidden" disabled={logoUploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadLogo(f); e.target.value = '' }} />
+                </label>
+                <button type="button" onClick={useDefaultLogo} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">
+                  Pakai Logo Default
+                </button>
               </div>
-              {palette.length > 1 && (
-                <div className="mb-3 h-8 w-full rounded-lg border border-slate-200 shadow-inner dark:border-slate-700" style={{ background: `linear-gradient(90deg, ${palette.join(', ')})` }} aria-hidden />
-              )}
-              <div className="space-y-2">
-                {palette.map((c, idx) => (
-                  <div key={`${c}-${idx}`} className="flex items-center gap-2">
-                    <div className="flex flex-1 items-center gap-2 rounded-lg border border-slate-200 bg-white px-2 py-1.5 dark:border-slate-700 dark:bg-slate-900">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white shadow" style={{ background: c }}>{idx + 1}</span>
-                      <input type="color" aria-label={`Warna ${idx + 1}`} value={/^#[0-9a-fA-F]{6}$/.test(c) ? c : '#2563eb'} onChange={(e) => { const next = [...palette]; next[idx] = e.target.value; setPalette(next) }} className="h-7 w-9 cursor-pointer rounded border-0 bg-transparent p-0" />
-                      <input type="text" value={c} onChange={(e) => { const next = [...palette]; next[idx] = e.target.value; setPalette(next) }} className="w-full bg-transparent font-mono text-xs outline-none dark:text-slate-100" maxLength={7} placeholder="#000000" />
-                    </div>
-                    {palette.length > 1 && (
-                      <button onClick={() => setPalette(palette.filter((_, i) => i !== idx))} aria-label={`Hapus warna ${idx + 1}`} className="rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10">×</button>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <p className="mt-2 text-[11px] leading-relaxed text-slate-400">Hapus/tambah bebas. Jika &gt;1 warna, tema otomatis menjadi <strong>gradasi</strong> (header, tombol utama, nav aktif) — preview gradasi di atas.</p>
             </div>
+            <p className="text-[11px] text-slate-400">Rekomendasi: PNG/WebP 512×512, kotak, maks 1MB.</p>
           </div>
-        </div>
 
-        <div className="flex justify-end border-t border-slate-100 pt-4">
-          <Button onClick={save} loading={saving} icon={<Save className="h-4 w-4" />}>Simpan Branding</Button>
-        </div>
-      </CardBody>
-    </Card>
+          <div className="flex justify-end border-t border-slate-100 pt-4">
+            <Button onClick={save} loading={saving} icon={<Save className="h-4 w-4" />}>Simpan Branding</Button>
+          </div>
+        </CardBody>
+      </Card>
+    </div>
   )
 }
 
-function _ColorFieldUnused() {
-  return null
-}
-void _ColorFieldUnused
 
 function ExamDefaultsPanel() {
   const toast = useToast()

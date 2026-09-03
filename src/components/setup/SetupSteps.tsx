@@ -20,7 +20,7 @@ export function Shell({ children }: { children: ReactNode }) {
 export function StepHeader({ icon, title }: { icon: ReactNode; title: string }) {
   return (
     <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-600 dark:text-white dark:text-white">
         {icon}
       </span>
       <div>
@@ -124,7 +124,7 @@ export function StepSchool({
           }
         />
         {school.logoUrl && !errors.logoUrl && (
-          <div className="mt-3 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <div className="mt-3 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:bg-slate-800 dark:text-slate-200">
             <img src={school.logoUrl} alt="Pratinjau logo" className="h-12 w-12 rounded-lg object-contain" onError={(e) => ((e.currentTarget.style.display = 'none'))} />
             <Badge tone="blue">Pratinjau logo</Badge>
           </div>
@@ -192,7 +192,7 @@ export function StepAdmin({
           <PasswordInput label="Password *" name="setup-password" autoComplete="new-password" value={admin.password} onChange={(e) => set({ password: e.target.value })} error={errors.password} required placeholder="min. 8 karakter" />
           {admin.password.length > 0 && (
             <div className="mt-1.5 flex items-center gap-2">
-              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700 dark:text-slate-200">
                 <div
                   className={`h-full rounded-full transition-all ${
                     passwordScore.tone === 'red' ? 'w-1/3 bg-rose-400' : passwordScore.tone === 'amber' ? 'w-2/3 bg-amber-400' : 'w-full bg-emerald-500'

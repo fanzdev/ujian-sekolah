@@ -139,10 +139,10 @@ export default function StudentsPage() {
                   header: '',
                   render: (s) => (
                     <div className="flex justify-end gap-1">
-                      <button onClick={() => setEditingStudent(s)} title="Ubah data" className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-sky-50 hover:text-sky-600">
+                      <button onClick={() => setEditingStudent(s)} title="Ubah data" className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-500/10 dark:hover:text-sky-400">
                         <Pencil className="h-4 w-4" />
                       </button>
-                      <button onClick={() => setResetTarget({ profileId: s.profile_id!, name: s.profiles?.full_name ?? '' })} title="Reset password" className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-violet-50 hover:text-violet-600">
+                      <button onClick={() => setResetTarget({ profileId: s.profile_id!, name: s.profiles?.full_name ?? '' })} title="Reset password" className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-500/10 dark:hover:text-violet-300">
                         <KeyRound className="h-4 w-4" />
                       </button>
                       <button
@@ -164,7 +164,7 @@ export default function StudentsPage() {
                           }
                         }}
                         title="Hapus"
-                        className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
+                        className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10 dark:hover:text-rose-400"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -313,7 +313,7 @@ function CreateStudentModal({
           <Input label="Username *" placeholder="cth: budi.santoso" autoCapitalize="none" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value.replace(/\s/g, '').toLowerCase() })} required hint="Digunakan untuk login." />
           <Input label="Password Awal *" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required hint="Minimal 8 karakter."
             rightSlot={
-              <button type="button" onClick={() => setForm((f) => ({ ...f, password: randomCode(8) }))} className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase text-slate-500 hover:bg-slate-200">Acak</button>
+              <button type="button" onClick={() => setForm((f) => ({ ...f, password: randomCode(8) }))} className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200">Acak</button>
             }
           />
           <Select label="Kelas *" placeholder="Pilih kelas" required value={form.classId} onChange={(e) => setForm({ ...form, classId: e.target.value })} options={classes.map((c) => ({ value: c.id, label: `${c.name}${c.departments?.code ? ` · ${c.departments.code}` : ''}` }))} />
@@ -326,7 +326,7 @@ function CreateStudentModal({
         </div>
         <Input label="Alamat" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
       </div>
-      <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4">
+      <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:bg-slate-800 dark:text-slate-200">
         <Button variant="ghost" onClick={onClose}>Batal</Button>
         <Button onClick={submit} loading={saving}>Buat Akun Siswa</Button>
       </div>
@@ -415,7 +415,7 @@ function EditStudentModal({
         </div>
         <Input label="Alamat" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
       </div>
-      <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4">
+      <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:bg-slate-800 dark:text-slate-200">
         <Button variant="ghost" onClick={onClose}>Batal</Button>
         <Button onClick={submit} loading={saving}>Simpan Perubahan</Button>
       </div>
@@ -459,12 +459,12 @@ function ResetPasswordModal({ target, onClose }: { target: { profileId: string; 
           onChange={(e) => setNewPassword(e.target.value)}
           required
           rightSlot={
-            <button type="button" onClick={() => setNewPassword(randomCode(10))} className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase text-slate-500 hover:bg-slate-200">Acak</button>
+            <button type="button" onClick={() => setNewPassword(randomCode(10))} className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200">Acak</button>
           }
           hint="Bagikan password baru melalui jalur yang aman."
         />
       </div>
-      <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4">
+      <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:bg-slate-800 dark:text-slate-200">
         <Button variant="ghost" onClick={onClose}>Batal</Button>
         <Button onClick={submit} loading={saving}>Reset Password</Button>
       </div>

@@ -290,7 +290,7 @@ export default function AiKeysPanel() {
                       )}
                       {test?.ok === true && <Badge tone="green"><CheckCircle2 className="mr-1 inline h-3 w-3" />{test.message}</Badge>}
                       {test?.ok === false && (
-                        <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-rose-50 px-2.5 py-0.5 text-[11px] font-medium text-rose-600 dark:bg-rose-500/10">
+                        <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-rose-50 px-2.5 py-0.5 text-[11px] font-medium text-rose-600 dark:bg-rose-500/10 dark:text-white">
                           <AlertCircle className="h-3 w-3 shrink-0" />
                           <span className="truncate">{test.message}</span>
                         </span>
@@ -313,7 +313,7 @@ export default function AiKeysPanel() {
                       disabled={test?.loading}
                       title="Tes API Key ini (pakai model gratis otomatis)"
                       aria-label={`Tes API Key ${key.label || i + 1}`}
-                      className="rounded-lg border border-slate-200 p-2 text-slate-400 transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-600 disabled:opacity-50 dark:border-slate-700 dark:hover:bg-emerald-500/10"
+                      className="rounded-lg border border-slate-200 p-2 text-slate-400 transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-600 disabled:opacity-50 dark:border-slate-700 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-300"
                     >
                       {test?.loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlaskConical className="h-4 w-4" />}
                     </button>
@@ -325,7 +325,7 @@ export default function AiKeysPanel() {
                         disabled={i === 0}
                         onClick={() => void handleMove(key.id!, -1)}
                         aria-label="Naikkan prioritas"
-                        className="rounded p-0.5 text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30 dark:hover:bg-slate-800"
+                        className="rounded p-0.5 text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30 dark:hover:bg-slate-800 dark:hover:bg-slate-700 dark:bg-slate-700 dark:text-slate-200"
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-3.5 w-3.5"><path strokeLinecap="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" /></svg>
                       </button>
@@ -333,13 +333,13 @@ export default function AiKeysPanel() {
                         disabled={i === keys.length - 1}
                         onClick={() => void handleMove(key.id!, +1)}
                         aria-label="Turunkan prioritas"
-                        className="rounded p-0.5 text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30 dark:hover:bg-slate-800"
+                        className="rounded p-0.5 text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30 dark:hover:bg-slate-800 dark:hover:bg-slate-700 dark:bg-slate-700 dark:text-slate-200"
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-3.5 w-3.5"><path strokeLinecap="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
                       </button>
                     </div>
 
-                    <button onClick={() => { setEditingKey(key); setFormOpen(true) }} aria-label="Ubah key" className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-500/10">
+                    <button onClick={() => { setEditingKey(key); setFormOpen(true) }} aria-label="Ubah key" className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-500/10 dark:hover:text-sky-400">
                       <Pencil className="h-4 w-4" />
                     </button>
                     <button
@@ -360,7 +360,7 @@ export default function AiKeysPanel() {
                         }
                       }}
                       aria-label="Hapus key"
-                      className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10"
+                      className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10 dark:hover:text-rose-400"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -434,7 +434,7 @@ export default function AiKeysPanel() {
                     <label className="flex cursor-pointer items-center gap-1.5 text-[11px] font-medium text-primary-600 dark:text-primary-300">
                       <input
                         type="checkbox"
-                        className="h-3.5 w-3.5 rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800"
+                        className="h-3.5 w-3.5 rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
                         checked={(() => {
                           const filtered = allModelItems.filter((m) => (!freeOnly || m.free) && (!modelSearch || m.id.toLowerCase().includes(modelSearch.toLowerCase()) || m.name.toLowerCase().includes(modelSearch.toLowerCase()))).map((m) => m.id)
                           return filtered.length > 0 && filtered.every((id) => selectedModels.includes(id))
@@ -459,7 +459,7 @@ export default function AiKeysPanel() {
                             key={m.id}
                             className={`flex cursor-pointer items-start gap-2.5 rounded-lg border px-2.5 py-2 transition-colors ${checked ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-800/50 dark:bg-emerald-500/10' : 'border-transparent bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800'}`}
                           >
-                            <input type="checkbox" checked={checked} onChange={() => toggleModel(m.id)} className="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-800" />
+                            <input type="checkbox" checked={checked} onChange={() => toggleModel(m.id)} className="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white" />
                             <span className="min-w-0 flex-1">
                               <span className="flex items-center gap-1.5">
                                 <span className="truncate text-xs font-semibold text-slate-800 dark:text-slate-100">{m.name}</span>
@@ -486,7 +486,7 @@ export default function AiKeysPanel() {
                         <span key={id} className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1 text-[11px] font-medium text-slate-600 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700">
                           <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-bold text-white">{idx + 1}</span>
                           <span className="max-w-[160px] truncate font-mono">{id}</span>
-                          <button onClick={() => toggleModel(id)} aria-label={`Hapus ${id}`} className="rounded-full p-0.5 hover:bg-slate-100 dark:hover:bg-slate-700">
+                          <button onClick={() => toggleModel(id)} aria-label={`Hapus ${id}`} className="rounded-full p-0.5 hover:bg-slate-100 dark:hover:bg-slate-700 dark:bg-slate-700 dark:text-slate-200">
                             <span className="text-[12px] leading-none">×</span>
                           </button>
                         </span>
@@ -515,7 +515,7 @@ export default function AiKeysPanel() {
                 {modelTest.loading && <Badge tone="gray"><Loader2 className="mr-1 inline h-3 w-3 animate-spin" />Menguji…</Badge>}
                 {modelTest.ok === true && <Badge tone="green"><CheckCircle2 className="mr-1 inline h-3 w-3" />{modelTest.message}</Badge>}
                 {modelTest.ok === false && (
-                  <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-rose-50 px-2.5 py-0.5 text-[11px] font-medium text-rose-600 dark:bg-rose-500/10">
+                  <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-rose-50 px-2.5 py-0.5 text-[11px] font-medium text-rose-600 dark:bg-rose-500/10 dark:text-white">
                     <AlertCircle className="h-3 w-3 shrink-0" />
                     <span className="truncate">{modelTest.message}</span>
                   </span>
@@ -667,7 +667,7 @@ function KeyFormModal({
             {modalTest.loading && <Badge tone="gray"><Loader2 className="mr-1 inline h-3 w-3 animate-spin" />Menguji…</Badge>}
             {modalTest.ok === true && <Badge tone="green"><CheckCircle2 className="mr-1 inline h-3 w-3" />{modalTest.message}</Badge>}
             {modalTest.ok === false && (
-              <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-rose-50 px-2.5 py-0.5 text-[11px] font-medium text-rose-600 dark:bg-rose-500/10">
+              <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-rose-50 px-2.5 py-0.5 text-[11px] font-medium text-rose-600 dark:bg-rose-500/10 dark:text-white">
                 <AlertCircle className="h-3 w-3 shrink-0" />
                 <span className="truncate">{modalTest.message}</span>
               </span>

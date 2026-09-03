@@ -70,7 +70,7 @@ export default function ExamDetailPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <Link to="/student/exams" className="mb-5 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-primary-600">
+      <Link to="/student/exams" className="mb-5 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-primary-600 dark:hover:text-primary-300">
         <ArrowLeft className="h-4 w-4" /> Kembali ke daftar ujian
       </Link>
 
@@ -119,17 +119,17 @@ export default function ExamDetailPage() {
               Ujian belum dibuka. Kembali saat jadwal dimulai.
             </p>
           ) : exam.status_for_me === 'no_attempts' ? (
-            <p className="rounded-xl bg-slate-100 px-4 py-3 text-center text-sm font-medium text-slate-500">
+            <p className="rounded-xl bg-slate-100 px-4 py-3 text-center text-sm font-medium text-slate-500 dark:bg-slate-700 dark:text-slate-200">
               Kesempatan mengerjakan sudah habis.
             </p>
           ) : exam.status_for_me === 'closed' ? (
-            <p className="rounded-xl bg-slate-100 px-4 py-3 text-center text-sm font-medium text-slate-500">
+            <p className="rounded-xl bg-slate-100 px-4 py-3 text-center text-sm font-medium text-slate-500 dark:bg-slate-700 dark:text-slate-200">
               Periode ujian telah berakhir.
             </p>
           ) : (
             <>
               {exam.has_pin && (
-                <p className="flex items-center gap-2 rounded-lg bg-slate-50 px-4 py-2.5 text-xs text-slate-500">
+                <p className="flex items-center gap-2 rounded-lg bg-slate-50 px-4 py-2.5 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-200">
                   <KeyRound className="h-3.5 w-3.5 shrink-0" /> Ujian ini membutuhkan PIN dari pengawas.
                 </p>
               )}
@@ -163,7 +163,7 @@ export default function ExamDetailPage() {
             }}
           />
         </div>
-        <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4">
+        <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:bg-slate-800 dark:text-slate-200">
           <Button variant="ghost" onClick={() => setPinOpen(false)}>Batal</Button>
           <Button disabled={pin.length < 3} onClick={() => { setPinOpen(false); setConfirmOpen(true) }}>Lanjut</Button>
         </div>
@@ -186,7 +186,7 @@ export default function ExamDetailPage() {
             label={<span className="text-sm">Saya menyatakan mengerjakan secara jujur & mandiri sesuai tata tertib ujian.</span>}
           />
         </div>
-        <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4">
+        <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:bg-slate-800 dark:text-slate-200">
           <Button variant="ghost" onClick={() => setConfirmOpen(false)}>Belum</Button>
           <Button disabled={!agreed} loading={starting} onClick={doStart} icon={<AlertTriangle className="hidden h-4 w-4" />}>
             Ya, Mulai Sekarang
@@ -199,7 +199,7 @@ export default function ExamDetailPage() {
 
 function Detail({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
   return (
-    <div className="rounded-xl bg-slate-50 px-4 py-3">
+    <div className="rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-800 dark:text-slate-200">
       <dt className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">{icon} {label}</dt>
       <dd className="mt-1 truncate text-[13px] font-bold text-slate-800">{value}</dd>
     </div>

@@ -46,7 +46,7 @@ export default function ExamCardPage() {
           <div id="print-area">
             <Card className="overflow-hidden animate-fade-in">
               <div className="flex items-center gap-4 bg-gradient-to-r from-primary-700 to-primary-900 px-6 py-5 text-white">
-                <img src={d.school.logo_url || `${import.meta.env.BASE_URL}logo.svg`} alt="" className="h-12 w-12 rounded-xl bg-white/10 object-contain p-1" width={48} height={48} />
+                <img src={d.school.logo_url || `${import.meta.env.BASE_URL}logo.webp`} alt="" className="h-12 w-12 rounded-xl bg-white/10 object-contain p-1" width={48} height={48} />
                 <div>
                   <p className="text-sm font-extrabold uppercase tracking-wide">{d.school.app_name}</p>
                   <p className="text-xs text-white/70">{d.school.school_name}{d.school.academic_year ? ` · T.A. ${d.school.academic_year}` : ''}</p>
@@ -62,7 +62,7 @@ export default function ExamCardPage() {
                   <Row label="Jurusan" value={d.studentInfo.classes?.departments?.name ?? '-'} />
                 </div>
 
-                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4">
+                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 dark:bg-slate-800 dark:text-slate-200">
                   <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">Ujian Terjadwal</p>
                   {activeExams.length === 0 ? (
                     <p className="text-xs text-slate-400">Tidak ada ujian terjadwal saat ini.</p>

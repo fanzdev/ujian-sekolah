@@ -2,7 +2,7 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/webp" href="/logo.webp" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0f172a" />
     <meta name="description" content="SMK AL-FATA CBT - Sistem Ujian Berbasis Komputer" />
@@ -38,8 +38,8 @@
       html.dark #static-splash .ss-dotgrid { opacity: 0.055; }
       #static-splash .ss-blob { position: absolute; border-radius: 9999px; filter: blur(36px); opacity: .1; will-change: transform; transform: translateZ(0); }
       #static-splash .ss-blob2 { position: absolute; border-radius: 9999px; filter: blur(36px); opacity: .08; will-change: transform; transform: translateZ(0); }
-      #static-splash .ss-ring { position: absolute; left: 50%; top: 50%; border-radius: 9999px; border: 1px solid rgba(59,130,246,0.12); transform: translate(-50%,-50%); }
-      #static-splash .ss-ring2 { position: absolute; left: 50%; top: 50%; border-radius: 9999px; border: 1px solid rgba(59,130,246,0.06); transform: translate(-50%,-50%); }
+      #static-splash .ss-ring { position: absolute; left: 50%; top: 50%; border-radius: 9999px; border: 1px solid rgba(13,134,143,0.12); transform: translate(-50%,-50%); }
+      #static-splash .ss-ring2 { position: absolute; left: 50%; top: 50%; border-radius: 9999px; border: 1px solid rgba(13,134,143,0.06); transform: translate(-50%,-50%); }
       #static-splash .ss-inner { animation: ssEnter 600ms cubic-bezier(0.22,1,0.36,1) both; will-change: opacity, transform; }
       #static-splash .ss-logo-wrap { position: relative; animation: ssLogo 2.2s ease-in-out infinite; }
       #static-splash .ss-logo-glow { position: absolute; inset: 0; transform: scale(1.75); border-radius: 28px; background: rgba(59,130,246,0.14); filter: blur(30px); }
@@ -82,14 +82,11 @@
         <div class="ss-logo-wrap">
           <div class="ss-logo-glow"></div>
           <div class="ss-logo-card">
-            <img src="/logo.svg" alt="Logo SMK AL-FATA" width="60" height="60" style="width:60px; height:60px; object-fit:contain;" />
-            <span class="ss-badge" aria-hidden>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="9"/></svg>
-            </span>
+            <img src="/logo.webp" alt="Logo SMK AL-FATA" width="60" height="60" style="width:60px; height:60px; object-fit:contain;" />
           </div>
         </div>
-        <div class="ss-title">SMK AL-FATA CBT</div>
-        <div class="ss-subtitle">Computer Based Test</div>
+        <div class="ss-title" id="ss-title">SMK AL-FATA CBT</div>
+        <div class="ss-subtitle" id="ss-subtitle">Computer Based Test</div>
         <div class="ss-desc">Sistem Ujian Digital — Aman, Cepat, Terintegrasi untuk Guru &amp; Siswa</div>
         <div class="ss-dots" aria-label="Memuat">
           <span class="ss-dot"></span><span class="ss-dot"></span><span class="ss-dot"></span>
@@ -100,10 +97,62 @@
         <div class="ss-loading">Memuat sistem ujian…</div>
       </div>
       <div style="position:absolute; bottom:20px; display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; padding:0 16px;">
-        <div style="font-size:10px; font-weight:500; letter-spacing:.14em; text-transform:uppercase; color:#94a3b8;">SMK AL-FATA • v1.0 • Profesional • Aman • Cepat</div>
-        <div style="font-size:11px; color:#94a3b8;">© 2026 SMK AL-FATA CBT</div>
+        <div id="ss-footer-school" style="font-size:10px; font-weight:500; letter-spacing:.14em; text-transform:uppercase; color:#94a3b8;">SMK AL-FATA • v1.0 • Profesional • Aman • Cepat</div>
+        <div id="ss-footer-app" style="font-size:11px; color:#94a3b8;">© 2026 SMK AL-FATA CBT</div>
       </div>
     </div>
+    <script>
+      ;(function () {
+        try {
+          var raw = localStorage.getItem('cbt-branding')
+          if (raw) {
+            var b = JSON.parse(raw)
+            var t = document.getElementById('ss-title')
+            var st = document.getElementById('ss-subtitle')
+            var ft = document.getElementById('ss-footer-app')
+            var fs = document.getElementById('ss-footer-school')
+            if (b.app_name) {
+              if (t) t.textContent = b.app_name
+              if (ft) ft.textContent = '© 2026 ' + b.app_name
+              document.title = b.app_name
+            }
+            if (b.school_name) {
+              if (st) st.textContent = b.school_name + ' • CBT'
+              if (fs) fs.textContent = b.school_name + ' • v1.0 • Profesional • Aman • Cepat'
+            }
+            if (b.logo_url) {
+              var img = document.querySelector('#static-splash img[alt="Logo SMK AL-FATA"]')
+              if (img) img.src = b.logo_url
+              var fav = document.querySelector('link[rel="icon"]')
+              if (fav) fav.href = b.logo_url
+            }
+            if (b.primary_color) {
+              var pc = b.primary_color
+              var sc = b.secondary_color || pc
+              var dots = document.querySelectorAll('#static-splash .ss-dot')
+              dots.forEach(function(d) { d.style.background = pc; d.style.boxShadow = '0 0 8px ' + pc + '66' })
+              var bar = document.querySelector('#static-splash .ss-bar')
+              if (bar) {
+                bar.style.background = 'linear-gradient(90deg, ' + pc + ', ' + sc + ', ' + pc + ')'
+                bar.style.boxShadow = '0 0 10px ' + pc + '66'
+              }
+              var sub = document.getElementById('ss-subtitle')
+              if (sub) sub.style.color = pc
+              var blob1 = document.querySelector('#static-splash .ss-blob')
+              if (blob1) blob1.style.background = pc
+              var blob2 = document.querySelector('#static-splash .ss-blob2')
+              if (blob2) blob2.style.background = sc
+              var glow = document.querySelector('#static-splash .ss-logo-glow')
+              if (glow) glow.style.background = pc + '24'
+              var ring = document.querySelector('#static-splash .ss-ring')
+              if (ring) ring.style.borderColor = pc + '1f'
+              var ring2 = document.querySelector('#static-splash .ss-ring2')
+              if (ring2) ring2.style.borderColor = pc + '0f'
+            }
+          }
+        } catch (e) {}
+      })()
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

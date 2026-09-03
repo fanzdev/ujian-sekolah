@@ -13,7 +13,6 @@ import { Modal } from '@/components/ui/Modal'
 import { Badge } from '@/components/ui/Badge'
 import { EmptyState, ErrorState } from '@/components/ui/Feedback'
 import { listBanks, createBank, updateBank, deleteBank, listQuestions, type BankInput } from '@/services/questions.service'
-import { listSubjects } from '@/services/academics.service'
 import type { QuestionBank } from '@/types/models'
 
 const STATUS_TONES: Record<string, 'gray' | 'green' | 'amber'> = {
@@ -31,7 +30,6 @@ const STATUS_LABELS: Record<string, string> = {
 export default function QuestionBanksPage() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
-  const [subjectFilter, setSubjectFilter] = useState('')
   const debouncedSearch = useDebounce(search)
   useDocumentTitle('Bank Soal')
 
@@ -39,7 +37,6 @@ export default function QuestionBanksPage() {
     () => listBanks({ search: debouncedSearch || undefined, status: statusFilter || undefined, pageSize: 100 }),
     [debouncedSearch, statusFilter],
   )
-  const subjectsQuery = useAsync(() => listSubjects(), [])
   const toast = useToast()
   const confirmDialog = useConfirm()
   const [editorOpen, setEditorOpen] = useState(false)
@@ -47,10 +44,7 @@ export default function QuestionBanksPage() {
 
   if (query.error) return <ErrorState message={query.error} onRetry={query.reload} />
 
-  let banks = query.data?.rows ?? []
-  if (subjectFilter) {
-    banks = banks.filter((b) => b.subject_id === subjectFilter)
-  }
+  const banks = query.data?.rows ?? []
 
   const openCreate = () => {
     setEditing(null)
@@ -82,7 +76,7 @@ export default function QuestionBanksPage() {
     <>
       <PageHeader
         title="Bank Soal"
-        subtitle="Kelola koleksi soal per mata pelajaran"
+        subtitle="Kelola koleksi soal untuk ujian"
         icon={<Database className="h-5 w-5" />}
         actions={
           <Button icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
@@ -94,13 +88,6 @@ export default function QuestionBanksPage() {
       <Card>
         <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
           <SearchInput placeholder="Cari judul bank..." value={search} onChange={(e) => setSearch(e.target.value)} />
-          <Select
-            className="w-full sm:w-44"
-            placeholder="Semua Mapel"
-            value={subjectFilter}
-            onChange={(e) => setSubjectFilter(e.target.value)}
-            options={(subjectsQuery.data ?? []).map((s) => ({ value: s.id, label: s.name }))}
-          />
           <Select
             className="w-full sm:w-40"
             placeholder="Semua Status"
@@ -117,7 +104,7 @@ export default function QuestionBanksPage() {
         {query.loading ? (
           <div className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-48 animate-pulse rounded-xl border border-slate-100 bg-slate-50" />
+              <div key={i} className="h-48 animate-pulse rounded-xl border border-slate-100 bg-slate-50 dark:bg-slate-800 dark:text-slate-200" />
             ))}
           </div>
         ) : banks.length === 0 ? (
@@ -196,7 +183,7 @@ function BankCardGrid({
                 to={`./${bank.id}`}
                 className="min-w-0 flex-1"
               >
-                <h3 className="text-[15px] font-bold leading-snug text-slate-900 transition-colors group-hover:text-primary-600 line-clamp-2">
+                <h3 className="text-[15px] font-bold leading-snug text-slate-900 transition-colors group-hover:text-primary-600 line-clamp-2 dark:group-hover:text-primary-300">
                   {bank.title}
                 </h3>
               </Link>
@@ -223,7 +210,7 @@ function BankCardGrid({
                 </span>
               )}
               {bank.tags && bank.tags.length > 0 && (
-                <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
+                <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500 dark:bg-slate-700 dark:text-slate-200">
                   <Tag className="h-3 w-3" />
                   {bank.tags.slice(0, 2).join(', ')}
                   {bank.tags.length > 2 && ` +${bank.tags.length - 2}`}
@@ -255,7 +242,7 @@ function BankCardGrid({
           <div className="flex items-center gap-1 border-t border-slate-100 px-4 py-2.5">
             <Link
               to={`./${bank.id}`}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold text-primary-600 transition-colors hover:bg-primary-50"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold text-primary-600 transition-colors hover:bg-primary-50 dark:hover:bg-primary-500/15 dark:text-white"
             >
               <FolderOpen className="h-3.5 w-3.5" />
               Kelola Soal
@@ -263,14 +250,14 @@ function BankCardGrid({
             <button
               onClick={() => onEdit(bank)}
               title="Ubah"
-              className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-sky-50 hover:text-sky-600"
+              className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-500/10 dark:hover:text-sky-400"
             >
               <Pencil className="h-4 w-4" />
             </button>
             <button
               onClick={() => onDelete(bank)}
               title="Hapus"
-              className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
+              className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10 dark:hover:text-rose-400"
             >
               <Trash2 className="h-4 w-4" />
             </button>
@@ -306,8 +293,6 @@ function BankEditorModal({
   })
   const [tagText, setTagText] = useState('')
   const [saving, setSaving] = useState(false)
-
-  const subjectsQuery = useAsync(() => listSubjects(), [])
 
   useEffect(() => {
     if (!open) return
@@ -355,37 +340,19 @@ function BankEditorModal({
   return (
     <Modal open={open} onClose={onClose} title={editing ? 'Ubah Bank Soal' : 'Buat Bank Soal'} size="md">
       <div className="space-y-4 px-6 py-5">
-        <Input label="Judul *" placeholder="cth: Bank Soal Matematika Kelas X" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required autoFocus />
+        <Input label="Judul" placeholder="cth: Bank Soal Matematika Kelas X" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required autoFocus />
         <Textarea label="Deskripsi" placeholder="Deskripsi singkat isi bank soal" value={form.description ?? ''} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Select
-            label="Mata Pelajaran"
-            placeholder="Pilih mapel"
-            value={form.subject_id ?? ''}
-            onChange={(e) => setForm({ ...form, subject_id: e.target.value })}
-            options={(subjectsQuery.data ?? []).map((s) => ({ value: s.id, label: s.name }))}
-          />
-          <Select
-            label="Tingkat Kelas"
-            placeholder="Semua tingkat"
-            value={form.grade_level ?? ''}
-            onChange={(e) => setForm({ ...form, grade_level: e.target.value ? Number(e.target.value) : null })}
-            options={Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: `Kelas ${i + 1}` }))}
-          />
-        </div>
         <Select
-          label="Status"
-          value={form.status ?? 'draft'}
-          onChange={(e) => setForm({ ...form, status: e.target.value as BankInput['status'] })}
-          options={[
-            { value: 'draft', label: 'Draf' },
-            { value: 'published', label: 'Dipublikasi' },
-            { value: 'archived', label: 'Arsip' },
-          ]}
+          label="Tingkat Kelas"
+          placeholder="Semua tingkat"
+          value={form.grade_level ?? ''}
+          onChange={(e) => setForm({ ...form, grade_level: e.target.value ? Number(e.target.value) : null })}
+          options={Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: `Kelas ${i + 1}` }))}
         />
+
         <Input label="Tag" placeholder="pisahkan dengan koma, cth: aljabar, geometri" value={tagText} onChange={(e) => setTagText(e.target.value)} hint="Tag memudahkan pencarian soal." />
       </div>
-      <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4">
+      <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:bg-slate-800 dark:text-slate-200">
         <Button variant="ghost" onClick={onClose}>Batal</Button>
         <Button onClick={submit} loading={saving}>{editing ? 'Simpan Perubahan' : 'Buat & Tambah Soal'}</Button>
       </div>

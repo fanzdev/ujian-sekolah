@@ -13,7 +13,7 @@ export default function AttemptReview({ payload }: { payload: AttemptPayload; on
   if (!reveal) {
     return (
       <div className="space-y-4 px-6 py-6">
-        <p className="rounded-xl bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-500">
+        <p className="rounded-xl bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-500 dark:bg-slate-800 dark:text-slate-200">
           Pembahasan & kunci jawaban belum dibuka untuk ujian ini.
         </p>
         <ol className="space-y-3">
@@ -23,7 +23,7 @@ export default function AttemptReview({ payload }: { payload: AttemptPayload; on
             const answered = isAnswered(ans)
             return (
               <li key={qid} className="flex items-start gap-3 rounded-xl border border-slate-200 p-3.5">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500 dark:bg-slate-700 dark:text-slate-200">
                   {i + 1}
                 </span>
                 <RichContent html={q?.text ?? ''} className="min-w-0 flex-1 [&_*]:text-[13px]" />
@@ -57,7 +57,7 @@ export default function AttemptReview({ payload }: { payload: AttemptPayload; on
 
             <RichContent html={q.text} className="[&_*]:text-sm" />
 
-            <div className="mt-3 rounded-xl bg-slate-50 p-3">
+            <div className="mt-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-800 dark:text-slate-200">
               <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Jawaban Anda</p>
               <AnswerPreview question={q} answer={ans} />
             </div>

@@ -59,10 +59,10 @@ export default function TeacherDashboard() {
         <>
           {/* ---------- Stat cards ---------- */}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
-            <StatCard label="Ujian Saya" value={<Link to="/teacher/exams" className="hover:text-primary-600">{d.totalExams}</Link>} icon={<FileText className="h-5 w-5" />} tone="blue" />
+            <StatCard label="Ujian Saya" value={<Link to="/teacher/exams" className="hover:text-primary-600 dark:hover:text-primary-300">{d.totalExams}</Link>} icon={<FileText className="h-5 w-5" />} tone="blue" />
             <StatCard label="Sedang Aktif" value={d.activeExams} icon={<PlayCircle className="h-5 w-5 animate-pulse-soft" />} tone="green" hint={`${d.upcomingExams} mendatang`} />
             <StatCard label="Total Peserta" value={d.participants} icon={<Users className="h-5 w-5" />} tone="purple" hint={`${d.submissions} submission`} />
-            <StatCard label="Essay Belum Dinilai" value={<Link to="/teacher/grading" className="hover:text-primary-600">{d.pendingEssays}</Link>} icon={<PencilRuler className="h-5 w-5" />} tone={d.pendingEssays > 0 ? 'rose' : 'green'} />
+            <StatCard label="Essay Belum Dinilai" value={<Link to="/teacher/grading" className="hover:text-primary-600 dark:hover:text-primary-300">{d.pendingEssays}</Link>} icon={<PencilRuler className="h-5 w-5" />} tone={d.pendingEssays > 0 ? 'rose' : 'green'} />
           </div>
 
           {/* ---------- Grafik ---------- */}
@@ -118,7 +118,7 @@ export default function TeacherDashboard() {
                     <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Tingkat Partisipasi per Ujian</h3>
                     <p className="mt-0.5 text-xs text-slate-400">Persentase peserta yang sudah mengumpulkan</p>
                   </div>
-                  <Link to="/teacher/exams" className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700">
+                  <Link to="/teacher/exams" className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 dark:hover:text-primary-300">
                     Kelola <ArrowRight className="h-3 w-3" />
                   </Link>
                 </div>
@@ -136,7 +136,7 @@ export default function TeacherDashboard() {
             <Card className="min-w-0 lg:col-span-2">
               <CardHeader
                 title="Ujian Saya Terbaru"
-                action={<Link to="/teacher/exams" className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700">Semua Ujian <ArrowRight className="h-3 w-3" /></Link>}
+                action={<Link to="/teacher/exams" className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 dark:hover:text-primary-300">Semua Ujian <ArrowRight className="h-3 w-3" /></Link>}
               />
               {d.recentExams.length === 0 ? (
                 <p className="px-4 py-10 text-center text-sm text-slate-400 sm:px-5">
@@ -149,7 +149,7 @@ export default function TeacherDashboard() {
                     const ongoing = e.status === 'published' && now >= new Date(e.starts_at).getTime() && now <= new Date(e.ends_at).getTime()
                     return (
                       <li key={e.id}>
-                        <Link to={`/teacher/exams/${e.id}/participants`} className="flex items-center justify-between gap-3 px-4 py-3.5 transition-colors hover:bg-slate-50 sm:px-5 dark:hover:bg-slate-800/40">
+                        <Link to={`/teacher/exams/${e.id}/participants`} className="flex items-center justify-between gap-3 px-4 py-3.5 transition-colors hover:bg-slate-50 sm:px-5 dark:hover:bg-slate-800/40 dark:bg-slate-800 dark:text-slate-200">
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{e.title}</span>
                             <span className="text-[11px] text-slate-400">{e.subjects?.name ?? '-'} · {formatDateTime(e.starts_at)}</span>
@@ -306,7 +306,7 @@ function attemptIdsHas(attempts: { id: string }[], id: string): boolean {
 
 function QuickAction({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
   return (
-    <Link to={to} className="card flex items-center gap-3 p-4 text-sm font-semibold text-slate-700 transition-all hover:border-primary-200 hover:text-primary-700 hover:shadow-card-hover dark:text-slate-200 dark:hover:border-primary-700">
+    <Link to={to} className="card flex items-center gap-3 p-4 text-sm font-semibold text-slate-700 transition-all hover:border-primary-200 hover:text-primary-700 hover:shadow-card-hover dark:text-slate-200 dark:hover:border-primary-700 dark:hover:text-primary-300">
       <span className="text-primary-500">{icon}</span>
       {label}
       <ArrowRight className="ml-auto h-4 w-4 text-slate-300" />

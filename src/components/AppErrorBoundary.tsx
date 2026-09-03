@@ -28,16 +28,16 @@ export class AppErrorBoundary extends Component<Props, State> {
     if (!this.state.hasError) return this.props.children
 
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-slate-50 p-6">
+      <div className="flex min-h-dvh items-center justify-center bg-slate-50 p-6 dark:bg-slate-800 dark:text-slate-200">
         <div className="card max-w-md w-full p-8 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-500">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-500 dark:bg-amber-600 dark:text-white dark:text-white">
             <AlertTriangle className="h-7 w-7" />
           </div>
           <h1 className="mt-4 text-lg font-bold text-slate-900">Terjadi Kesalahan</h1>
           <p className="mt-2 text-sm leading-relaxed text-slate-500">
             Aplikasi mengalami kesalahan yang tidak terduga. Muat ulang halaman untuk mencoba lagi.
           </p>
-          <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-400 break-words">
+          <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-400 break-words dark:bg-slate-800 dark:text-slate-200">
             {this.state.message.slice(0, 200)}
           </p>
           <button

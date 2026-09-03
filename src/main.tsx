@@ -26,7 +26,15 @@ function BrandingBoot({ children }: { children: React.ReactNode }) {
     )
     if (!configured) return
     fetchSchoolSettings()
-      .then(applyBranding)
+      .then((s) => {
+        applyBranding(s)
+        try {
+          localStorage.setItem('cbt-branding', JSON.stringify({ app_name: s.app_name, school_name: s.school_name, logo_url: s.logo_url, primary_color: s.primary_color, secondary_color: s.secondary_color }))
+          if (s.app_name) document.title = s.app_name
+          const metaDesc = document.querySelector<HTMLMetaElement>('meta[name="description"]')
+          if (metaDesc && s.school_name) metaDesc.content = `${s.school_name} - ${s.app_name} CBT`
+        } catch (e: unknown) { void e }
+      })
       .catch(() => undefined)
   }, [])
   return <>{children}</>

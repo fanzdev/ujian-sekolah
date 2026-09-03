@@ -66,7 +66,7 @@ export default function AdminDashboard() {
           </div>
 
           <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-4 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
-            <StatCard label="Ujian Aktif" value={<Link to="/admin/exams" className="hover:text-primary-600">{d.examsActive}</Link>} icon={<PlayCircle className="h-5 w-5 animate-pulse-soft" />} tone="green" />
+            <StatCard label="Ujian Aktif" value={<Link to="/admin/exams" className="hover:text-primary-600 dark:hover:text-primary-300">{d.examsActive}</Link>} icon={<PlayCircle className="h-5 w-5 animate-pulse-soft" />} tone="green" />
             <StatCard label="Ujian Mendatang" value={d.examsUpcoming} icon={<CalendarClock className="h-5 w-5" />} tone="amber" />
             <StatCard label="Submission" value={d.submissions} icon={<ClipboardCheck className="h-5 w-5" />} tone="blue" hint={`${d.inProgress} sedang berlangsung`} />
             <StatCard label="Rata-rata Nilai" value={formatNumber(d.avgScore, 1)} icon={<TrendingUp className="h-5 w-5" />} tone="rose" hint={`Daya serap ${formatNumber(d.passRate, 0)}%`} />
@@ -106,7 +106,7 @@ export default function AdminDashboard() {
                   <CardHeader
                     title="Pelanggaran Terbaru"
                     action={
-                      <Link to="/admin/violation-logs" className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700">
+                      <Link to="/admin/violation-logs" className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 dark:hover:text-primary-300">
                         Semua <ArrowRight className="h-3 w-3" />
                       </Link>
                     }
@@ -143,7 +143,7 @@ export default function AdminDashboard() {
                 title="Aktivitas Terbaru"
                 subtitle="Jejak audit seluruh sistem"
                 action={
-                  <Link to="/admin/audit-logs" className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700">
+                  <Link to="/admin/audit-logs" className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 dark:hover:text-primary-300">
                     Lihat Semua <ArrowRight className="h-3 w-3" />
                   </Link>
                 }
@@ -179,7 +179,7 @@ export default function AdminDashboard() {
                 <ul className="divide-y divide-slate-50 dark:divide-slate-800">
                   {d.runningExams.map((e) => (
                     <li key={e.id}>
-                      <Link to={`/admin/exams/${e.id}/participants`} className="flex items-center justify-between px-4 py-3 transition-colors hover:bg-emerald-50/40 sm:px-5 dark:hover:bg-emerald-500/5">
+                      <Link to={`/admin/exams/${e.id}/participants`} className="flex items-center justify-between px-4 py-3 transition-colors hover:bg-emerald-50/40 sm:px-5 dark:hover:bg-emerald-500/5 dark:hover:bg-emerald-500/10">
                         <span className="min-w-0">
                           <span className="block truncate text-[13px] font-semibold text-slate-800 dark:text-slate-100">{e.title}</span>
                           <span className="text-[11px] text-emerald-600 dark:text-emerald-400">Berakhir {fmtDT(e.ends_at)}</span>
@@ -415,7 +415,7 @@ interface DashboardViolation {
 
 function QuickLink({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
   return (
-    <Link to={to} className="card flex min-w-0 items-center gap-2 p-3 text-[13px] font-semibold text-slate-700 transition-all hover:border-primary-200 hover:text-primary-700 hover:shadow-card-hover dark:text-slate-200 dark:hover:border-primary-700 sm:gap-3 sm:p-4 sm:text-sm">
+    <Link to={to} className="card flex min-w-0 items-center gap-2 p-3 text-[13px] font-semibold text-slate-700 transition-all hover:border-primary-200 hover:text-primary-700 hover:shadow-card-hover dark:text-slate-200 dark:hover:border-primary-700 sm:gap-3 sm:p-4 sm:text-sm dark:hover:text-primary-300">
       <span className="shrink-0 text-primary-500">{icon}</span>
       <span className="truncate">{label}</span>
     </Link>
