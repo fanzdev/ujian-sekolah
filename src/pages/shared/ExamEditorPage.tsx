@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { ArrowLeft, ChevronRight, FileText, Target, ListChecks, Settings2, Check, Plus, X, GripVertical, HelpCircle } from 'lucide-react'
 import { useAsync, useDocumentTitle } from '@/hooks/useAsync'
 import { useToast } from '@/hooks/useToast'
+import { useConfirm } from '@/hooks/useConfirm'
 import { Button } from '@/components/ui/Button'
 import { Input, Select, Textarea } from '@/components/ui/Input'
 import { ToggleSwitch, SearchInput } from '@/components/ui/FormControls'
@@ -490,6 +491,7 @@ function QuestionsStep({
   const [saving, setSaving] = useState(false)
   const [hasUnsaved, setHasUnsaved] = useState(false)
   const toast = useToast()
+  const confirmDialog = useConfirm()
 
   const examInfo = useAsync(() => (examId ? getExam(examId) : Promise.resolve(null)), [examId])
   const banksForSubject = useAsync(async () => {
@@ -615,13 +617,27 @@ function QuestionsStep({
     return () => window.removeEventListener('beforeunload', onBeforeUnload)
   }, [hasUnsaved])
 
-  const handleBack = () => {
-    if (hasUnsaved && !window.confirm('Ada perubahan soal belum disimpan. Tetap kembali tanpa menyimpan?')) return
+  const handleBack = async () => {
+    if (hasUnsaved) {
+      const ok = await confirmDialog.confirm({
+        title: 'Buang perubahan?',
+        message: 'Ada perubahan soal belum disimpan. Yakin kembali tanpa menyimpan? Perubahan akan hilang.',
+        confirmText: 'Buang & Kembali',
+        cancelText: 'Tetap di sini',
+        danger: true,
+      })
+      if (!ok) return
+    }
     onBack()
   }
   const handleNext = async () => {
     if (hasUnsaved) {
-      const ok = window.confirm('Ada perubahan belum disimpan. Simpan dulu sebelum lanjut?')
+      const ok = await confirmDialog.confirm({
+        title: 'Simpan perubahan?',
+        message: 'Ada perubahan soal belum disimpan. Simpan dulu sebelum lanjut ke langkah berikutnya?',
+        confirmText: 'Simpan & Lanjut',
+        cancelText: 'Lanjut tanpa simpan',
+      })
       if (ok) {
         const saved = await save()
         if (!saved) return
