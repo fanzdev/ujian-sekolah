@@ -220,7 +220,7 @@ export function Topbar({
   const chatButtonRef = useRef<HTMLButtonElement>(null)
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-30 flex h-16 items-center gap-2 border-b border-slate-200/50 bg-white/95 px-4 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/95 sm:gap-3 sm:px-6 lg:left-64">
+    <header className="fixed top-0 left-0 right-0 z-30 flex h-16 items-center gap-1.5 border-b border-slate-200/50 bg-white/95 px-3 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/95 sm:gap-3 sm:px-6 lg:left-64">
       <button
         onClick={onMenuClick}
         aria-label="Buka menu"
@@ -230,14 +230,19 @@ export function Topbar({
           <path strokeLinecap="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
         </svg>
       </button>
-      <NetworkPing />
+      <div className="hidden sm:block">
+        <NetworkPing />
+      </div>
+      <div className="sm:hidden flex items-center">
+        <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" aria-hidden />
+      </div>
 
       <div className="hidden sm:flex min-w-0 flex-1">
         <Breadcrumb />
       </div>
       <div className="flex min-w-0 flex-1 items-center sm:hidden" />
 
-      <div className="flex shrink-0 items-center gap-0.5 sm:gap-1.5">
+      <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
         {profile.role !== 'student' && (
           <button
             ref={chatButtonRef}

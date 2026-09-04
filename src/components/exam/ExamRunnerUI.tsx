@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle, Camera, CameraOff } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 import { useAsync } from '@/hooks/useAsync'
 import { uploadMedia } from '@/services/storage.service'
 import { fetchSystemSettings } from '@/services/settings.service'
@@ -40,21 +40,21 @@ export function ExamTimer({ seconds, compact = false }: { seconds: number | null
       role="timer"
       aria-live="off"
       aria-label={`Sisa waktu ${h} jam ${m} menit ${sec} detik`}
-      className={`flex items-center gap-2 rounded-xl px-3 py-2 font-mono font-bold tabular-nums ${
-        compact ? 'text-base' : 'text-lg sm:text-xl'
+      className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 font-mono font-bold tabular-nums sm:gap-2 sm:px-3 sm:py-2 ${
+        compact ? 'text-sm sm:text-base' : 'text-base sm:text-xl'
       } ${
         danger
           ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30 animate-pulse-soft'
           : warn
             ? 'bg-amber-100 text-amber-800 ring-1 ring-amber-300'
-            : 'bg-slate-100 text-slate-800'
+            : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100'
       }`}
     >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} className={compact ? 'h-4 w-4' : 'h-5 w-5'}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} className={compact ? 'h-4 w-4 shrink-0' : 'h-5 w-5 shrink-0'}>
         <circle cx="12" cy="12" r="9" />
         <path strokeLinecap="round" d="M12 7v5l3 2" />
       </svg>
-      {seconds === null ? '--:--' : h > 0 ? `${pad(h)}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`}
+      <span className="whitespace-nowrap">{seconds === null ? '--:--' : h > 0 ? `${pad(h)}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`}</span>
     </div>
   )
 }
@@ -73,7 +73,7 @@ export function QuestionNavigator({
   onJump: (i: number) => void
 }) {
   return (
-    <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-8 lg:grid-cols-10">
+    <div className="grid grid-cols-5 gap-1.5 xs:grid-cols-6 sm:grid-cols-8 lg:grid-cols-5 xl:grid-cols-8 2xl:grid-cols-10">
       {order.map((qid, i) => {
         const answered =
           answers[qid] !== null &&
@@ -93,7 +93,7 @@ export function QuestionNavigator({
             onClick={() => onJump(i)}
             aria-label={`Soal ${i + 1}${answered ? ', terjawab' : ''}${isFlagged ? ', ditandai' : ''}`}
             aria-current={isCurrent ? 'true' : undefined}
-            className={`relative flex h-9 items-center justify-center rounded-lg border text-xs font-bold transition-all active:scale-95 ${cls}`}
+            className={`relative flex h-9 min-w-0 items-center justify-center rounded-lg border text-xs font-bold transition-all active:scale-95 tap-target ${cls}`}
           >
             {i + 1}
             {isFlagged && !isCurrent && <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-violet-500 ring-2 ring-white dark:ring-slate-900" />}
@@ -156,7 +156,6 @@ export function CameraMonitor() {
     }
   }, [])
 
-  // periodic snapshot upload when enabled by admin
   useEffect(() => {
     if (!snapshotsEnabled || status !== 'granted') return
     const interval = window.setInterval(async () => {
@@ -181,21 +180,15 @@ export function CameraMonitor() {
   }, [snapshotsEnabled, status])
 
   return (
-    <div className="pointer-events-none fixed right-4 bottom-24 z-40 sm:right-6 lg:right-auto lg:left-6">
-      {status === 'granted' ? (
-        <div className="overflow-hidden rounded-xl border-2 border-white bg-black shadow-2xl">
-          <video ref={videoRef} autoPlay muted playsInline className="h-20 w-28 object-cover sm:h-24 sm:w-32" aria-label="Monitoring kamera" />
-          <p className="flex items-center justify-center gap-1 bg-emerald-600 py-0.5 text-[9px] font-bold tracking-wide text-white uppercase">
-            <Camera className="h-2.5 w-2.5" /> Terhubung
-          </p>
-        </div>
-      ) : status === 'denied' || status === 'unsupported' ? (
-        <div className="rounded-xl bg-amber-50 px-3 py-2 text-[10px] font-semibold text-amber-700 shadow-lg ring-1 ring-amber-200">
-          <span className="flex items-center gap-1"><CameraOff className="h-3 w-3" /> Kamera tidak aktif</span>
-        </div>
-      ) : null}
+    <div className="sr-only" aria-hidden>
+      <video ref={videoRef} autoPlay muted playsInline className="h-1 w-1" aria-label="Monitoring kamera" />
+      <span>{status}</span>
     </div>
   )
+}
+
+export function CameraPreviewBadge() {
+  return null
 }
 
 export function SubmitConfirmModal({

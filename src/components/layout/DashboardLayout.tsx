@@ -111,12 +111,12 @@ export function DashboardLayout() {
 
       <div className="flex min-h-dvh flex-col lg:pl-64 overflow-visible">
         <Topbar profile={profile} extra={extra} onMenuClick={() => setDrawerOpen(true)} onSignOut={handleSignOut} />
-        <div className="pt-14 sm:pt-16 flex-1 overflow-visible">
-          <main id="main-content" className="w-full flex-1 bg-slate-50 px-4 py-4 pb-6 dark:bg-slate-950 sm:px-5 lg:px-6 lg:py-6 lg:pb-6 safe-bottom overflow-visible">
-            <div className="w-full overflow-visible pb-28 lg:pb-0">
+        <div className="pt-16 flex-1 overflow-visible">
+          <main id="main-content" className="w-full flex-1 bg-slate-50 px-4 py-4 dark:bg-slate-950 sm:px-5 lg:px-6 lg:py-6 safe-bottom overflow-visible">
+            <div className="w-full overflow-visible pb-20 lg:pb-0">
               <Outlet />
             </div>
-            <div className="h-28 lg:hidden shrink-0 safe-bottom" aria-hidden />
+            <div className="h-20 lg:hidden shrink-0" aria-hidden />
           </main>
         </div>
         <BottomNav role={profile.role} onMoreClick={() => setDrawerOpen(true)} />

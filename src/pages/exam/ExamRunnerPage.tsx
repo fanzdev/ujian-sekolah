@@ -69,11 +69,12 @@ export default function ExamRunnerPage() {
   return (
     <div className="flex min-h-dvh flex-col bg-slate-100 dark:bg-slate-950">
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-3 py-2.5 sm:px-6 sm:py-3">
-          <div className="min-w-0">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-2.5 sm:gap-3 sm:px-6 sm:py-3">
+          <div className="min-w-0 flex-1">
             <h1 className="truncate text-sm font-extrabold tracking-tight text-slate-900 dark:text-slate-100 sm:text-base">{exam.title}</h1>
-            <p className="hidden truncate text-[11px] text-slate-400 sm:block">
-              {engine.payload.student.name} · {engine.payload.student.class ?? '-'}
+            <p className="truncate text-[11px] text-slate-400 sm:block">
+              <span className="hidden sm:inline">{engine.payload.student.name} · {engine.payload.student.class ?? '-'}</span>
+              <span className="sm:hidden truncate">{engine.payload.student.class ?? engine.payload.student.name}</span>
               {exam.violation_limit > 0 && (
                 <span className={cn('ml-2 font-semibold', engine.violationCount > 0 ? 'text-rose-500' : 'text-slate-300')}>
                   Pelanggaran: {engine.violationCount}/{exam.violation_limit}
@@ -81,9 +82,9 @@ export default function ExamRunnerPage() {
               )}
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <ConnectionBadge status={engine.saveStatus} />
-            <ExamTimer seconds={engine.remainingSeconds} />
+            <ExamTimer seconds={engine.remainingSeconds} compact />
           </div>
         </div>
       </header>
@@ -107,8 +108,8 @@ export default function ExamRunnerPage() {
         </p>
       )}
 
-      <main className="mx-auto grid w-full max-w-6xl flex-1 gap-4 px-3 py-4 sm:px-6 lg:grid-cols-[1fr_280px] lg:py-6">
-        <section className="min-w-0">
+      <main className="mx-auto grid w-full max-w-6xl flex-1 gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[1fr_300px] lg:py-6">
+        <section className="min-w-0 overflow-hidden">
           <QuestionCard
             key={q.id}
             question={q}
@@ -120,16 +121,16 @@ export default function ExamRunnerPage() {
             onToggleFlag={() => engine.toggleFlag(q.id)}
           />
 
-          <div className="mt-4 flex items-center justify-between gap-3">
-            <Button variant="outline" onClick={engine.prev} disabled={engine.currentIndex === 0} icon={<ChevronLeft className="h-4 w-4" />}>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Button variant="outline" onClick={engine.prev} disabled={engine.currentIndex === 0} icon={<ChevronLeft className="h-4 w-4" />} className="w-full sm:w-auto">
               Sebelumnya
             </Button>
             {engine.currentIndex < order.length - 1 ? (
-              <Button onClick={engine.next}>
+              <Button onClick={engine.next} className="w-full sm:w-auto">
                 Berikutnya <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
             ) : (
-              <Button variant="primary" icon={<Send className="h-4 w-4" />} onClick={() => setConfirmOpen(true)}>
+              <Button variant="primary" icon={<Send className="h-4 w-4" />} onClick={() => setConfirmOpen(true)} className="w-full sm:w-auto">
                 Kumpulkan Ujian
               </Button>
             )}
@@ -230,22 +231,22 @@ function QuestionCard({
     (Array.isArray(answer) ? answer.length > 0 : typeof answer === 'string' ? answer.trim().length > 0 : typeof answer === 'object' ? Object.keys(answer).length > 0 : true)
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-7 animate-fade-in dark:border-slate-700 dark:bg-slate-900" data-question-type={question.type}>
-      <header className="mb-5 flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
+    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-7 animate-fade-in dark:border-slate-700 dark:bg-slate-900 overflow-hidden" data-question-type={question.type}>
+      <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-600 text-base font-extrabold text-white shadow-md shadow-primary-600/25">
             {index + 1}
           </span>
-          <div className="text-xs leading-tight">
+          <div className="text-xs leading-tight min-w-0">
             <p className="font-semibold text-slate-500">Soal {index + 1} dari {total}</p>
-            <p className="text-slate-300">{question.points} poin</p>
+            <p className="text-slate-400">{question.points} poin</p>
           </div>
         </div>
         <button
           onClick={onToggleFlag}
           aria-pressed={flagged}
           className={cn(
-            'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold transition-all active:scale-95',
+            'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold transition-all active:scale-95 shrink-0',
             flagged
               ? 'border-violet-300 bg-violet-100 text-violet-700'
               : 'border-slate-200 bg-white text-slate-400 hover:border-violet-300 hover:text-violet-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-400 dark:hover:border-violet-500 dark:hover:text-violet-400',
@@ -262,9 +263,11 @@ function QuestionCard({
         </div>
       )}
 
-      <RichContent html={question.text} className="text-[15px] leading-relaxed sm:text-base" />
+      <div className="overflow-hidden">
+        <RichContent html={question.text} className="text-[15px] leading-relaxed sm:text-base break-words" />
+      </div>
 
-      <hr className="my-6 border-slate-100" />
+      <hr className="my-6 border-slate-100 dark:border-slate-700" />
 
       <AnswerInput question={question} answer={answer} onAnswer={onAnswer} />
 
@@ -363,8 +366,8 @@ function AnswerInput({
       return (
         <div className="space-y-3">
           {(question.left_items ?? []).map((left) => (
-            <div key={left.k} className="flex flex-col gap-2 rounded-xl border border-slate-200 p-3 sm:flex-row sm:items-center">
-              <p className="min-w-0 flex-1 text-sm">
+            <div key={left.k} className="flex flex-col gap-2.5 rounded-xl border border-slate-200 p-3 sm:flex-row sm:items-center sm:gap-3">
+              <p className="min-w-0 flex-1 text-sm leading-snug break-words">
                 <span className="mr-2 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-200">{left.k}</span>
                 {left.text}
               </p>
@@ -377,7 +380,7 @@ function AnswerInput({
                   else next[String(left.k)] = Number(e.target.value)
                   onAnswer(next)
                 }}
-                className="input-base cursor-pointer py-2 sm:w-64"
+                className="input-base w-full cursor-pointer py-2.5 sm:w-64 shrink-0"
               >
                 <option value="">— pilih pasangan —</option>
                 {(question.right_items ?? []).map((right) => (
@@ -388,12 +391,12 @@ function AnswerInput({
               </select>
             </div>
           ))}
-          <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800 dark:text-slate-200">
+          <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800 dark:text-slate-200 overflow-hidden">
             <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">Kolom Pasangan:</p>
-            <ol className="space-y-1 text-xs text-slate-500">
+            <ol className="space-y-1.5 text-xs text-slate-500 break-words">
               {(question.right_items ?? []).map((r) => (
-                <li key={r.k}>
-                  <strong className="text-slate-700">{r.k}.</strong> {r.text}
+                <li key={r.k} className="flex gap-1.5">
+                  <strong className="text-slate-700 dark:text-slate-300 shrink-0">{r.k}.</strong> <span className="min-w-0 flex-1">{r.text}</span>
                 </li>
               ))}
             </ol>
@@ -483,7 +486,7 @@ function OptionList({
             aria-checked={active}
             onClick={() => handle(opt.id)}
             className={cn(
-              'flex w-full items-start gap-3.5 rounded-xl border-2 p-3.5 text-left text-[15px] leading-snug transition-all active:scale-[0.99] sm:p-4',
+              'flex w-full items-start gap-3 rounded-xl border-2 p-3.5 text-left text-[15px] leading-snug transition-all active:scale-[0.99] sm:p-4',
               active
                 ? 'border-primary-500 bg-primary-50/70 ring-4 ring-primary-500/10'
                 : 'border-slate-200 bg-white hover:border-primary-300 hover:bg-primary-50/20 dark:border-slate-600 dark:bg-slate-800 dark:hover:border-primary-500 dark:hover:bg-primary-900/20',
@@ -491,15 +494,21 @@ function OptionList({
           >
             <span
               className={cn(
-                'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center text-xs font-extrabold transition-colors',
-                multi ? 'rounded-md border-2' : 'rounded-full border-2',
-                active ? 'border-primary-600 bg-primary-600 text-white' : 'border-slate-300 text-slate-400',
+                'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center text-xs font-extrabold transition-colors shadow-sm',
+                multi ? 'rounded-lg border-2' : 'rounded-full border-2',
+                active ? 'border-primary-600 bg-primary-600 text-white shadow-md' : 'border-slate-300 bg-white text-slate-500 dark:bg-slate-800 dark:text-slate-400',
               )}
             >
-              {active ? (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3.2} className="h-3.5 w-3.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                </svg>
+              {multi ? (
+                active ? (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3.2} className="h-3.5 w-3.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                  </svg>
+                ) : (
+                  <span className="h-2.5 w-2.5 rounded-sm border border-slate-300 dark:border-slate-500" aria-hidden />
+                )
+              ) : active ? (
+                <span className="h-2.5 w-2.5 rounded-full bg-white shadow-inner" aria-hidden />
               ) : (
                 String.fromCharCode(65 + i)
               )}

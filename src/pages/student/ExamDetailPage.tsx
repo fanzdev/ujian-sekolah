@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, PlayCircle, Clock3, ListChecks, ShieldAlert,
-  Camera, Maximize, KeyRound, AlertTriangle, Info,
+  Camera, Maximize, KeyRound, AlertTriangle, Info, Video,
 } from 'lucide-react'
 import { useAsync, useDocumentTitle } from '@/hooks/useAsync'
 import { useToast } from '@/hooks/useToast'
@@ -35,6 +35,9 @@ export default function ExamDetailPage() {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [agreed, setAgreed] = useState(false)
   const [starting, setStarting] = useState(false)
+  const [cameraOpen, setCameraOpen] = useState(false)
+  const [cameraStatus, setCameraStatus] = useState<'idle' | 'requesting' | 'granted' | 'denied' | 'unsupported'>('idle')
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)
 
   if (query.error) return <ErrorState message={query.error} onRetry={query.reload} />
   if (query.loading) return <div className="flex justify-center py-20"><Spinner className="h-8 w-8" /></div>
@@ -57,6 +60,46 @@ export default function ExamDetailPage() {
     }
   }
 
+  const requestCamera = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraStatus('unsupported')
+      return false
+    }
+    setCameraStatus('requesting')
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false })
+      setCameraStream(stream)
+      setCameraStatus('granted')
+      return true
+    } catch {
+      setCameraStatus('denied')
+      return false
+    }
+  }
+
+  const handleConfirmAgree = async () => {
+    if (exam.camera_monitoring) {
+      setCameraOpen(true)
+      setCameraStatus('idle')
+      setCameraStream(null)
+      return
+    }
+    await doStart()
+  }
+
+  const handleCameraContinue = async () => {
+    if (cameraStatus !== 'granted') {
+      const ok = await requestCamera()
+      if (!ok) return
+    }
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((t) => t.stop())
+      setCameraStream(null)
+    }
+    setCameraOpen(false)
+    await doStart()
+  }
+
   const doStart = async () => {
     setStarting(true)
     try {
@@ -75,16 +118,16 @@ export default function ExamDetailPage() {
       </Link>
 
       <Card className="overflow-hidden animate-fade-in">
-        <div className="bg-gradient-to-br from-primary-600 to-primary-800 px-6 py-8 text-white sm:px-8">
+        <div className="bg-gradient-to-br from-primary-600 to-primary-800 px-4 py-6 text-white sm:px-8 sm:py-8">
           <Badge tone="sky" className="!bg-white/15 !text-white !ring-white/30">
             {exam.subject_name ?? 'Ujian'}
           </Badge>
-          <h1 className="mt-3 text-xl leading-snug font-extrabold tracking-tight sm:text-2xl">{exam.title}</h1>
+          <h1 className="mt-3 text-lg leading-snug font-extrabold tracking-tight break-words sm:text-2xl">{exam.title}</h1>
           {exam.teacher_name && <p className="mt-1 text-sm text-white/70">Pengawas: {exam.teacher_name}</p>}
         </div>
 
-        <div className="space-y-6 p-6 sm:p-8">
-          <dl className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-x-4 sm:gap-y-4 text-sm">
+        <div className="space-y-6 p-4 sm:p-8">
+          <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-x-4 sm:gap-y-4 text-sm">
             <Detail label="Dibuka" value={formatDateTime(exam.starts_at)} icon={<Clock3 className="h-4 w-4" />} />
             <Detail label="Ditutup" value={formatDateTime(exam.ends_at)} icon={<Clock3 className="h-4 w-4" />} />
             <Detail label="Durasi Pengerjaan" value={`${exam.duration_minutes} menit`} icon={<Clock3 className="h-4 w-4" />} />
@@ -178,6 +221,7 @@ export default function ExamDetailPage() {
               <li>Jawaban tersimpan otomatis; jika internet terputus, jawaban tetap aman.</li>
               <li>Pelanggaran (berpindah tab dll.) tercatat hingga batas <strong>{exam.violation_limit}</strong> kali.</li>
               <li>Kumpulkan sebelum waktu habis untuk hasil terbaik.</li>
+              {exam.camera_monitoring && <li className="font-semibold text-amber-700">Kamera wajib aktif — Anda akan diminta menyalakan kamera sebelum ujian dimulai.</li>}
             </ul>
           </div>
           <Checkbox
@@ -188,13 +232,90 @@ export default function ExamDetailPage() {
         </div>
         <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:bg-slate-800 dark:text-slate-200">
           <Button variant="ghost" onClick={() => setConfirmOpen(false)}>Belum</Button>
-          <Button disabled={!agreed} loading={starting} onClick={doStart} icon={<AlertTriangle className="hidden h-4 w-4" />}>
+          <Button disabled={!agreed} loading={starting} onClick={handleConfirmAgree} icon={<AlertTriangle className="hidden h-4 w-4" />}>
             Ya, Mulai Sekarang
           </Button>
         </div>
       </Modal>
+
+      {/* Camera mandatory modal */}
+      <Modal
+        open={cameraOpen}
+        onClose={() => {
+          if (cameraStream) cameraStream.getTracks().forEach((t) => t.stop())
+          setCameraStream(null)
+          setCameraOpen(false)
+        }}
+        title="Aktifkan Kamera"
+        size="md"
+      >
+        <div className="space-y-4 px-6 py-5">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="flex items-center gap-2 text-sm font-bold text-amber-800"><Video className="h-4 w-4" /> Kamera Wajib Aktif</p>
+            <p className="mt-1 text-xs leading-relaxed text-amber-700">Ujian ini mewajibkan kamera menyala. Snapshot berkala akan dikirim ke pengawas/admin untuk monitoring. Tanpa izin kamera Anda tidak dapat memulai ujian.</p>
+          </div>
+
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-900">
+            {cameraStatus === 'granted' && cameraStream ? (
+              <CameraPreview stream={cameraStream} />
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-800 text-slate-400">
+                  <Camera className="h-8 w-8" />
+                </div>
+                <p className="text-sm font-medium text-slate-300">Kamera belum aktif</p>
+                <p className="max-w-sm text-xs leading-relaxed text-slate-400">Tekan tombol di bawah untuk memberi izin. Pastikan Anda memilih kamera yang benar dan pencahayaan cukup.</p>
+              </div>
+            )}
+          </div>
+
+          {cameraStatus === 'denied' && (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
+              <p className="text-xs font-semibold text-rose-700">Izin kamera ditolak</p>
+              <p className="mt-1 text-xs leading-relaxed text-rose-600">Buka pengaturan browser (ikon gembok di address bar) → izinkan kamera, lalu tekan Coba Lagi. Jika perangkat tidak punya kamera, hubungi pengawas.</p>
+            </div>
+          )}
+          {cameraStatus === 'unsupported' && (
+            <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs leading-relaxed text-rose-600">Perangkat/browser tidak mendukung kamera. Gunakan browser modern (Chrome/Edge) atau perangkat lain, lalu hubungi pengawas.</p>
+          )}
+          {cameraStatus === 'granted' && (
+            <p className="rounded-xl bg-emerald-50 px-4 py-2.5 text-xs font-medium text-emerald-700">Kamera terhubung — Anda dapat melanjutkan ke ujian.</p>
+          )}
+
+          <p className="text-[11px] leading-relaxed text-slate-400">Dengan melanjutkan, Anda menyetujui pengambilan snapshot berkala selama ujian untuk keperluan pengawasan.</p>
+        </div>
+        <div className="flex flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 sm:flex-row sm:justify-end dark:border-slate-700 dark:bg-slate-800/60">
+          <Button
+            variant="ghost"
+            onClick={() => {
+              if (cameraStream) cameraStream.getTracks().forEach((t) => t.stop())
+              setCameraStream(null)
+              setCameraOpen(false)
+            }}
+          >
+            Batal
+          </Button>
+          {cameraStatus !== 'granted' ? (
+            <Button onClick={requestCamera} loading={cameraStatus === 'requesting'} icon={<Camera className="h-4 w-4" />}>
+              {cameraStatus === 'denied' ? 'Coba Lagi' : 'Aktifkan Kamera'}
+            </Button>
+          ) : (
+            <Button onClick={handleCameraContinue} loading={starting} variant="primary">
+              Lanjut Mulai Ujian
+            </Button>
+          )}
+        </div>
+      </Modal>
     </div>
   )
+}
+
+function CameraPreview({ stream }: { stream: MediaStream }) {
+  const ref = useRef<HTMLVideoElement>(null)
+  useEffect(() => {
+    if (ref.current) ref.current.srcObject = stream
+  }, [stream])
+  return <video ref={ref} autoPlay muted playsInline className="h-56 w-full object-cover sm:h-64" />
 }
 
 function Detail({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
