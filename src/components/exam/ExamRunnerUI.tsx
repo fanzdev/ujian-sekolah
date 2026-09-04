@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, Camera, CameraOff } from 'lucide-react'
 import { useAsync } from '@/hooks/useAsync'
 import { uploadMedia } from '@/services/storage.service'
 import { fetchSystemSettings } from '@/services/settings.service'
@@ -180,15 +180,30 @@ export function CameraMonitor() {
   }, [snapshotsEnabled, status])
 
   return (
-    <div className="sr-only" aria-hidden>
-      <video ref={videoRef} autoPlay muted playsInline className="h-1 w-1" aria-label="Monitoring kamera" />
-      <span>{status}</span>
+    <div className="pointer-events-none fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] right-3 z-30 sm:right-4 lg:bottom-4">
+      {status === 'granted' ? (
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-black shadow-xl">
+          <video ref={videoRef} autoPlay muted playsInline className="h-20 w-28 object-cover sm:h-24 sm:w-36" aria-label="Preview kamera ujian" />
+          <p className="flex items-center justify-center gap-1 bg-emerald-600 py-1 text-[9px] font-bold tracking-wide text-white uppercase">
+            <Camera className="h-2.5 w-2.5" /> Kamera Aktif
+          </p>
+        </div>
+      ) : status === 'denied' ? (
+        <div className="max-w-[220px] rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 shadow-lg">
+          <p className="flex items-center gap-1.5 text-xs font-bold text-amber-800"><CameraOff className="h-3.5 w-3.5" /> Izin Kamera Ditolak</p>
+          <p className="mt-1 text-[11px] leading-relaxed text-amber-700">Snapshot tidak terkirim. Buka ikon gembok di address bar untuk izinkan kamera.</p>
+        </div>
+      ) : status === 'unsupported' ? (
+        <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-500 shadow-lg">
+          <span className="flex items-center gap-1.5"><CameraOff className="h-3.5 w-3.5" /> Perangkat tidak dukung kamera</span>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-500 shadow-lg">
+          <span className="flex items-center gap-1.5"><Camera className="h-3.5 w-3.5 animate-pulse" /> Meminta izin kamera…</span>
+        </div>
+      )}
     </div>
   )
-}
-
-export function CameraPreviewBadge() {
-  return null
 }
 
 export function SubmitConfirmModal({
