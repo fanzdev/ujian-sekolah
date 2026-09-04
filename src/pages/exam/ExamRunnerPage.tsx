@@ -33,13 +33,17 @@ export default function ExamRunnerPage() {
   if (engine.phase === 'error') {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-slate-50 p-6 dark:bg-slate-950">
-        <div className="card max-w-md p-8 text-center">
+        <div className="card max-w-md p-8 text-center animate-fade-in">
           <AlertCircle className="mx-auto h-12 w-12 text-rose-500" />
-          <h1 className="mt-4 text-lg font-bold text-slate-900">Terjadi Kendala</h1>
-          <p className="mt-2 text-sm leading-relaxed text-slate-500">{engine.loadError}</p>
-          <Link to="/student/exams" className="mt-5 inline-block rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-700">
-            Kembali ke Daftar Ujian
-          </Link>
+          <h1 className="mt-4 text-lg font-bold text-slate-900 dark:text-slate-100">Terjadi Kendala</h1>
+          <p className="mt-2 text-sm leading-relaxed text-slate-500">{engine.loadError || 'Gagal memuat lembar ujian. Periksa koneksi atau hubungi guru.'}</p>
+          <div className="mt-6 flex flex-col gap-2">
+            <Button onClick={() => engine.reload()} className="w-full">Coba Lagi</Button>
+            <Link to="/student/exams" className="block rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-center text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              Kembali ke Daftar Ujian
+            </Link>
+          </div>
+          <p className="mt-4 text-xs leading-relaxed text-slate-400">Jika terus gagal: pastikan jadwal masih aktif, kesempatan masih ada, dan akun terdaftar di ujian. Hubungi admin jika perlu.</p>
         </div>
       </div>
     )

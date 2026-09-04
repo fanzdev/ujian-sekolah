@@ -6,6 +6,7 @@ import {
   submitAttempt,
   recordViolation,
 } from '@/services/attempts.service'
+import { friendlyError } from '@/lib/errors'
 import type { AnswerValue, SubmitSummary, AttemptPayload } from '@/types/models'
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'offline' | 'error'
@@ -54,45 +55,49 @@ export function useExamEngine(attemptId: string) {
 
   answersRef.current = answers
 
-  // ---------------- initial load ----------------
-  useEffect(() => {
-    let cancelled = false
+  const load = useCallback(async () => {
     setPhase('loading')
-    ;(async () => {
-      try {
-        const [p, offset] = await Promise.all([getAttemptPayload(attemptId), getServerTimeOffset().catch(() => 0)])
-        if (cancelled) return
-        offsetRef.current = offset
+    setLoadError('')
+    try {
+      const [p, offset] = await Promise.all([getAttemptPayload(attemptId), getServerTimeOffset().catch(() => 0)])
+      offsetRef.current = offset
 
-        if (p.attempt.status !== 'in_progress') {
-          setPayload(p)
-          setPhase('submitted')
-          return
-        }
-
-        const draft = readDraft(attemptId)
-        const merged = { ...p.answers, ...draft }
-        setPayload(p)
-        setAnswers(merged)
-        setRemainingSeconds(p.remaining_seconds)
-        setViolationCount(p.attempt.violation_count)
-        setViolationLimit(p.exam.violation_limit)
-        setPhase('running')
-
-        for (const [qid, val] of Object.entries(draft)) {
-          if (JSON.stringify(val) !== JSON.stringify(p.answers[qid] ?? null)) dirtyRef.current.add(qid)
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setLoadError(err instanceof Error ? err.message : 'Gagal memuat ujian.')
-          setPhase('error')
-        }
+      if (!p || !p.attempt || !p.exam) {
+        throw new Error('Data ujian tidak lengkap. Hubungi admin.')
       }
-    })()
-    return () => {
-      cancelled = true
+
+      if (p.attempt.status !== 'in_progress') {
+        setPayload(p)
+        setPhase('submitted')
+        return
+      }
+
+      if (!p.order || p.order.length === 0) {
+        throw new Error('Ujian belum memiliki soal. Hubungi guru/admin untuk menambahkan soal.')
+      }
+
+      const draft = readDraft(attemptId)
+      const merged = { ...p.answers, ...draft }
+      setPayload(p)
+      setAnswers(merged)
+      setRemainingSeconds(p.remaining_seconds)
+      setViolationCount(p.attempt.violation_count)
+      setViolationLimit(p.exam.violation_limit)
+      setPhase('running')
+
+      for (const [qid, val] of Object.entries(draft)) {
+        if (JSON.stringify(val) !== JSON.stringify(p.answers[qid] ?? null)) dirtyRef.current.add(qid)
+      }
+    } catch (err) {
+      setLoadError(friendlyError(err))
+      setPhase('error')
     }
   }, [attemptId])
+
+  // ---------------- initial load ----------------
+  useEffect(() => {
+    void load()
+  }, [load])
 
   // ---------------- countdown (server-synced) ----------------
   useEffect(() => {
@@ -225,7 +230,7 @@ export function useExamEngine(attemptId: string) {
           setPhase('submitted')
           return
         }
-        setLoadError(err instanceof Error ? err.message : 'Gagal mengumpulkan ujian.')
+        setLoadError(friendlyError(err))
         if (!auto) setPhase('error')
       }
     },
@@ -375,6 +380,7 @@ export function useExamEngine(attemptId: string) {
     next: () => goTo(currentIndex + 1),
     prev: () => goTo(currentIndex - 1),
     submit: () => doSubmit(false),
+    reload: load,
   }
 }
 

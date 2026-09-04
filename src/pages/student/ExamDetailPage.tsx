@@ -69,7 +69,7 @@ export default function ExamDetailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-2xl pb-28 lg:pb-0">
       <Link to="/student/exams" className="mb-5 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-primary-600 dark:hover:text-primary-300">
         <ArrowLeft className="h-4 w-4" /> Kembali ke daftar ujian
       </Link>
