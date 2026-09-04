@@ -158,7 +158,7 @@ function BrandingPanel() {
             <label className="label-base">Logo Aplikasi</label>
             <div className="flex items-center gap-4">
               <div className="relative">
-                <img src={form.logo_url || `${import.meta.env.BASE_URL}logo.webp`} alt="Logo" className="h-20 w-20 rounded-xl border border-slate-200 bg-white object-contain p-2 shadow-sm dark:border-slate-700 dark:bg-slate-900" width={80} height={80} />
+                <img src={form.logo_url && !form.logo_url.includes('vcbt') ? form.logo_url : `${import.meta.env.BASE_URL}logo.webp`} alt="Logo" className="h-20 w-20 rounded-xl border border-slate-200 bg-white object-contain p-2 shadow-sm dark:border-slate-700 dark:bg-slate-900" width={80} height={80} onError={(e)=>{ const t=e.currentTarget; if(t.src.endsWith('logo.webp')) return; t.onerror=null; t.src=`${import.meta.env.BASE_URL}logo.webp` }} />
                 <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm ring-2 ring-white dark:ring-slate-900">
                   <span className="text-xs font-bold leading-none">{logoUploading ? '…' : '+'}</span>
                 </span>

@@ -29,7 +29,8 @@ function BrandingBoot({ children }: { children: React.ReactNode }) {
       .then((s) => {
         applyBranding(s)
         try {
-          localStorage.setItem('cbt-branding', JSON.stringify({ app_name: s.app_name, school_name: s.school_name, logo_url: s.logo_url, primary_color: s.primary_color, secondary_color: s.secondary_color }))
+          const cleanLogo = s.logo_url && !String(s.logo_url).includes('vcbt') && !String(s.logo_url).includes('logo.svg') ? s.logo_url : `${import.meta.env.BASE_URL}logo.webp`
+          localStorage.setItem('cbt-branding', JSON.stringify({ app_name: s.app_name, school_name: s.school_name, logo_url: cleanLogo, primary_color: s.primary_color, secondary_color: s.secondary_color }))
           if (s.app_name) document.title = s.app_name
           const metaDesc = document.querySelector<HTMLMetaElement>('meta[name="description"]')
           if (metaDesc && s.school_name) metaDesc.content = `${s.school_name} - ${s.app_name} CBT`

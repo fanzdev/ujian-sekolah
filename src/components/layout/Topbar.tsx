@@ -401,22 +401,30 @@ export function Topbar({
 }
 
 export function BrandMark({ appName, schoolName }: { appName?: string; schoolName?: string }) {
+  const sanitize = (u: string | null | undefined): string | null => {
+    if (!u || typeof u !== 'string') return null
+    const s = u.trim()
+    if (!s || s.includes('vcbt') || s.includes('logo.svg') || s.includes('favicon.svg')) return null
+    return s
+  }
   const [logo, setLogo] = useState<string | null>(null)
   useEffect(() => {
     try {
       const raw = localStorage.getItem('cbt-branding')
       if (raw) {
         const b = JSON.parse(raw) as { logo_url?: string }
-        if (b.logo_url) setLogo(b.logo_url)
+        const c = sanitize(b.logo_url)
+        if (c) setLogo(c)
+        else if (b.logo_url && b.logo_url.includes('vcbt')) { try { const p=JSON.parse(raw) as Record<string,unknown>; (p as Record<string,unknown>)['logo_url']=null; localStorage.setItem('cbt-branding', JSON.stringify(p)) } catch { void 0 } }
       }
     } catch (_e) { void _e }
     import('@/services/settings.service').then(({ fetchSchoolSettings }) =>
-      fetchSchoolSettings().then((s) => { if (s.logo_url) setLogo(s.logo_url) }).catch(() => undefined),
+      fetchSchoolSettings().then((s) => { const c=sanitize(s.logo_url); if (c) setLogo(c) }).catch(() => undefined),
     )
   }, [])
   return (
     <div className="flex items-center gap-3 px-2">
-      <img src={logo || `${import.meta.env.BASE_URL}logo.webp`} alt="Logo" className="h-9 w-9 shrink-0 rounded-lg bg-white object-contain p-1 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700" width={36} height={36} />
+      <img src={logo || `${import.meta.env.BASE_URL}logo.webp`} alt="Logo" className="h-9 w-9 shrink-0 rounded-lg bg-white object-contain p-1 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700" width={36} height={36} onError={(e)=>{ const t=e.currentTarget; if(t.src.endsWith('logo.webp')) return; t.onerror=null; t.src=`${import.meta.env.BASE_URL}logo.webp` }} />
       <div className="min-w-0 leading-tight">
         <p className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{schoolName ?? 'SMK AL-FATA'}</p>
         <p className="truncate text-[11px] font-medium text-slate-500 dark:text-slate-400">{appName ?? 'SMK AL-FATA CBT'}</p>

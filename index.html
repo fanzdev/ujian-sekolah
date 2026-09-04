@@ -120,11 +120,13 @@
               if (st) st.textContent = b.school_name + ' • CBT'
               if (fs) fs.textContent = b.school_name + ' • v1.0 • Profesional • Aman • Cepat'
             }
-            if (b.logo_url) {
+            if (b.logo_url && !String(b.logo_url).includes('vcbt') && String(b.logo_url).indexOf('logo.svg')===-1 && String(b.logo_url).indexOf('favicon.svg')===-1) {
               var img = document.querySelector('#static-splash img[alt="Logo SMK AL-FATA"]')
-              if (img) img.src = b.logo_url
+              if (img) { img.src = b.logo_url; img.onerror = function(){ this.onerror=null; this.src='/logo.webp'; } }
               var fav = document.querySelector('link[rel="icon"]')
               if (fav) fav.href = b.logo_url
+            } else if (b.logo_url && String(b.logo_url).includes('vcbt')) {
+              try { var c=JSON.parse(localStorage.getItem('cbt-branding')||'{}'); if(c.logo_url&&String(c.logo_url).includes('vcbt')){ c.logo_url='/logo.webp'; localStorage.setItem('cbt-branding', JSON.stringify(c)); } } catch(e){}
             }
             if (b.primary_color) {
               var pc = b.primary_color

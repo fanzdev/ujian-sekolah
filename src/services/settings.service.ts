@@ -121,13 +121,25 @@ export function applyBranding(settings: SchoolSettings): void {
 
   document.title = settings.app_name || 'SMK AL-FATA CBT'
 
+  const fallbackLogo = `${import.meta.env.BASE_URL}logo.webp`
+  const sanitizeLogo = (u: string | null | undefined): string | null => {
+    if (!u || typeof u !== 'string') return null
+    const s = u.trim()
+    if (!s) return null
+    if (s.includes('vcbt')) return null
+    if (s.includes('logo.svg') || s.includes('favicon.svg')) return null
+    return s
+  }
+  const cleanLogo = sanitizeLogo(settings.logo_url) ?? fallbackLogo
+  const cleanFavicon = sanitizeLogo(settings.favicon_url) ?? cleanLogo
+
   let faviconLink = document.querySelector<HTMLLinkElement>("link[rel~='icon']")
   if (!faviconLink) {
     faviconLink = document.createElement('link')
     faviconLink.rel = 'icon'
     document.head.appendChild(faviconLink)
   }
-  faviconLink.href = settings.favicon_url || settings.logo_url || `${import.meta.env.BASE_URL}logo.webp`
+  faviconLink.href = cleanFavicon
 
   const metaTheme = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
   if (metaTheme && settings.primary_color && /^#[0-9a-fA-F]{6}$/.test(settings.primary_color)) {
@@ -137,13 +149,20 @@ export function applyBranding(settings: SchoolSettings): void {
   try {
     const raw = localStorage.getItem('cbt-branding')
     const prev = raw ? (JSON.parse(raw) as Record<string, unknown>) : {}
+    const fallbackLogo2 = `${import.meta.env.BASE_URL}logo.webp`
+    const cleanForStore = (u: string | null | undefined): string | null => {
+      if (!u || typeof u !== 'string') return null
+      const s = u.trim()
+      if (!s || s.includes('vcbt') || s.includes('logo.svg') || s.includes('favicon.svg')) return null
+      return s
+    }
     localStorage.setItem(
       'cbt-branding',
       JSON.stringify({
         ...prev,
         app_name: settings.app_name,
         school_name: settings.school_name,
-        logo_url: settings.logo_url,
+        logo_url: cleanForStore(settings.logo_url) ?? fallbackLogo2,
         primary_color: settings.primary_color,
         secondary_color: settings.secondary_color,
       }),

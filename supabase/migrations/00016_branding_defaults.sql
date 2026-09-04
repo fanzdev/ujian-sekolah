@@ -13,7 +13,7 @@ alter table public.school_settings
 alter table public.school_settings
   alter column secondary_color set default '#0CBCC9';
 
--- Update baris yang sudah ada jika masih pakai default lama
+-- Update baris yang sudah ada jika masih pakai default lama — FIX: gunakan /logo.webp yang memang ada di public/
 update public.school_settings
 set
   primary_color = '#0D868F',
@@ -21,23 +21,23 @@ set
   logo_url = coalesce(
     nullif(logo_url, ''),
     case when logo_url like '%logo.svg' or logo_url like '%favicon.svg' then null else logo_url end,
-    '/vcbt-01.png'
+    '/logo.webp'
   ),
   favicon_url = coalesce(
     nullif(favicon_url, ''),
     case when favicon_url like '%logo.svg' or favicon_url like '%favicon.svg' then null else favicon_url end,
-    '/vcbt-02.png'
+    '/logo.webp'
   ),
   updated_at = now()
 where id = true
   and (
     primary_color in ('#2563eb', '#3b82f6', '#0D868F')
     or secondary_color in ('#0ea5e9', '#0D868F', '#2563eb')
-    or logo_url like '%logo.svg' or logo_url like '%favicon.svg' or logo_url is null
-    or favicon_url like '%logo.svg' or favicon_url like '%favicon.svg' or favicon_url is null
+    or logo_url like '%logo.svg' or logo_url like '%favicon.svg' or logo_url is null or logo_url like '%vcbt%'
+    or favicon_url like '%logo.svg' or favicon_url like '%favicon.svg' or favicon_url is null or favicon_url like '%vcbt%'
   );
 
--- Jika baris belum ada (fresh install), sisipkan default baru
+-- Jika baris belum ada (fresh install), sisipkan default baru — FIX: /logo.webp
 insert into public.school_settings (id, app_name, school_name, logo_url, favicon_url, primary_color, secondary_color)
-values (true, 'SMK AL-FATA CBT', 'SMK AL-FATA', '/vcbt-01.png', '/vcbt-02.png', '#0D868F', '#0CBCC9')
+values (true, 'SMK AL-FATA CBT', 'SMK AL-FATA', '/logo.webp', '/logo.webp', '#0D868F', '#0CBCC9')
 on conflict (id) do nothing;
