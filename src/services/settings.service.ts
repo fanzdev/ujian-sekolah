@@ -128,4 +128,27 @@ export function applyBranding(settings: SchoolSettings): void {
     document.head.appendChild(faviconLink)
   }
   faviconLink.href = settings.favicon_url || settings.logo_url || `${import.meta.env.BASE_URL}logo.webp`
+
+  const metaTheme = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+  if (metaTheme && settings.primary_color && /^#[0-9a-fA-F]{6}$/.test(settings.primary_color)) {
+    metaTheme.content = settings.primary_color
+  }
+
+  try {
+    const raw = localStorage.getItem('cbt-branding')
+    const prev = raw ? (JSON.parse(raw) as Record<string, unknown>) : {}
+    localStorage.setItem(
+      'cbt-branding',
+      JSON.stringify({
+        ...prev,
+        app_name: settings.app_name,
+        school_name: settings.school_name,
+        logo_url: settings.logo_url,
+        primary_color: settings.primary_color,
+        secondary_color: settings.secondary_color,
+      }),
+    )
+  } catch {
+    /* storage blocked */
+  }
 }

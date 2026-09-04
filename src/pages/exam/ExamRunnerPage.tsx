@@ -125,7 +125,7 @@ export default function ExamRunnerPage() {
                 Berikutnya <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
             ) : (
-              <Button variant="success" icon={<Send className="h-4 w-4" />} onClick={() => setConfirmOpen(true)}>
+              <Button variant="primary" icon={<Send className="h-4 w-4" />} onClick={() => setConfirmOpen(true)}>
                 Kumpulkan Ujian
               </Button>
             )}
@@ -159,7 +159,7 @@ export default function ExamRunnerPage() {
                 />
               </div>
             </div>
-            <Button variant="success" size="lg" className="w-full" icon={<Send className="h-4 w-4" />} onClick={() => setConfirmOpen(true)}>
+            <Button variant="primary" size="lg" className="w-full" icon={<Send className="h-4 w-4" />} onClick={() => setConfirmOpen(true)}>
               Kumpulkan Ujian
             </Button>
           </div>

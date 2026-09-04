@@ -16,3 +16,7 @@ Thumbs.db
 
 supabase/.temp
 supabase/.branches
+
+# Windows NUL device artifact created by "2>nul" in git bash
+nul
+NUL

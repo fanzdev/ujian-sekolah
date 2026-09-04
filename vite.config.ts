@@ -48,12 +48,20 @@ export default defineConfig({
     port: 3000,
     strictPort: false,
     cors: true,
+    allowedHosts: true as unknown as string[],
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+    },
+    hmr: {
+      overlay: true,
+    },
   },
   preview: {
     host: '0.0.0.0',
     port: 3000,
     strictPort: false,
     cors: true,
+    allowedHosts: true as unknown as string[],
   },
   build: {
     chunkSizeWarningLimit: 1200,

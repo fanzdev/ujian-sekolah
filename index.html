@@ -148,6 +148,8 @@
               if (ring) ring.style.borderColor = pc + '1f'
               var ring2 = document.querySelector('#static-splash .ss-ring2')
               if (ring2) ring2.style.borderColor = pc + '0f'
+              var meta = document.querySelector('meta[name="theme-color"]')
+              if (meta && /^#[0-9a-fA-F]{6}$/.test(pc)) meta.content = pc
             }
           }
         } catch (e) {}

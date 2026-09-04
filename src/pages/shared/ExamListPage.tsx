@@ -188,7 +188,7 @@ export default function ExamListPage() {
                       <Button variant="outline" size="sm" icon={<Users className="h-3.5 w-3.5" />}>Peserta</Button>
                     </Link>
                     {exam.status !== 'published' && exam.status !== 'completed' && (
-                      <Button variant="success" size="sm" onClick={() => handlePublishToggle(exam)}>Aktifkan</Button>
+                      <Button variant="primary" size="sm" onClick={() => handlePublishToggle(exam)}>Aktifkan</Button>
                     )}
                     {exam.status === 'published' && (
                       <>

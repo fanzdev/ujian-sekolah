@@ -19,7 +19,7 @@ const VARIANTS: Record<Variant, string> = {
   ghost: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100',
   danger: 'bg-rose-600 text-white shadow-sm hover:bg-rose-700 active:bg-rose-800',
   outline: 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:border-slate-500',
-  success: 'bg-emerald-600 text-white shadow-sm hover:bg-emerald-700',
+  success: 'bg-primary-600 text-white shadow-sm hover:bg-primary-700 active:bg-primary-800',
 }
 
 const SIZES: Record<Size, string> = {
