@@ -365,6 +365,12 @@ function TargetStep({
         return { kind, target_id: id }
       })
       await setExamTargets(examId, targets)
+      try {
+        const { supabase } = await import('@/services/client')
+        await supabase.rpc('sync_exam_participants', { p_exam_id: examId })
+      } catch {
+        /* trigger DB akan sync otomatis jika migrasi 00015/00017 terpasang */
+      }
       onSaved()
       return true
     } catch (err) {
