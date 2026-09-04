@@ -206,6 +206,62 @@ export function CameraMonitor() {
   )
 }
 
+export function SilentCameraCapture() {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const settingsQuery = useAsync(() => fetchSystemSettings(), [])
+  const snapshotsEnabled = settingsQuery.data?.security?.camera_snapshots_enabled !== false
+
+  useEffect(() => {
+    let cancelled = false
+    if (!navigator.mediaDevices?.getUserMedia) return
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false })
+      .then((stream) => {
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop())
+          return
+        }
+        streamRef.current = stream
+        if (videoRef.current) videoRef.current.srcObject = stream
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+      streamRef.current?.getTracks().forEach((t) => t.stop())
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!snapshotsEnabled) return
+    const interval = window.setInterval(async () => {
+      try {
+        const video = videoRef.current
+        if (!video || video.readyState < 2 || video.videoWidth === 0) return
+        const canvas = document.createElement('canvas')
+        canvas.width = 320
+        canvas.height = 240
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return
+        ctx.drawImage(video, 0, 0, 320, 240)
+        canvas.toBlob(
+          async (blob) => {
+            if (!blob) return
+            await uploadMedia(new File([blob], `snap-${Date.now()}.jpg`, { type: 'image/jpeg' }), 'exam-snapshot')
+          },
+          'image/jpeg',
+          0.65,
+        )
+      } catch {
+        // never break exam
+      }
+    }, 120000)
+    return () => window.clearInterval(interval)
+  }, [snapshotsEnabled])
+
+  return <video ref={videoRef} autoPlay muted playsInline className="pointer-events-none fixed left-0 top-0 h-[240px] w-[320px] -translate-x-[9999px] opacity-0" aria-hidden tabIndex={-1} />
+}
+
 export function SubmitConfirmModal({
   open,
   onClose,

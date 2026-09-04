@@ -1,14 +1,15 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   ChevronLeft, ChevronRight, Flag, Send, WifiOff, AlertCircle,
-  Maximize2,
+  Maximize2, ShieldAlert,
 } from 'lucide-react'
 import { useParams, Link } from 'react-router-dom'
 import { useExamEngine } from '@/features/exam/useExamEngine'
 import {
   ConnectionBadge, ExamTimer, QuestionNavigator,
-  ViolationFlash, CameraMonitor, SubmitConfirmModal, SubmittedScreen,
+  ViolationFlash, SubmitConfirmModal, SubmittedScreen,
 } from '@/components/exam/ExamRunnerUI'
+import { StudentLivePublisher } from '@/components/exam/LiveCameraRTC'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Feedback'
 import { RichContent } from '@/components/ui/RichTextEditor'
@@ -20,6 +21,93 @@ export default function ExamRunnerPage() {
   const attemptId = params.attemptId ?? ''
   const engine = useExamEngine(attemptId)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const isFsSupported = (() => {
+    if (typeof document === 'undefined') return false
+    const doc = document as unknown as { fullscreenEnabled?: boolean; webkitFullscreenEnabled?: boolean }
+    const el = document.documentElement as unknown as { requestFullscreen?: unknown; webkitRequestFullscreen?: unknown }
+    return !!(doc.fullscreenEnabled || doc.webkitFullscreenEnabled || el.requestFullscreen || el.webkitRequestFullscreen)
+  })()
+  const checkFullscreen = () => {
+    const doc = document as unknown as { fullscreenElement: Element | null; webkitFullscreenElement?: Element | null; mozFullScreenElement?: Element | null }
+    return !!(doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement)
+  }
+  const [isFullscreen, setIsFullscreen] = useState(() => typeof document !== 'undefined' ? checkFullscreen() : false)
+
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(checkFullscreen())
+    document.addEventListener('fullscreenchange', onChange)
+    document.addEventListener('webkitfullscreenchange', onChange as EventListener)
+    document.addEventListener('mozfullscreenchange', onChange as EventListener)
+    return () => {
+      document.removeEventListener('fullscreenchange', onChange)
+      document.removeEventListener('webkitfullscreenchange', onChange as EventListener)
+      document.removeEventListener('mozfullscreenchange', onChange as EventListener)
+    }
+  }, [])
+
+  const [fsLoading, setFsLoading] = useState(false)
+  const [bypassFullscreen, setBypassFullscreen] = useState(false)
+
+  const requestFs = useCallback(async () => {
+    if (fsLoading) return
+    setFsLoading(true)
+    const isMobile = typeof window !== 'undefined' && (window.innerWidth < 768 || ((navigator as unknown as { maxTouchPoints?: number }).maxTouchPoints ?? 0) > 0)
+    if (!isFsSupported) {
+      if (isMobile) {
+        setBypassFullscreen(true)
+        setIsFullscreen(true)
+      }
+      setFsLoading(false)
+      return
+    }
+    const el = document.documentElement as unknown as { requestFullscreen?: (opts?: unknown) => Promise<void>; webkitRequestFullscreen?: () => Promise<void>; mozRequestFullScreen?: () => Promise<void> }
+    const req = el.requestFullscreen ?? el.webkitRequestFullscreen ?? el.mozRequestFullScreen
+    if (!req) {
+      if (isMobile) {
+        setBypassFullscreen(true)
+        setIsFullscreen(true)
+      }
+      setFsLoading(false)
+      return
+    }
+    try {
+      const p = (req as (opts?: unknown) => Promise<void>).call(el, { navigationUI: 'hide' } as unknown) as Promise<void> | undefined
+      if (p && typeof p.then === 'function') {
+        await p
+        setIsFullscreen(checkFullscreen())
+        if (!checkFullscreen() && isMobile) {
+          setBypassFullscreen(true)
+          setIsFullscreen(true)
+        }
+      } else {
+        window.setTimeout(() => {
+          const ok = checkFullscreen()
+          if (!ok && isMobile) {
+            setBypassFullscreen(true)
+            setIsFullscreen(true)
+          } else {
+            setIsFullscreen(ok)
+          }
+        }, 300)
+      }
+    } catch {
+      if (isMobile) {
+        setBypassFullscreen(true)
+        setIsFullscreen(true)
+      } else {
+        setIsFullscreen(checkFullscreen())
+      }
+    } finally {
+      setFsLoading(false)
+    }
+  }, [isFsSupported, fsLoading])
+
+  useEffect(() => {
+    if (!isFsSupported) return
+    if (engine.phase === 'running' && !isFullscreen) {
+      requestFs()
+    }
+  }, [engine.phase, isFullscreen, isFsSupported, requestFs])
 
   if (engine.phase === 'loading') {
     return (
@@ -93,13 +181,37 @@ export default function ExamRunnerPage() {
         <ViolationFlash count={engine.violationFlash.count} limit={engine.violationLimit} />
       )}
 
-      {exam.fullscreen_required && !document.fullscreenElement && (
+      {!isFullscreen && !bypassFullscreen && engine.phase === 'running' && (
         <button
-          onClick={() => document.documentElement.requestFullscreen?.().catch(() => undefined)}
-          className="flex items-center justify-center gap-1.5 bg-sky-50 py-1.5 text-[11px] font-semibold text-sky-700"
+          type="button"
+          onClick={requestFs}
+          className="flex w-full cursor-pointer items-center justify-center gap-1.5 bg-amber-50 py-2 text-xs font-bold text-amber-800 ring-1 ring-amber-200 dark:bg-amber-500/15 dark:text-amber-200 dark:ring-amber-500/30"
         >
-          <Maximize2 className="h-3.5 w-3.5" /> Aktifkan kembali mode layar penuh
+          <Maximize2 className="h-3.5 w-3.5" /> {isFsSupported ? 'Wajib Layar Penuh — klik untuk masuk fullscreen' : 'Fullscreen tidak didukung — klik untuk lanjut terbatas'}
         </button>
+      )}
+
+      {!isFullscreen && !bypassFullscreen && engine.phase === 'running' && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/85 p-6 backdrop-blur-sm">
+          <div className="card pointer-events-auto max-w-sm p-8 text-center animate-scale-in">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-300">
+              <ShieldAlert className="h-7 w-7" />
+            </div>
+            <h2 className="mt-4 text-lg font-extrabold text-slate-900 dark:text-white">Wajib Layar Penuh</h2>
+            <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+              {isFsSupported
+                ? 'Ujian harus dikerjakan dalam mode layar penuh. Keluar dari fullscreen tercatat sebagai pelanggaran dan dapat otomatis mengumpulkan jawaban.'
+                : 'Perangkat Anda tidak mendukung Fullscreen API. Anda tetap bisa melanjutkan, tapi pelanggaran keluar halaman tetap tercatat.'}
+            </p>
+            <p className="mt-2 text-xs font-semibold text-slate-400">
+              Pelanggaran: {engine.violationCount}/{engine.violationLimit}
+            </p>
+            <Button type="button" size="lg" className="mt-6 w-full cursor-pointer" icon={<Maximize2 className="h-4 w-4" />} onClick={requestFs} loading={fsLoading}>
+              {isFsSupported ? 'Masuk Layar Penuh Sekarang' : 'Lanjutkan Tanpa Fullscreen'}
+            </Button>
+            <p className="mt-3 text-[11px] text-slate-400">{isFsSupported ? 'Tekan Esc tidak akan keluar — sistem akan mencatat pelanggaran dan meminta masuk kembali.' : 'Mode terbatas: tetap fokus di halaman, jangan pindah tab.'}</p>
+          </div>
+        </div>
       )}
 
       {engine.saveStatus === 'offline' && (
@@ -171,7 +283,7 @@ export default function ExamRunnerPage() {
         </aside>
       </main>
 
-      {exam.camera_monitoring && <CameraMonitor />}
+      {exam.camera_monitoring && <StudentLivePublisher examId={exam.id} />}
 
       <SubmitConfirmModal
         open={confirmOpen}

@@ -287,10 +287,25 @@ export function useExamEngine(attemptId: string) {
     const onBlur = () => {
       void triggerViolation('window_blur', 'warning')
     }
+    const isFsSupported = (() => {
+      const d = document as unknown as { fullscreenEnabled?: boolean; webkitFullscreenEnabled?: boolean }
+      const el = document.documentElement as unknown as { requestFullscreen?: unknown; webkitRequestFullscreen?: unknown }
+      return !!(d.fullscreenEnabled || d.webkitFullscreenEnabled || el.requestFullscreen || el.webkitRequestFullscreen)
+    })()
+    const isFs = () => {
+      const d = document as unknown as { fullscreenElement: Element | null; webkitFullscreenElement?: Element | null; mozFullScreenElement?: Element | null }
+      return !!(d.fullscreenElement || d.webkitFullscreenElement || d.mozFullScreenElement)
+    }
+    const requestFs = () => {
+      if (!isFsSupported) return
+      const el = document.documentElement as unknown as { requestFullscreen?: () => Promise<void>; webkitRequestFullscreen?: () => Promise<void>; mozRequestFullScreen?: () => Promise<void> }
+      const req = el.requestFullscreen ?? el.webkitRequestFullscreen ?? el.mozRequestFullScreen
+      req?.call(el).catch(() => undefined)
+    }
     const onFsChange = () => {
-      if (payload.exam.fullscreen_required && !document.fullscreenElement && !document.hidden) {
+      if (!isFs() && !document.hidden) {
         void triggerViolation('fullscreen_exit', 'serious')
-        document.documentElement.requestFullscreen?.().catch(() => undefined)
+        requestFs()
       }
     }
     const onContextMenu = (e: MouseEvent) => {
@@ -311,25 +326,31 @@ export function useExamEngine(attemptId: string) {
     document.addEventListener('visibilitychange', onVisibility)
     window.addEventListener('blur', onBlur)
     document.addEventListener('fullscreenchange', onFsChange)
+    document.addEventListener('webkitfullscreenchange', onFsChange as EventListener)
+    document.addEventListener('mozfullscreenchange', onFsChange as EventListener)
     document.addEventListener('contextmenu', onContextMenu)
     document.addEventListener('copy', onCopy)
     document.addEventListener('cut', onCopy)
     window.addEventListener('beforeunload', onBeforeUnload)
 
-    if (payload.exam.fullscreen_required && !document.fullscreenElement) {
-      document.documentElement.requestFullscreen?.().catch(() => undefined)
+    if (!isFs()) {
+      requestFs()
     }
 
     return () => {
       document.removeEventListener('visibilitychange', onVisibility)
       window.removeEventListener('blur', onBlur)
       document.removeEventListener('fullscreenchange', onFsChange)
+      document.removeEventListener('webkitfullscreenchange', onFsChange as EventListener)
+      document.removeEventListener('mozfullscreenchange', onFsChange as EventListener)
       document.removeEventListener('contextmenu', onContextMenu)
       document.removeEventListener('copy', onCopy)
       document.removeEventListener('cut', onCopy)
       window.removeEventListener('beforeunload', onBeforeUnload)
-      if (document.fullscreenElement) {
-        document.exitFullscreen?.().catch(() => undefined)
+      const d = document as unknown as { fullscreenElement: Element | null; webkitFullscreenElement?: Element | null; mozFullScreenElement?: Element | null; exitFullscreen?: () => Promise<void>; webkitExitFullscreen?: () => Promise<void>; mozCancelFullScreen?: () => Promise<void> }
+      if (d.fullscreenElement || d.webkitFullscreenElement || d.mozFullScreenElement) {
+        const ex = d.exitFullscreen ?? d.webkitExitFullscreen ?? d.mozCancelFullScreen
+        ex?.call(document).catch(() => undefined)
       }
     }
   }, [phase, payload, triggerViolation])

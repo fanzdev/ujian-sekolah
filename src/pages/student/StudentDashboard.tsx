@@ -1,7 +1,8 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   CalendarDays, PlayCircle, ClipboardCheck, IdCard, Clock3,
-  CheckCircle2, AlertCircle, Hourglass, TrendingUp,
+  AlertCircle, Hourglass, TrendingUp, ShieldAlert,
 } from 'lucide-react'
 import { useAsync, useDocumentTitle } from '@/hooks/useAsync'
 import { useAuth } from '@/hooks/useAuth'
@@ -32,8 +33,33 @@ export default function StudentDashboard() {
     [profile?.id],
   )
 
-  if (query.error) return <ErrorState message={query.error} onRetry={query.reload} />
   const d = query.data
+  const inProgressAttempts = (d?.attempts ?? []).filter((a) => a.status === 'in_progress')
+  const [showIncompletePopup, setShowIncompletePopup] = useState(false)
+  useEffect(() => {
+    if (inProgressAttempts.length > 0) {
+      const timer = window.setTimeout(() => setShowIncompletePopup(true), 600)
+      return () => window.clearTimeout(timer)
+    } else {
+      setShowIncompletePopup(false)
+    }
+  }, [inProgressAttempts.length])
+
+  useEffect(() => {
+    if (!showIncompletePopup) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowIncompletePopup(false)
+    }
+    document.addEventListener('keydown', onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prev
+    }
+  }, [showIncompletePopup])
+
+  if (query.error) return <ErrorState message={query.error} onRetry={query.reload} />
 
   const canStart = (d?.exams ?? []).filter((e) => e.status_for_me === 'can_start' || e.status_for_me === 'resume')
   const upcoming = (d?.exams ?? []).filter((e) => e.status_for_me === 'upcoming')
@@ -233,15 +259,60 @@ export default function StudentDashboard() {
         </Card>
       </div>
 
-      {(d?.attempts ?? []).some((a) => a.status === 'in_progress') && (
-        <div className="fixed inset-x-0 bottom-[100px] z-30 border-t border-amber-200 bg-amber-50 p-3 text-center safe-bottom dark:border-amber-500/30 dark:bg-amber-500/10 lg:bottom-0">
-          <p className="mb-2 flex items-center justify-center gap-2 text-xs font-semibold text-amber-800 dark:text-amber-300 sm:text-sm">
-            <CheckCircle2 className="hidden h-4 w-4" />
-            Ada ujian yang belum dikumpulkan. Selesaikan sebelum deadline!
-          </p>
-          <Link to="/student/exams">
-            <Button size="sm">Lihat Ujian Berlangsung</Button>
-          </Link>
+      {showIncompletePopup && inProgressAttempts.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Ujian belum selesai">
+          <div className="absolute inset-0 bg-slate-900/55 backdrop-blur-sm" aria-hidden onClick={() => setShowIncompletePopup(false)} />
+          <div className="relative flex max-h-[92dvh] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-2xl animate-scale-in dark:bg-slate-900 border border-slate-200/60 dark:border-slate-700">
+            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300">
+                  <ShieldAlert className="h-5 w-5" />
+                </span>
+                <div>
+                  <h2 className="text-sm font-bold leading-tight text-slate-900 dark:text-white">Ujian Belum Selesai</h2>
+                  <p className="text-xs text-slate-400">{inProgressAttempts.length} ujian aktif perlu diselesaikan</p>
+                </div>
+              </div>
+              <button onClick={() => setShowIncompletePopup(false)} aria-label="Tutup" className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="overflow-y-auto scrollbar-thin">
+              <div className="space-y-4 px-6 py-5">
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3.5 dark:border-amber-800/30 dark:bg-amber-500/10">
+                  <p className="flex items-center gap-2 text-sm font-bold text-amber-800 dark:text-amber-200">
+                    <Clock3 className="h-4 w-4" /> Selesaikan sebelum deadline
+                  </p>
+                  <p className="mt-1.5 text-xs leading-relaxed text-amber-700/90 dark:text-amber-200/80">
+                    Timer tetap berjalan dan pelanggaran tetap tercatat. Jika waktu habis, jawaban otomatis dikumpulkan.
+                  </p>
+                </div>
+
+                <div className="space-y-2.5">
+                  {inProgressAttempts.slice(0, 3).map((a) => (
+                    <div key={a.id} className="group flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3.5 transition-colors hover:border-primary-200 hover:bg-white dark:border-slate-700 dark:bg-slate-800/40 dark:hover:border-slate-600 dark:hover:bg-slate-800">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold leading-tight text-slate-800 dark:text-slate-100 group-hover:text-primary-700 dark:group-hover:text-white">{a.exams?.title ?? 'Ujian'}</p>
+                        <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-slate-400"><Clock3 className="h-3 w-3 shrink-0" /> Mulai {fmtDT(a.started_at)}</p>
+                      </div>
+                      <Link to={`/exam/${a.id}`} className="shrink-0" onClick={() => setShowIncompletePopup(false)}>
+                        <Button size="sm" variant="primary" className="shadow-sm" icon={<PlayCircle className="h-4 w-4" />}>Lanjutkan</Button>
+                      </Link>
+                    </div>
+                  ))}
+                  {inProgressAttempts.length > 3 && (
+                    <p className="text-center text-xs font-medium text-slate-400">+{inProgressAttempts.length - 3} ujian lainnya</p>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2.5 border-t border-slate-100 bg-slate-50/80 px-6 py-4 dark:border-slate-800 dark:bg-slate-800/50 sm:flex-row sm:justify-end">
+              <Button variant="ghost" onClick={() => setShowIncompletePopup(false)} className="w-full sm:w-auto order-2 sm:order-1">Nanti</Button>
+              <Link to="/student/exams" onClick={() => setShowIncompletePopup(false)} className="w-full sm:w-auto order-1 sm:order-2">
+                <Button variant="primary" className="w-full sm:w-auto shadow-sm">Lihat Semua Ujian</Button>
+              </Link>
+            </div>
+          </div>
         </div>
       )}
     </>

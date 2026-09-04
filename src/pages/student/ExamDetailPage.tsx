@@ -79,6 +79,7 @@ export default function ExamDetailPage() {
 
   const handleConfirmAgree = async () => {
     if (exam.camera_monitoring) {
+      setConfirmOpen(false)
       setCameraOpen(true)
       setCameraStatus('idle')
       setCameraStream(null)
