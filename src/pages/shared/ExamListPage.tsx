@@ -86,7 +86,15 @@ export default function ExamListPage() {
     if (!ok) return
     try {
       await updateExam(exam.id, { status: publishing ? 'published' : exam.status === 'published' ? 'draft' : exam.status })
-      toast.success(publishing ? 'Ujian diaktifkan.' : 'Ujian dinonaktifkan.')
+      if (publishing) {
+        try {
+          const { supabase } = await import('@/services/client')
+          await supabase.rpc('sync_exam_participants', { p_exam_id: exam.id })
+        } catch {
+          /* fallback: trigger otomatis di DB akan sync jika migrasi sudah terpasang */
+        }
+      }
+      toast.success(publishing ? 'Ujian diaktifkan & peserta disinkronkan.' : 'Ujian dinonaktifkan.')
       query.reload()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Gagal memperbarui status.')
