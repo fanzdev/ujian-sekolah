@@ -17,6 +17,7 @@ import {
   listStudents,
   updateStudent,
   listClasses,
+  listDepartments,
 } from '@/services/academics.service'
 import { pingManageUser, createFullUser, resetUserPassword, updateUser as edgeUpdateUser, deleteUser } from '@/services/users.service'
 import { supabase } from '@/services/client'
@@ -27,6 +28,7 @@ import type { Student } from '@/types/models'
 export default function StudentsPage() {
   const [search, setSearch] = useState('')
   const [classFilter, setClassFilter] = useState('')
+  const [departmentFilter, setDepartmentFilter] = useState('')
   const [page, setPage] = useState(1)
   const debounced = useDebounce(search)
   useDocumentTitle('Data Siswa')
@@ -40,15 +42,16 @@ export default function StudentsPage() {
   const query = useAsync(
     () =>
       Promise.all([
-        listStudents({ search: debounced || undefined, classId: classFilter || undefined, page, pageSize: 15 }),
+        listStudents({ search: debounced || undefined, classId: classFilter || undefined, departmentId: departmentFilter || undefined, page, pageSize: 15 }),
         listClasses(),
+        listDepartments(),
       ]),
-    [debounced, classFilter, page],
+    [debounced, classFilter, departmentFilter, page],
   )
 
   if (query.error) return <ErrorState message={query.error} onRetry={query.reload} />
 
-  const [studentsResult, classes] = query.data ?? [{ rows: [], total: 0 }, []]
+  const [studentsResult, classes, departments] = query.data ?? [{ rows: [], total: 0 }, [], []]
 
   return (
     <>
@@ -63,11 +66,18 @@ export default function StudentsPage() {
         <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
           <SearchInput placeholder="Cari nama / NIS / NISN..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} />
           <Select
-            className="w-full sm:w-52"
+            className="w-full sm:w-44"
+            placeholder="Semua Jurusan"
+            value={departmentFilter}
+            onChange={(e) => { setDepartmentFilter(e.target.value); setClassFilter(''); setPage(1) }}
+            options={departments.map((d) => ({ value: d.id, label: `${d.code} · ${d.name}` }))}
+          />
+          <Select
+            className="w-full sm:w-48"
             placeholder="Semua Kelas"
             value={classFilter}
             onChange={(e) => { setClassFilter(e.target.value); setPage(1) }}
-            options={classes.map((c) => ({ value: c.id, label: c.name }))}
+            options={classes.filter((c) => !departmentFilter || c.department_id === departmentFilter).map((c) => ({ value: c.id, label: c.name }))}
           />
         </div>
 
@@ -105,11 +115,19 @@ export default function StudentsPage() {
                   key: 'class',
                   header: 'Kelas',
                   render: (s) => (
-                    <Badge tone={s.classes?.departments?.code ? 'blue' : 'gray'}>
+                    <Badge tone={s.classes?.name ? 'blue' : 'gray'}>
                       {s.classes?.name ?? '-'}
-                      {s.classes?.departments?.code ? ` · ${s.classes.departments.code}` : ''}
                     </Badge>
                   ),
+                },
+                {
+                  key: 'department',
+                  header: 'Jurusan',
+                  render: (s) => {
+                    const dept = s.classes?.departments
+                    if (!dept) return <span className="text-xs text-slate-400">-</span>
+                    return <Badge tone="sky">{dept.code} · {dept.name}</Badge>
+                  },
                 },
                 { key: 'gender', header: 'L/P', render: (s) => (s.gender === 'L' ? 'Laki-laki' : s.gender === 'P' ? 'Perempuan' : '-') },
                 {
@@ -183,6 +201,7 @@ export default function StudentsPage() {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         classes={classes}
+        departments={departments}
         onSaved={() => {
           setCreateOpen(false)
           query.reload()
@@ -192,6 +211,7 @@ export default function StudentsPage() {
       <EditStudentModal
         student={editingStudent}
         classes={classes}
+        departments={departments}
         onClose={() => setEditingStudent(null)}
         onSaved={() => {
           setEditingStudent(null)
@@ -238,21 +258,25 @@ function CreateStudentModal({
   open,
   onClose,
   classes,
+  departments,
   onSaved,
 }: {
   open: boolean
   onClose: () => void
   classes: Awaited<ReturnType<typeof listClasses>>
+  departments: Awaited<ReturnType<typeof listDepartments>>
   onSaved: () => void
 }) {
   const toast = useToast()
   const [saving, setSaving] = useState(false)
   const [edgeAvailable, setEdgeAvailable] = useState<boolean | null>(null)
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
+  const [deptId, setDeptId] = useState('')
 
   useEffect(() => {
     if (open) {
       setForm({ ...EMPTY_FORM, password: randomCode(8) })
+      setDeptId('')
       void checkEdge()
     }
   }, [open])
@@ -299,6 +323,8 @@ function CreateStudentModal({
     }
   }
 
+  const filteredClassesCreate = deptId ? classes.filter((c) => c.department_id === deptId) : classes
+
   return (
     <Modal open={open} onClose={onClose} title="Tambah Siswa Baru" size="lg">
       <div className="space-y-5 px-6 py-5">
@@ -316,7 +342,8 @@ function CreateStudentModal({
               <button type="button" onClick={() => setForm((f) => ({ ...f, password: randomCode(8) }))} className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200">Acak</button>
             }
           />
-          <Select label="Kelas *" placeholder="Pilih kelas" required value={form.classId} onChange={(e) => setForm({ ...form, classId: e.target.value })} options={classes.map((c) => ({ value: c.id, label: `${c.name}${c.departments?.code ? ` · ${c.departments.code}` : ''}` }))} />
+          <Select label="Jurusan" placeholder="Pilih jurusan (filter kelas)" value={deptId} onChange={(e) => { setDeptId(e.target.value); setForm((f) => ({ ...f, classId: '' })) }} options={departments.map((d) => ({ value: d.id, label: `${d.code} · ${d.name}` }))} />
+          <Select label="Kelas *" placeholder={filteredClassesCreate.length ? 'Pilih kelas' : 'Tidak ada kelas di jurusan ini'} required value={form.classId} onChange={(e) => setForm({ ...form, classId: e.target.value })} options={filteredClassesCreate.map((c) => ({ value: c.id, label: `${c.name}${c.departments?.code ? ` · ${c.departments.code}` : ''}` }))} />
           <Input label="NIS" value={form.nis} onChange={(e) => setForm({ ...form, nis: e.target.value })} />
           <Input label="NISN" value={form.nisn} onChange={(e) => setForm({ ...form, nisn: e.target.value })} />
           <Select label="Jenis Kelamin" placeholder="Pilih" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} options={[{ value: 'L', label: 'Laki-laki' }, { value: 'P', label: 'Perempuan' }]} />
@@ -337,20 +364,25 @@ function CreateStudentModal({
 function EditStudentModal({
   student,
   classes,
+  departments,
   onClose,
   onSaved,
 }: {
   student: Student | null
   classes: Awaited<ReturnType<typeof listClasses>>
+  departments: Awaited<ReturnType<typeof listDepartments>>
   onClose: () => void
   onSaved: () => void
 }) {
   const toast = useToast()
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
+  const [deptId, setDeptId] = useState('')
 
   useEffect(() => {
     if (!student) return
+    const cls = classes.find((c) => c.id === student.class_id)
+    setDeptId(cls?.department_id ?? '')
     setForm({
       fullName: student.profiles?.full_name ?? '',
       username: student.profiles?.username ?? '',
@@ -365,7 +397,7 @@ function EditStudentModal({
       birthDate: student.birth_date ?? '',
       address: student.address ?? '',
     })
-  }, [student])
+  }, [student, classes])
 
   const submit = async () => {
     if (!student) return
@@ -398,12 +430,15 @@ function EditStudentModal({
     }
   }
 
+  const filteredForEdit = deptId ? classes.filter((c) => c.department_id === deptId) : classes
+
   return (
     <Modal open={student !== null} onClose={onClose} title={`Ubah Data · ${student?.profiles?.full_name ?? ''}`} size="lg">
       <div className="space-y-5 px-6 py-5">
         <div className="grid gap-4 sm:grid-cols-2">
           <Input label="Username" value={form.username} disabled hint="Username tidak dapat diubah" />
-          <Select label="Kelas *" placeholder="Pilih kelas" required value={form.classId} onChange={(e) => setForm({ ...form, classId: e.target.value })} options={classes.map((c) => ({ value: c.id, label: `${c.name}${c.departments?.code ? ` · ${c.departments.code}` : ''}` }))} />
+          <Select label="Jurusan *" placeholder="Pilih jurusan" required value={deptId} onChange={(e) => { setDeptId(e.target.value); setForm((f) => ({ ...f, classId: '' })) }} options={departments.map((d) => ({ value: d.id, label: `${d.code} · ${d.name}` }))} />
+          <Select label="Kelas *" placeholder={filteredForEdit.length ? 'Pilih kelas' : 'Tidak ada kelas di jurusan ini'} required value={form.classId} onChange={(e) => setForm({ ...form, classId: e.target.value })} options={filteredForEdit.map((c) => ({ value: c.id, label: `${c.name}${c.departments?.code ? ` · ${c.departments.code}` : ''}` }))} />
           <Input label="Nama Lengkap *" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} required />
           <Select label="Jenis Kelamin" placeholder="Pilih" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} options={[{ value: 'L', label: 'Laki-laki' }, { value: 'P', label: 'Perempuan' }]} />
           <Input label="NIS" value={form.nis} onChange={(e) => setForm({ ...form, nis: e.target.value })} />
@@ -414,6 +449,7 @@ function EditStudentModal({
           <Input label="Tanggal Lahir" type="date" value={form.birthDate} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} />
         </div>
         <Input label="Alamat" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+        <p className="text-[11px] text-slate-400">Mengubah jurusan akan memfilter daftar kelas. Jurusan siswa ditentukan oleh kelasnya.</p>
       </div>
       <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:bg-slate-800 dark:text-slate-200">
         <Button variant="ghost" onClick={onClose}>Batal</Button>
