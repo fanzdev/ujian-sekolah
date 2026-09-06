@@ -640,12 +640,13 @@ function KeyFormModal({
           hint="Nama bebas untuk memudahkan identifikasi."
         />
         <Input
-          label={editing ? 'API Key Baru (opsional)' : 'API Key *'}
+          label={editing ? 'API Key Baru (opsional)' : 'API Key'}
           placeholder={editing ? 'kosongkan bila tidak diganti' : 'sk-or-v1-xxxxxxxxxxxx'}
           value={apiKeyValue}
           onChange={(e) => setApiKeyValue(e.target.value)}
           autoCapitalize="off"
           autoComplete="off"
+          required={!editing}
           hint={
             <>
               Dapatkan di{' '}

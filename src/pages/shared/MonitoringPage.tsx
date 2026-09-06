@@ -123,10 +123,54 @@ export default function MonitoringPage() {
   const submittedCount = rows.filter((r) => r.attempt && r.attempt.status !== 'in_progress').length
   const totalViolations = rows.reduce((sum, r) => sum + (r.attempt?.violation_count ?? 0), 0)
 
+  const allowOutside = (examQuery.data as unknown as { allow_outside_schedule?: boolean } | null)?.allow_outside_schedule ?? false
+
+  const toggleAllowOutside = async () => {
+    if (!examId) return
+    const next = !allowOutside
+    try {
+      const { error } = await supabase.from('exams').update({ allow_outside_schedule: next } as unknown as Record<string, unknown>).eq('id', examId)
+      if (error) throw error
+      toast.success(next ? 'Siswa kini boleh menyelesaikan di luar jadwal.' : 'Batas jadwal diperketat kembali.')
+      examQuery.reload()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      if (msg.toLowerCase().includes('allow_outside_schedule')) {
+        toast.error('Kolom allow_outside_schedule belum ada. Jalankan migrasi 00024_allow_outside_schedule.sql di Supabase SQL Editor, lalu coba lagi. Untuk sekarang gunakan Paksa Selesai manual.')
+      } else {
+        toast.error(msg || 'Gagal mengubah pengaturan.')
+      }
+    }
+  }
+
+  const handleForceSubmitAll = async () => {
+    const active = rows.filter((r) => r.attempt?.status === 'in_progress' && !r.is_removed)
+    if (active.length === 0) {
+      toast.info('Tidak ada peserta yang sedang ujian.')
+      return
+    }
+    const ok = await confirmDialog.confirm({
+      title: `Paksa Selesai ${active.length} Peserta?`,
+      message: `${active.length} ujian yang sedang berlangsung akan langsung dikumpulkan meskipun bukan waktunya. Jawaban yang sudah ada akan dinilai.`,
+      danger: true,
+      confirmText: 'Ya, Selesaikan Semua',
+    })
+    if (!ok) return
+    let okCount = 0
+    for (const r of active) {
+      try {
+        await supabase.rpc('submit_attempt', { p_attempt_id: r.attempt!.id })
+        okCount++
+      } catch { /* ignore per row */ }
+    }
+    toast.success(`${okCount}/${active.length} ujian berhasil dikumpulkan paksa.`)
+    setTick((t) => t + 1)
+  }
+
   const handleForceSubmit = async (attemptId: string, name: string) => {
     const ok = await confirmDialog.confirm({
       title: 'Paksa Selesai?',
-      message: `Ujian ${name} akan langsung dikumpulkan. Jawaban yang sudah ada akan dinilai.`,
+      message: `Ujian ${name} akan langsung dikumpulkan meskipun bukan waktunya. Jawaban yang sudah ada akan dinilai.`,
       danger: true,
       confirmText: 'Ya, Kumpulkan',
     })
@@ -167,6 +211,21 @@ export default function MonitoringPage() {
             >
               Auto {autoRefresh ? 'ON' : 'OFF'} (30s)
             </Button>
+            {examId && (
+              <Button
+                variant={allowOutside ? 'primary' : 'outline'}
+                size="sm"
+                onClick={toggleAllowOutside}
+                title="Jika ON, siswa boleh memulai & mengumpulkan meskipun di luar jam / status Draf"
+              >
+                Luar Jadwal: {allowOutside ? 'ON' : 'OFF'}
+              </Button>
+            )}
+            {examId && activeCount > 0 && (
+              <Button variant="danger" size="sm" onClick={handleForceSubmitAll} icon={<AlertTriangle className="h-3 w-3" />}>
+                Selesaikan Paksa Semua ({activeCount})
+              </Button>
+            )}
           </div>
         }
       />

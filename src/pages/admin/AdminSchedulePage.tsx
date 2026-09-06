@@ -32,21 +32,21 @@ export default function AdminSchedulePage() {
 
   const [classes, setClasses] = useState<{ id: string; name: string }[]>([])
   const [teachers, setTeachers] = useState<{ id: string; name: string }[]>([])
-  const [subjects, setSubjects] = useState<{ id: string; name: string }[]>([])
+  const [examsList, setExamsList] = useState<{ id: string; title: string; subject_id: string | null }[]>([])
 
   useEffect(() => {
     let active = true
     const load = async () => {
       try {
-        const [c, t, s] = await Promise.all([
+        const [c, t, e] = await Promise.all([
           supabase.from('classes').select('id, name').order('name'),
           supabase.from('teachers').select('id, profiles(full_name)').order('id'),
-          supabase.from('subjects').select('id, name').order('name'),
+          supabase.from('exams').select('id, title, subject_id').order('title').limit(100),
         ])
         if (!active) return
         setClasses((c.data as { id: string; name: string }[]) ?? [])
         setTeachers((t.data as unknown as { id: string; profiles?: { full_name: string } }[])?.map((x) => ({ id: x.id, name: x.profiles?.full_name ?? '' })) ?? [])
-        setSubjects((s.data as { id: string; name: string }[]) ?? [])
+        setExamsList((e.data as { id: string; title: string; subject_id: string | null }[]) ?? [])
       } catch { /* ignore */ }
     }
     void load()
@@ -191,14 +191,14 @@ export default function AdminSchedulePage() {
         initial={editing}
         classes={classes}
         teachers={teachers}
-        subjects={subjects}
+        examsList={examsList}
       />
     </div>
   )
 }
 
 function ScheduleFormModal({
-  open, onClose, onSaved, initial, classes, teachers, subjects,
+  open, onClose, onSaved, initial, classes, teachers, examsList,
 }: {
   open: boolean
   onClose: () => void
@@ -206,13 +206,13 @@ function ScheduleFormModal({
   initial: Schedule | null
   classes: { id: string; name: string }[]
   teachers: { id: string; name: string }[]
-  subjects: { id: string; name: string }[]
+  examsList: { id: string; title: string; subject_id: string | null }[]
 }) {
   const toast = useToast()
   const [saving, setSaving] = useState(false)
   const [title, setTitle] = useState(initial?.title ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
-  const [subjectId, setSubjectId] = useState(initial?.subject_id ?? '')
+  const [examId, setExamId] = useState('')
   const [teacherId, setTeacherId] = useState(initial?.teacher_id ?? '')
   const [classId, setClassId] = useState(initial?.class_id ?? '')
   const [dayOfWeek, setDayOfWeek] = useState(String(initial?.day_of_week ?? 1))
@@ -224,7 +224,8 @@ function ScheduleFormModal({
     if (open) {
       setTitle(initial?.title ?? '')
       setDescription(initial?.description ?? '')
-      setSubjectId(initial?.subject_id ?? '')
+      const inferred = initial ? examsList.find((e) => e.title === initial.title)?.id ?? examsList.find((e) => e.subject_id === initial.subject_id)?.id ?? '' : ''
+      setExamId(inferred)
       setTeacherId(initial?.teacher_id ?? '')
       setClassId(initial?.class_id ?? '')
       setDayOfWeek(String(initial?.day_of_week ?? 1))
@@ -232,7 +233,7 @@ function ScheduleFormModal({
       setEndTime(initial?.end_time?.slice(0, 5) ?? '08:30')
       setColor(initial?.color ?? '#3b82f6')
     }
-  }, [open, initial])
+  }, [open, initial, examsList])
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -241,10 +242,11 @@ function ScheduleFormModal({
     }
     setSaving(true)
     try {
+      const selectedExam = examsList.find((e) => e.id === examId)
       const payload = {
         title: title.trim(),
         description: description.trim() || undefined,
-        subject_id: subjectId || undefined,
+        subject_id: selectedExam?.subject_id ?? initial?.subject_id ?? undefined,
         teacher_id: teacherId || undefined,
         class_id: classId || undefined,
         day_of_week: Number(dayOfWeek),
@@ -270,11 +272,16 @@ function ScheduleFormModal({
   return (
     <Modal open={open} onClose={onClose} title={initial ? 'Ubah Jadwal' : 'Tambah Jadwal'} size="md">
       <div className="space-y-4 px-6 py-5">
-        <Input label="Judul Jadwal" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Contoh: Matematika Kelas X" required />
+        <Input label="Judul Jadwal" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Contoh: Ujian Matematika Kelas X" required />
         <Input label="Deskripsi (opsional)" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Catatan tambahan" />
 
         <div className="grid grid-cols-2 gap-4">
-          <Select label="Mata Pelajaran" value={subjectId} onChange={(e) => setSubjectId(e.target.value)} options={[{ value: '', label: '— Pilih —' }, ...subjects.map((s) => ({ value: s.id, label: s.name }))]} />
+          <Select label="Ujian" value={examId} onChange={(e) => {
+            const val = e.target.value
+            setExamId(val)
+            const ex = examsList.find((x) => x.id === val)
+            if (ex && !title.trim()) setTitle(ex.title)
+          }} options={[{ value: '', label: '— Pilih Ujian —' }, ...examsList.map((ex) => ({ value: ex.id, label: ex.title }))]} />
           <Select label="Guru" value={teacherId} onChange={(e) => setTeacherId(e.target.value)} options={[{ value: '', label: '— Pilih —' }, ...teachers.map((t) => ({ value: t.id, label: t.name }))]} />
         </div>
 

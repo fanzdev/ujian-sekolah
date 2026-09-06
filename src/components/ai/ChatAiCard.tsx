@@ -321,8 +321,8 @@ export function ChatAiCard({
       <div
         onMouseDown={handleDragStart}
         onTouchStart={handleDragStart}
-        className="flex cursor-grab select-none items-center justify-between border-b border-slate-100 bg-gradient-to-r from-primary-600 to-sky-500 px-4 py-3 text-white active:cursor-grabbing dark:border-slate-800"
-        style={{ touchAction: 'none' }}
+        className="flex cursor-grab select-none items-center justify-between border-b border-slate-100 px-4 py-3 text-white active:cursor-grabbing dark:border-slate-800"
+        style={{ touchAction: 'none', background: 'var(--app-gradient, linear-gradient(to right, rgb(var(--c-primary-600)), rgb(var(--c-accent-600))))', color: 'white' }}
       >
         <div className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 backdrop-blur">

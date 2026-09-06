@@ -96,9 +96,9 @@ export function ClassesPage() {
         {editing && (
           <>
             <div className="grid gap-4 px-6 py-5 sm:grid-cols-3">
-              <Input label="Nama Kelas *" placeholder="cth: XI.1" value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} required autoFocus className="sm:col-span-1" />
-              <Select label="Tingkat *" value={String(editing.level)} onChange={(e) => setEditing({ ...editing, level: Number(e.target.value) })} options={LEVEL_OPTIONS} />
-              <Select label="Jurusan *" placeholder={teachers.length ? 'Pilih jurusan' : 'Buat jurusan dulu'} required value={editing.department_id} onChange={(e) => setEditing({ ...editing, department_id: e.target.value })} options={(query.data?.[1] ?? []).map((d) => ({ value: d.id, label: `${d.code} · ${d.name}` }))} />
+              <Input label="Nama Kelas" placeholder="cth: XI.1" value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} required autoFocus className="sm:col-span-1" />
+              <Select label="Tingkat" value={String(editing.level)} onChange={(e) => setEditing({ ...editing, level: Number(e.target.value) })} options={LEVEL_OPTIONS} required />
+              <Select label="Jurusan" placeholder={teachers.length ? 'Pilih jurusan' : 'Buat jurusan dulu'} required value={editing.department_id} onChange={(e) => setEditing({ ...editing, department_id: e.target.value })} options={(query.data?.[1] ?? []).map((d) => ({ value: d.id, label: `${d.code} · ${d.name}` }))} />
             </div>
             <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:bg-slate-800 dark:text-slate-200">
               <Button variant="ghost" onClick={() => setEditing(null)}>Batal</Button>
@@ -212,8 +212,8 @@ export function DepartmentsPage() {
         {editing && (
           <>
             <div className="grid gap-4 px-6 py-5 sm:grid-cols-2">
-              <Input label="Kode *" placeholder="cth: RPL" value={editing.code} onChange={(e) => setEditing({ ...editing, code: e.target.value.toUpperCase() })} required autoFocus />
-              <Input label="Nama Jurusan *" placeholder="cth: Rekayasa Perangkat Lunak" value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} required />
+              <Input label="Kode" placeholder="cth: RPL" value={editing.code} onChange={(e) => setEditing({ ...editing, code: e.target.value.toUpperCase() })} required autoFocus />
+              <Input label="Nama Jurusan" placeholder="cth: Rekayasa Perangkat Lunak" value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} required />
               <Input label="Deskripsi" className="sm:col-span-2" value={editing.description} onChange={(e) => setEditing({ ...editing, description: e.target.value })} />
             </div>
             <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:bg-slate-800 dark:text-slate-200">

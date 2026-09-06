@@ -152,7 +152,7 @@ export default function ExamDetailPage() {
                 <li className="flex items-start gap-2">
                   <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   Batas pelanggaran: <strong>{exam.violation_limit}×</strong> (berpindah tab/menghilangkan fokus).
-                  {exam.violation_limit >= 3 ? ' Pelanggaran ke-3 otomatis mengumpulkan jawaban.' : ''}
+                  {exam.auto_submit_on_limit ? ` Melebihi ${exam.violation_limit}× akan otomatis mengumpulkan jawaban.` : ' Pelanggaran tercatat untuk review pengawas.'}
                 </li>
               </ul>
             </div>
@@ -220,9 +220,10 @@ export default function ExamDetailPage() {
             <ul className="list-disc space-y-1 pl-4">
               <li>Timer <strong>{exam.duration_minutes} menit</strong> langsung berjalan dan tidak dapat dijeda.</li>
               <li>Jawaban tersimpan otomatis; jika internet terputus, jawaban tetap aman.</li>
-              <li>Pelanggaran (berpindah tab dll.) tercatat hingga batas <strong>{exam.violation_limit}</strong> kali.</li>
+              <li>Pelanggaran tercatat hingga <strong>{exam.violation_limit}×</strong> {exam.auto_submit_on_limit ? `— melebihi batas otomatis mengumpulkan.` : `— hanya dicatat.`}</li>
               <li>Kumpulkan sebelum waktu habis untuk hasil terbaik.</li>
               {exam.camera_monitoring && <li className="font-semibold text-amber-700">Kamera wajib aktif — Anda akan diminta menyalakan kamera sebelum ujian dimulai.</li>}
+              {exam.fullscreen_required && <li className="font-semibold text-amber-700">Wajib layar penuh — keluar fullscreen tercatat sebagai pelanggaran.</li>}
             </ul>
           </div>
           <Checkbox

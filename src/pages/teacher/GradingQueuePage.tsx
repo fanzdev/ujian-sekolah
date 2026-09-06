@@ -172,7 +172,7 @@ function GradingModal({ item, onClose, onSaved }: { item: QueueItem; onClose: ()
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
-            label={`Nilai Final * (maks. ${detail.maxPoints})`}
+            label={`Nilai Final (maks. ${detail.maxPoints})`}
             type="number"
             step={0.5}
             min={0}

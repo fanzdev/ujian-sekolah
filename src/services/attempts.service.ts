@@ -143,7 +143,7 @@ export async function getMyAttempts(): Promise<
     submitted_at: string | null
     violation_count: number
     exam_id: string
-    exams: { title: string; duration_minutes: number } | null
+    exams: { title: string; duration_minutes: number; status: string; starts_at: string; ends_at: string; show_result_to_student: boolean; show_answers_after: boolean } | null
     results: {
       final_score: number | null
       objective_score: number
@@ -160,7 +160,7 @@ export async function getMyAttempts(): Promise<
   const { data, error } = await supabase
     .from('exam_attempts')
     .select(`id, status, started_at, submitted_at, violation_count, exam_id,
-      exams(title, duration_minutes),
+      exams(title, duration_minutes, status, starts_at, ends_at, show_result_to_student, show_answers_after),
       results:exam_results(final_score, objective_score, essay_score, passed, correct_count, wrong_count, unanswered_count, total_questions, duration_seconds)`)
     .order('started_at', { ascending: false })
   if (error) throw error
@@ -172,7 +172,7 @@ export async function getMyAttempts(): Promise<
       submitted_at: string | null
       violation_count: number
       exam_id: string
-      exams: { title: string; duration_minutes: number } | null
+      exams: { title: string; duration_minutes: number; status: string; starts_at: string; ends_at: string; show_result_to_student: boolean; show_answers_after: boolean } | null
       results: {
         final_score: number | null
         objective_score: number

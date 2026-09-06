@@ -33,9 +33,17 @@ const SEGMENT_LABELS: Record<string, string> = {
   examsAvailable: '',
 }
 
-function labelFor(segment: string): string {
+function isUuid(segment: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(segment)
+}
+
+function labelFor(segment: string, next?: string): string {
   if (SEGMENT_LABELS[segment]) return SEGMENT_LABELS[segment]
-  if (/^[0-9a-f]{8}-[0-9a-f]{4}/i.test(segment)) return `#${segment.slice(0, 6)}`
+  if (isUuid(segment)) {
+    if (next === 'participants') return 'Detail Ujian'
+    if (next === 'edit') return 'Ubah Ujian'
+    return 'Detail'
+  }
   if (segment.length > 18) return segment.slice(0, 16) + '…'
   return segment.charAt(0).toUpperCase() + segment.slice(1)
 }
@@ -46,10 +54,17 @@ export function Breadcrumb() {
   if (segments.length === 0) return null
 
   let acc = ''
-  const crumbs = segments.map((seg) => {
+  const rawCrumbs: { path: string; label: string; raw: string; isUuid: boolean }[] = []
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i]
+    const next = segments[i + 1]
     acc += `/${seg}`
-    return { path: acc, label: labelFor(seg), raw: seg }
-  })
+    if (isUuid(seg) && (next === 'participants' || next === 'edit')) {
+      continue
+    }
+    rawCrumbs.push({ path: acc, label: labelFor(seg, next), raw: seg, isUuid: isUuid(seg) })
+  }
+  const crumbs = rawCrumbs
 
   return (
     <nav aria-label="Alamat halaman" className="min-w-0 flex-1 overflow-hidden">
@@ -67,8 +82,8 @@ export function Breadcrumb() {
           <Fragment key={c.path}>
             <ChevronRight className="h-3 w-3 shrink-0 text-slate-300 dark:text-slate-600" />
             <li className="min-w-0">
-              {i === crumbs.length - 2 ? (
-                <span aria-current="page" className="block truncate rounded-md px-1.5 py-1 font-bold text-slate-800 dark:text-slate-100">
+              {i === crumbs.length - 2 || c.isUuid ? (
+                <span aria-current={i === crumbs.length - 2 ? 'page' : undefined} className={`block truncate rounded-md px-1.5 py-1 ${i === crumbs.length - 2 ? 'font-bold text-slate-800 dark:text-slate-100' : 'font-medium text-slate-400 dark:text-slate-400'}`}>
                   {c.label}
                 </span>
               ) : (

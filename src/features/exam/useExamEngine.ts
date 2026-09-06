@@ -287,6 +287,7 @@ export function useExamEngine(attemptId: string) {
     const onBlur = () => {
       void triggerViolation('window_blur', 'warning')
     }
+    const mustFs = payload.exam.fullscreen_required
     const isFsSupported = (() => {
       const d = document as unknown as { fullscreenEnabled?: boolean; webkitFullscreenEnabled?: boolean }
       const el = document.documentElement as unknown as { requestFullscreen?: unknown; webkitRequestFullscreen?: unknown }
@@ -297,12 +298,13 @@ export function useExamEngine(attemptId: string) {
       return !!(d.fullscreenElement || d.webkitFullscreenElement || d.mozFullScreenElement)
     }
     const requestFs = () => {
-      if (!isFsSupported) return
+      if (!mustFs || !isFsSupported) return
       const el = document.documentElement as unknown as { requestFullscreen?: () => Promise<void>; webkitRequestFullscreen?: () => Promise<void>; mozRequestFullScreen?: () => Promise<void> }
       const req = el.requestFullscreen ?? el.webkitRequestFullscreen ?? el.mozRequestFullScreen
       req?.call(el).catch(() => undefined)
     }
     const onFsChange = () => {
+      if (!mustFs) return
       if (!isFs() && !document.hidden) {
         void triggerViolation('fullscreen_exit', 'serious')
         requestFs()

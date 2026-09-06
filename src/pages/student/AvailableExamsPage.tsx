@@ -21,16 +21,6 @@ export default function AvailableExamsPage() {
     const { data: stu } = await supabase.from('students').select('class_id, classes(name)').eq('profile_id', user.id).maybeSingle()
     return stu as { class_id: string | null; classes: { name: string } | null } | null
   }, [])
-  const debugQuery = useAsync(async () => {
-    if ((query.data?.length ?? 1) !== 0) return null
-    if (query.loading) return null
-    try {
-      const { supabase } = await import('@/services/client')
-      const { data, error } = await supabase.rpc('student_available_exams_debug')
-      if (error) return null
-      return data as { student_id: string; class_id: string | null; dept_id: string | null; exams: { exam_id: string; title: string; allows: boolean; qtot: number; is_participant: boolean; is_removed: boolean; targets: { kind: string; target_id: string }[] | null }[] }
-    } catch { return null }
-  }, [query.data, query.loading])
 
   if (query.error) return <ErrorState message={query.error} onRetry={query.reload} />
 
@@ -55,45 +45,16 @@ export default function AvailableExamsPage() {
       {query.loading ? (
         <TableSkeleton rows={4} cols={3} />
       ) : exams.length === 0 ? (
-        <div className="space-y-4">
-          <EmptyState
-            icon={<CalendarDays className="h-6 w-6" />}
-            title={meQuery.data && !meQuery.data.class_id ? 'Kelas Belum Ditentukan' : 'Belum ada ujian'}
-            description={
-              meQuery.data && !meQuery.data.class_id
-                ? 'Akun Anda belum terhubung ke kelas. Hubungi admin untuk menetapkan kelas agar ujian dapat muncul.'
-                : 'Ujian akan muncul di sini sesuai kelas dan jurusan Anda. Jika ujian sudah aktif tapi tidak muncul, cek diagnosa di bawah.'
-            }
-            action={<Button size="sm" variant="outline" onClick={query.reload}>Muat Ulang</Button>}
-          />
-          <Card className="p-5 border-amber-200 bg-amber-50/50 dark:border-amber-800/40 dark:bg-amber-950/20">
-            <h3 className="text-sm font-bold text-amber-800 dark:text-amber-300">Diagnosa Ujian Tidak Muncul</h3>
-            <ul className="mt-2 list-disc pl-5 space-y-1 text-xs leading-relaxed text-amber-800 dark:text-amber-200/90">
-              <li>Kelas Anda: <strong>{meQuery.data?.classes?.name ?? meQuery.data?.class_id ?? '— belum ada kelas —'}</strong> {meQuery.data?.class_id ? '' : '(minta admin isi di menu Siswa → Kelas)'}</li>
-              <li>Admin harus: Status <strong>published</strong>, ada <strong>soal</strong>, ada <strong>target kelas/jurusan atau peserta</strong>, jadwal <strong>starts_at ≤ sekarang ≤ ends_at</strong> (WIB), siswa <strong>is_active</strong></li>
-              <li>Jika admin pakai target jurusan, pastikan kelas Anda terhubung ke jurusan yang sama</li>
-              <li>Jika ujian tanpa target/peserta sama sekali, setelah fix 00017 akan tampil untuk semua siswa aktif (fallback)</li>
-              <li>Klik Muat Ulang setelah admin perbaiki</li>
-            </ul>
-            {debugQuery.data && debugQuery.data.exams?.length > 0 && (
-              <div className="mt-4 rounded-lg border border-amber-200 bg-white p-3 dark:border-amber-800/30 dark:bg-slate-900">
-                <p className="text-xs font-bold text-amber-800 dark:text-amber-300">Debug (20 ujian published terbaru):</p>
-                <div className="mt-2 max-h-64 overflow-auto space-y-2">
-                  {debugQuery.data.exams.map((d) => (
-                    <div key={d.exam_id} className={`rounded-lg border px-3 py-2 text-xs ${d.allows ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800/40 dark:bg-emerald-950/30 dark:text-emerald-300' : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800/40 dark:bg-rose-950/30 dark:text-rose-300'}`}>
-                      <p className="font-bold">{d.title} — {d.allows ? 'TERLIHAT' : 'TERSEMBUNYI'} · {d.qtot} soal</p>
-                      <p className="mt-0.5 text-[11px] leading-relaxed">allows:{String(d.allows)} · peserta:{String(d.is_participant)} · removed:{String(d.is_removed)} · targets:{d.targets ? d.targets.map((t) => `${t.kind}:${t.target_id.slice(0,8)}`).join(', ') : '-'}</p>
-                      {!d.allows && d.qtot === 0 && <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-300">→ Ujian 0 soal, sekarang tetap tampil sebagai “Kesempatan Habis” setelah fix 00017. Admin wajib tambah soal.</p>}
-                      {!d.allows && d.targets && d.targets.length > 0 && <p className="text-[11px]">→ Kelas/jurusan Anda tidak cocok target. Minta admin cek menu Ujian → Peserta → Target.</p>}
-                    </div>
-                  ))}
-                </div>
-                <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">Kirim screenshot ini ke admin. Info student_id:{debugQuery.data.student_id.slice(0,8)} class:{debugQuery.data.class_id?.slice(0,8) ?? '-'} dept:{debugQuery.data.dept_id?.slice(0,8) ?? '-'}</p>
-              </div>
-            )}
-            <p className="mt-3 text-[11px] text-slate-500 dark:text-slate-400">Butuh fix Supabase? Jalankan migrasi <code className="rounded bg-slate-100 px-1 dark:bg-slate-800 dark:text-slate-200">00015</code> &amp; <code className="rounded bg-slate-100 px-1 dark:bg-slate-800 dark:text-slate-200">00017</code> di Supabase SQL Editor (lihat instruksi di bawah).</p>
-          </Card>
-        </div>
+        <EmptyState
+          icon={<CalendarDays className="h-6 w-6" />}
+          title={meQuery.data && !meQuery.data.class_id ? 'Kelas Belum Ditentukan' : 'Belum ada ujian'}
+          description={
+            meQuery.data && !meQuery.data.class_id
+              ? 'Akun Anda belum terhubung ke kelas. Hubungi admin untuk menetapkan kelas agar ujian dapat muncul.'
+              : 'Ujian akan muncul di sini sesuai kelas dan jurusan Anda.'
+          }
+          action={<Button size="sm" variant="outline" onClick={query.reload}>Muat Ulang</Button>}
+        />
       ) : (
         <div className="space-y-8">
           <ExamGroup icon={<AlertCircle className="h-4 w-4" />} title="Lanjutkan Pengerjaan" tone="red" items={groups.resume} highlight />
@@ -175,7 +136,7 @@ function ExamGroup({
                 {exam.passing_grade > 0 && <Info label="KKM" value={String(exam.passing_grade)} />}
               </dl>
 
-              {exam.best_score !== null && exam.status_for_me !== 'can_start' && (
+              {exam.best_score !== null && exam.status_for_me !== 'can_start' && exam.show_result_to_student && (
                 <p className="mt-3 inline-flex w-fit items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 ring-1 ring-emerald-200/60 dark:ring-emerald-500/20">
                   <CheckCircle2 className="h-3.5 w-3.5" /> Nilai terbaik: {formatNumber(exam.best_score, 1)}
                 </p>

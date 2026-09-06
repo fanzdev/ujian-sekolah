@@ -67,23 +67,8 @@ export default function StudentSchedulePage() {
         ))}
       </div>
 
-      {query.loading ? (
-        <div className="flex justify-center py-12"><Spinner className="h-6 w-6" /></div>
-      ) : todaySchedule.length === 0 ? (
-        <EmptyState
-          title="Tidak ada jadwal"
-          description={`Tidak ada jadwal untuk hari ${dayName(activeDay)}.`}
-        />
-      ) : (
-        <div className="space-y-3">
-          {todaySchedule.map((s) => (
-            <ScheduleCard key={s.id} schedule={s} />
-          ))}
-        </div>
-      )}
-
       {schedules.length > 0 && (
-        <Card className="mt-6">
+        <Card className="mb-4">
           <CardBody className="p-4">
             <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Ringkasan Mingguan</p>
             <div className="mt-3 grid grid-cols-7 gap-1.5">
@@ -104,6 +89,21 @@ export default function StudentSchedulePage() {
             </div>
           </CardBody>
         </Card>
+      )}
+
+      {query.loading ? (
+        <div className="flex justify-center py-12"><Spinner className="h-6 w-6" /></div>
+      ) : todaySchedule.length === 0 ? (
+        <EmptyState
+          title="Tidak ada jadwal"
+          description={`Tidak ada jadwal untuk hari ${dayName(activeDay)}.`}
+        />
+      ) : (
+        <div className="space-y-3">
+          {todaySchedule.map((s) => (
+            <ScheduleCard key={s.id} schedule={s} />
+          ))}
+        </div>
       )}
     </div>
   )

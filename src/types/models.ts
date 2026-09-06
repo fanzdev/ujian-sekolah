@@ -178,6 +178,7 @@ export interface Exam {
   camera_monitoring: boolean
   violation_limit: number
   auto_submit_on_limit: boolean
+  allow_outside_schedule: boolean
   ip_logging: boolean
   device_logging: boolean
   created_at: string
@@ -304,6 +305,7 @@ export interface SystemSettingsMap {
     show_result_to_student: boolean
     show_answers_after: boolean
     passing_grade: number
+    allow_outside_schedule: boolean
   }
   security: { camera_snapshots_enabled: boolean; ip_logging: boolean; device_logging: boolean }
   password_policy: { min_length: number }
@@ -349,7 +351,10 @@ export interface AvailableExam {
   camera_monitoring: boolean
   fullscreen_required: boolean
   violation_limit: number
+  auto_submit_on_limit: boolean
+  allow_outside_schedule: boolean
   show_result_to_student: boolean
+  show_answers_after: boolean
   status_for_me: AvailableExamStatus
   active_attempt_id: string | null
   best_score: number | null
@@ -407,6 +412,7 @@ export interface AttemptPayload {
     show_answers_after: boolean
     violation_limit: number
     max_attempts: number
+    allow_outside_schedule: boolean
     starts_at: string
     ends_at: string
   }

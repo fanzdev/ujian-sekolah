@@ -24,7 +24,12 @@ export default function HistoryPage() {
   if (query.error) return <ErrorState message={query.error} onRetry={query.reload} />
   if (query.loading) return <TableSkeleton rows={5} cols={4} />
 
-  const rows = query.data ?? []
+  const visibleRows = (query.data ?? []).filter((a) => {
+    if (a.status === 'in_progress') return true
+    const st = (a.exams as any)?.status
+    return st === 'published' || st === 'completed'
+  })
+  const rows = visibleRows
   const filtered = tab === 'all' ? rows : rows.filter((a) => a.results?.some((r) => r.final_score !== null))
 
   return (
@@ -88,6 +93,15 @@ export default function HistoryPage() {
                     <Link to={`/exam/${a.id}`}>
                       <Button size="sm" variant="danger">Lanjutkan</Button>
                     </Link>
+                  ) : (a.exams as unknown as { show_result_to_student?: boolean } | null)?.show_result_to_student === false ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge tone="gray">Nilai disembunyikan</Badge>
+                      {a.exams && (
+                        <Button size="xs" variant="outline" onClick={() => setReviewAttemptId(a.id)} icon={<Eye className="h-3.5 w-3.5" />}>
+                          Review
+                        </Button>
+                      )}
+                    </div>
                   ) : result && (result.final_score !== null || result.correct_count > 0 || result.total_questions > 0) ? (
                     <div className="flex flex-wrap items-center gap-2">
                       {result.final_score !== null ? (

@@ -242,9 +242,9 @@ function CreateTeacherModal({
           <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-700">Edge Function <strong>manage-user</strong> belum ter-deploy — pembuatan akun akan menggunakan mode fallback otomatis sehingga tetap berjalan. Deploy sesuai <code className="rounded bg-amber-100 px-1">docs/SUPABASE_SETUP.md</code> untuk performa terbaik.</p>
         )}
         <div className="grid gap-4 sm:grid-cols-2">
-          <Input label="Nama Lengkap *" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} required autoFocus />
-          <Input label="Username *" autoCapitalize="none" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value.replace(/\s/g, '').toLowerCase() })} required />
-          <Input label="Password Awal *" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required
+          <Input label="Nama Lengkap" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} required autoFocus />
+          <Input label="Username" autoCapitalize="none" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value.replace(/\s/g, '').toLowerCase() })} required />
+          <Input label="Password Awal" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required
             rightSlot={<button type="button" onClick={() => setForm((f) => ({ ...f, password: randomCode(10) }))} className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200">Acak</button>} />
           <Input label="NIP / NUPTK" value={form.nip} onChange={(e) => setForm({ ...form, nip: e.target.value })} />
           <Input label="No. Telepon" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
@@ -351,7 +351,7 @@ function EditTeacherModal({
   return (
     <Modal open={teacher !== null} onClose={onClose} title={`Ubah Data · ${teacher?.profiles?.full_name ?? ''}`} size="lg">
       <div className="grid gap-4 px-6 py-5 sm:grid-cols-2">
-        <Input label="Nama Lengkap *" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} required />
+        <Input label="Nama Lengkap" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} required />
         <Input label="NIP / NUPTK" value={form.nip} onChange={(e) => setForm({ ...form, nip: e.target.value })} />
         <Input label="No. Telepon" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
         <Input label="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />

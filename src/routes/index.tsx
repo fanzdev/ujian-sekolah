@@ -118,7 +118,6 @@ export function AppRoutes() {
           <Route path="/admin/exams/:examId/edit" element={<S><ExamEditorPage /></S>} />
           <Route path="/admin/exams/:examId/participants" element={<S><MonitoringPage /></S>} />
           <Route path="/admin/schedule" element={<S><AdminSchedulePage /></S>} />
-          <Route path="/admin/monitoring" element={<S><MonitoringPage /></S>} />
           <Route path="/admin/results" element={<S><ResultsPage /></S>} />
           <Route path="/admin/reports" element={<S><ReportsPage /></S>} />
           <Route path="/admin/import-export" element={<S><ImportExportPage /></S>} />

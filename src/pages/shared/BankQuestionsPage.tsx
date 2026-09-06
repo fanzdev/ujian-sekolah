@@ -528,27 +528,29 @@ function QuestionEditorModal({
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <Select
-            label="Tipe Soal *"
+            label="Tipe Soal"
             value={form.type}
             onChange={(e) => setForm((p) => ({ ...p, type: e.target.value as QuestionType }))}
             options={Object.entries(QUESTION_TYPE_LABELS).map(([v, l]) => ({ value: v, label: l }))}
+            required
           />
           <Select
-            label="Bank Soal *"
+            label="Bank Soal"
             placeholder="Pilih bank"
             value={form.bank_id}
             onChange={(e) => setForm((p) => ({ ...p, bank_id: e.target.value }))}
             options={(banksQuery.data?.rows ?? []).map((b) => ({ value: b.id, label: b.title }))}
+            required
           />
         </div>
 
         <div>
-          <label className="label-base">Pertanyaan *</label>
+          <label className="label-base">Pertanyaan <span className="ml-0.5 text-rose-500">*</span></label>
           <RichTextEditor value={form.text} onChange={(html) => setForm((p) => ({ ...p, text: html }))} placeholder="Tulis pertanyaan di sini... Anda bisa memakai teks tebal, daftar, dan tautan." minHeight={110} />
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
-          <Input label="Bobot / Poin *" type="number" min={0.5} step={0.5} value={form.points} onChange={(e) => setForm((p) => ({ ...p, points: Number(e.target.value) }))} required />
+          <Input label="Bobot / Poin" type="number" min={0.5} step={0.5} value={form.points} onChange={(e) => setForm((p) => ({ ...p, points: Number(e.target.value) }))} required />
 
           <div className="sm:col-span-2">
             <label className="label-base">Media Pendukung (opsional)</label>
@@ -734,11 +736,12 @@ function QuestionEditorModal({
               ]}
             />
             <Input
-              label="Jawaban Diterima *"
+              label="Jawaban Diterima"
               placeholder={form.sa_mode === 'numeric' ? 'cth: 42' : 'pisahkan beberapa jawaban dengan titik-koma ( ; )'}
               value={form.sa_accepted}
               onChange={(e) => setForm((p) => ({ ...p, sa_accepted: e.target.value }))}
               hint={form.sa_mode === 'numeric' ? 'Satu angka target. Toleransi default 0.' : 'cth: Jakarta; DKI Jakarta'}
+              required
             />
           </fieldset>
         )}

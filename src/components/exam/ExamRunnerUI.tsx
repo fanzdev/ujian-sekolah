@@ -73,7 +73,7 @@ export function QuestionNavigator({
   onJump: (i: number) => void
 }) {
   return (
-    <div className="grid grid-cols-5 gap-1.5 xs:grid-cols-6 sm:grid-cols-8 lg:grid-cols-5 xl:grid-cols-8 2xl:grid-cols-10">
+    <div className="grid grid-cols-5 gap-2 xs:grid-cols-6 sm:grid-cols-8 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
       {order.map((qid, i) => {
         const answered =
           answers[qid] !== null &&
@@ -82,10 +82,13 @@ export function QuestionNavigator({
         const isFlagged = flagged.has(qid)
         const isCurrent = i === currentIndex
 
-        let cls = 'bg-white text-slate-500 border-slate-200 hover:border-primary-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-600 dark:hover:border-primary-500'
-        if (isCurrent) cls = 'bg-primary-600 text-white border-primary-600 ring-4 ring-primary-500/20 scale-105'
-        else if (isFlagged) cls = 'bg-violet-100 text-violet-700 border-violet-300'
-        else if (answered) cls = 'bg-emerald-50 text-emerald-700 border-emerald-300'
+        let cls =
+          'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50 shadow-sm dark:bg-slate-800/80 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-800'
+        if (isCurrent)
+          cls =
+            'bg-gradient-to-br from-primary-600 to-primary-700 text-white border-primary-600 shadow-lg shadow-primary-600/20 scale-[1.04] ring-2 ring-primary-600/20'
+        else if (isFlagged) cls = 'bg-gradient-to-br from-violet-50 to-violet-100 text-violet-700 border-violet-200 shadow-sm dark:from-violet-900/30 dark:to-violet-800/30 dark:text-violet-300 dark:border-violet-700/50'
+        else if (answered) cls = 'bg-gradient-to-br from-emerald-50 to-emerald-100 text-emerald-700 border-emerald-200 shadow-sm dark:from-emerald-900/20 dark:to-emerald-800/20 dark:text-emerald-300 dark:border-emerald-700/30'
 
         return (
           <button
@@ -93,13 +96,49 @@ export function QuestionNavigator({
             onClick={() => onJump(i)}
             aria-label={`Soal ${i + 1}${answered ? ', terjawab' : ''}${isFlagged ? ', ditandai' : ''}`}
             aria-current={isCurrent ? 'true' : undefined}
-            className={`relative flex h-9 min-w-0 items-center justify-center rounded-lg border text-xs font-bold transition-all active:scale-95 tap-target ${cls}`}
+            className={`group relative flex h-10 min-w-0 items-center justify-center rounded-xl border text-sm font-bold backdrop-blur transition-all duration-200 hover:shadow-md active:scale-95 tap-target ${cls}`}
           >
-            {i + 1}
-            {isFlagged && !isCurrent && <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-violet-500 ring-2 ring-white dark:ring-slate-900" />}
+            <span className="relative">{i + 1}</span>
+            {isFlagged && !isCurrent && <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-violet-500 shadow-sm ring-2 ring-white dark:ring-slate-900" />}
+            {answered && !isCurrent && !isFlagged && <span className="absolute -bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-emerald-500" />}
           </button>
         )
       })}
+    </div>
+  )
+}
+
+export function NavigatorLegend({ stats }: { stats: { answered: number; unanswered: number; flagged: number; total: number } }) {
+  const pct = stats.total ? Math.round((stats.answered / stats.total) * 100) : 0
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Navigasi Soal</p>
+          <p className="mt-0.5 text-[11px] font-medium text-slate-400">
+            {stats.answered}/{stats.total} terjawab • {pct}% selesai
+          </p>
+        </div>
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+          {stats.total}
+        </span>
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+        <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-primary-600 transition-all duration-500" style={{ width: `${pct}%` }} />
+      </div>
+      <div className="flex items-center gap-2.5 text-[10px] font-semibold tracking-wide text-slate-500 dark:text-slate-400">
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-sm" /> Dijawab
+        </span>
+        <span className="h-3 w-px bg-slate-200 dark:bg-slate-700" />
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-violet-500 shadow-sm" /> Ragu
+        </span>
+        <span className="h-3 w-px bg-slate-200 dark:bg-slate-700" />
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full border-2 border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-800" /> Kosong
+        </span>
+      </div>
     </div>
   )
 }

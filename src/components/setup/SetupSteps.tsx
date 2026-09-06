@@ -100,8 +100,8 @@ export function StepSchool({
       <StepHeader icon={<Building2 className="h-5 w-5" />} title="Profil Sekolah & Aplikasi" />
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Input label="Nama Aplikasi *" placeholder="SMK AL-FATA CBT" value={school.appName} onChange={(e) => set({ appName: e.target.value })} error={errors.appName} required autoFocus />
-        <Input label="Nama Sekolah *" placeholder="SMK AL-FATA" value={school.schoolName} onChange={(e) => set({ schoolName: e.target.value })} error={errors.schoolName} required />
+        <Input label="Nama Aplikasi" placeholder="SMK AL-FATA CBT" value={school.appName} onChange={(e) => set({ appName: e.target.value })} error={errors.appName} required autoFocus />
+        <Input label="Nama Sekolah" placeholder="SMK AL-FATA" value={school.schoolName} onChange={(e) => set({ schoolName: e.target.value })} error={errors.schoolName} required />
         <Input label="Kota / Kabupaten" placeholder="cth: Bandung" value={school.city} onChange={(e) => set({ city: e.target.value })} />
         <Input label="Tahun Ajaran" placeholder="2026/2027" value={school.academicYear} onChange={(e) => set({ academicYear: e.target.value })} error={errors.academicYear} />
         <Input label="Kepala Sekolah" placeholder="Nama kepala sekolah" value={school.headmaster} onChange={(e) => set({ headmaster: e.target.value })} />
@@ -173,9 +173,9 @@ export function StepAdmin({
       <StepHeader icon={<UserPlus className="h-5 w-5" />} title="Akun Super Admin" />
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Input label="Nama Lengkap *" placeholder="cth: Muhammad Rizki, S.Kom" value={admin.fullName} onChange={(e) => set({ fullName: e.target.value })} error={errors.fullName} required autoFocus />
+        <Input label="Nama Lengkap" placeholder="cth: Muhammad Rizki, S.Kom" value={admin.fullName} onChange={(e) => set({ fullName: e.target.value })} error={errors.fullName} required autoFocus />
         <Input
-          label="Username *"
+          label="Username"
           placeholder="cth: admin"
           autoCapitalize="none"
           autoComplete="off"
@@ -189,7 +189,7 @@ export function StepAdmin({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <PasswordInput label="Password *" name="setup-password" autoComplete="new-password" value={admin.password} onChange={(e) => set({ password: e.target.value })} error={errors.password} required placeholder="min. 8 karakter" />
+          <PasswordInput label="Password" name="setup-password" autoComplete="new-password" value={admin.password} onChange={(e) => set({ password: e.target.value })} error={errors.password} required placeholder="min. 8 karakter" />
           {admin.password.length > 0 && (
             <div className="mt-1.5 flex items-center gap-2">
               <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700 dark:text-slate-200">
@@ -203,7 +203,7 @@ export function StepAdmin({
             </div>
           )}
         </div>
-        <PasswordInput label="Konfirmasi Password *" name="setup-password-confirm" autoComplete="new-password" value={admin.confirmPassword} onChange={(e) => set({ confirmPassword: e.target.value })} error={errors.confirmPassword} required />
+        <PasswordInput label="Konfirmasi Password" name="setup-password-confirm" autoComplete="new-password" value={admin.confirmPassword} onChange={(e) => set({ confirmPassword: e.target.value })} error={errors.confirmPassword} required />
       </div>
 
       <p className="flex items-start gap-2 rounded-lg bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-800">

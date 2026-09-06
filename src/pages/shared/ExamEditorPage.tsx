@@ -69,11 +69,12 @@ export default function ExamEditorPage() {
     auto_submit_on_limit: true,
     shuffle_questions: true,
     shuffle_options: true,
-    fullscreen_required: false,
-    camera_monitoring: false,
+    fullscreen_required: true,
+    camera_monitoring: true,
     show_result_to_student: true,
-    show_answers_after: false,
+    show_answers_after: true,
     passing_grade: 0,
+    allow_outside_schedule: false,
   }
 
   return (
@@ -225,8 +226,30 @@ function StepIndicator({ step, onStep }: { step: number; onStep: (n: number) => 
 type MetaSubjects = Awaited<ReturnType<typeof listSubjects>>
 type TeacherOption = { id: string; name: string }
 
+function getWibTodayYmd(): string {
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+}
+
+function addDaysYmd(ymd: string, days: number): string {
+  const d = new Date(`${ymd}T00:00:00+07:00`)
+  d.setDate(d.getDate() + days)
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d)
+}
+
+function extractTimeWib(iso: string | null | undefined): string {
+  if (!iso) return ''
+  const v = toInputValue(iso)
+  return v.includes('T') ? (v.split('T')[1] ?? '') : ''
+}
+
+function getYmdFromIsoWib(iso: string | null | undefined): string {
+  if (!iso) return getWibTodayYmd()
+  const v = toInputValue(iso)
+  return v.split('T')[0] ?? getWibTodayYmd()
+}
+
 function InfoStep({
-  subjects,
+  subjects: _subjects,
   teachers,
   examId,
   onNext,
@@ -238,6 +261,7 @@ function InfoStep({
   onNext: () => void
   onEnsureCreated: (form: Record<string, unknown>) => Promise<string>
 }) {
+  void _subjects
   const toast = useToast()
   const examQuery = useAsync(() => (examId ? getExam(examId) : Promise.resolve(null)), [examId])
   const exam = examQuery.data
@@ -247,8 +271,8 @@ function InfoStep({
   const [instructions, setInstructions] = useState('')
   const [subjectId, setSubjectId] = useState('')
   const [teacherId, setTeacherId] = useState('')
-  const [startsAt, setStartsAt] = useState('')
-  const [endsAt, setEndsAt] = useState('')
+  const [startsAtTime, setStartsAtTime] = useState('')
+  const [endsAtTime, setEndsAtTime] = useState('')
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -258,17 +282,19 @@ function InfoStep({
     setInstructions(exam.instructions ?? '')
     setSubjectId(exam.subject_id ?? '')
     setTeacherId(exam.teacher_id ?? '')
-    setStartsAt(toInputValue(exam.starts_at))
-    setEndsAt(toInputValue(exam.ends_at))
+    setStartsAtTime(extractTimeWib(exam.starts_at))
+    setEndsAtTime(extractTimeWib(exam.ends_at))
   }, [exam, title])
 
   const handleNext = async () => {
     if (title.trim().length < 4) { toast.error('Nama ujian minimal 4 karakter.'); return }
-    if (!startsAt || !endsAt) { toast.error('Tanggal mulai dan selesai wajib diisi.'); return }
-    const startIso = fromWibInput(startsAt)
-    const endIso = fromWibInput(endsAt)
-    if (!startIso || !endIso) { toast.error('Format tanggal tidak valid.'); return }
-    if (endIso <= startIso) { toast.error('Tanggal selesai harus setelah tanggal mulai.'); return }
+    if (!startsAtTime || !endsAtTime) { toast.error('Jam mulai dan selesai wajib diisi.'); return }
+    const baseYmd = exam ? getYmdFromIsoWib(exam.starts_at) : getWibTodayYmd()
+    const endYmd = endsAtTime <= startsAtTime ? addDaysYmd(baseYmd, 1) : baseYmd
+    const startIso = fromWibInput(`${baseYmd}T${startsAtTime}`)
+    const endIso = fromWibInput(`${endYmd}T${endsAtTime}`)
+    if (!startIso || !endIso) { toast.error('Format jam tidak valid.'); return }
+    if (endIso <= startIso) { toast.error('Jam selesai harus setelah jam mulai.'); return }
 
     const durationMinutes = Math.max(1, Math.round((new Date(endIso).getTime() - new Date(startIso).getTime()) / 60000))
 
@@ -293,20 +319,23 @@ function InfoStep({
     }
   }
 
+  const todayLabel = new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())
+
   return (
     <Card>
       <div className="space-y-5 p-6">
-        <Input label="Nama Ujian *" placeholder="cth: PTS Ganjil Matematika XII" value={title} onChange={(e) => setTitle(e.target.value)} required autoFocus />
+        <Input label="Nama Ujian" placeholder="cth: PTS Ganjil Matematika XII" value={title} onChange={(e) => setTitle(e.target.value)} required autoFocus />
         <Textarea label="Deskripsi" placeholder="Deskripsi singkat cakupan materi ujian" value={description} onChange={(e) => setDescription(e.target.value)} />
         <Textarea label="Instruksi untuk Siswa" placeholder="Petunjuk pengerjaan yang dibaca siswa sebelum mulai..." value={instructions} onChange={(e) => setInstructions(e.target.value)} />
         <div className="grid gap-4 sm:grid-cols-2">
-          <Select label="Mata Pelajaran" placeholder="Pilih mapel" value={subjectId} onChange={(e) => setSubjectId(e.target.value)} options={subjects.map((s) => ({ value: s.id, label: `${s.name} (${s.code})` }))} />
-          <Select label="Guru Pengampu" placeholder={teachers.length ? 'Pilih guru' : 'Tidak ada data guru'} value={teacherId} onChange={(e) => setTeacherId(e.target.value)} options={teachers.map((t) => ({ value: t.id, label: t.name }))} />
-          <Input label="Mulai (WIB) *" type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} required />
-          <Input label="Selesai (WIB) *" type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} required hint="Durasi otomatis mengikuti selisih waktu mulai-selesai." />
+          <div className="sm:col-span-2">
+            <Select label="Guru Pengampu" placeholder={teachers.length ? 'Pilih guru' : 'Tidak ada data guru'} value={teacherId} onChange={(e) => setTeacherId(e.target.value)} options={teachers.map((t) => ({ value: t.id, label: t.name }))} />
+          </div>
+          <Input label="Jam Mulai (WIB)" type="time" value={startsAtTime} onChange={(e) => setStartsAtTime(e.target.value)} required hint={`Tanggal otomatis ${todayLabel} (WIB).`} />
+          <Input label="Jam Selesai (WIB)" type="time" value={endsAtTime} onChange={(e) => setEndsAtTime(e.target.value)} required hint="Jika selesai lewat tengah malam, otomatis hari berikutnya." />
         </div>
         <div className="flex items-start gap-2 rounded-lg bg-sky-50 px-4 py-3 text-xs leading-relaxed text-sky-800">
-          Zona waktu otomatis WIB (Asia/Jakarta). Durasi pengerjaan dihitung otomatis dari selisih waktu mulai dan selesai.
+          Tanggal ujian otomatis hari pembuatan (WIB). Anda hanya perlu mengatur jam mulai & selesai. Durasi dihitung otomatis.
         </div>
       </div>
       <div className="flex justify-end border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:bg-slate-800 dark:text-slate-200">
@@ -490,6 +519,7 @@ function QuestionsStep({
   const [loadingExisting, setLoadingExisting] = useState(Boolean(examId))
   const [saving, setSaving] = useState(false)
   const [hasUnsaved, setHasUnsaved] = useState(false)
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
   const toast = useToast()
   const confirmDialog = useConfirm()
 
@@ -504,9 +534,8 @@ function QuestionsStep({
 
   const availableCountQuery = useAsync(async () => {
     const subjectId = examInfo.data?.subject_id
-    if (!subjectId) return 0
     const banks = await listBanks({ pageSize: 100 })
-    const relevant = banks.rows.filter((b) => b.subject_id === subjectId)
+    const relevant = subjectId ? banks.rows.filter((b) => b.subject_id === subjectId) : banks.rows
     if (relevant.length === 0) return 0
     let total = 0
     for (const b of relevant) {
@@ -554,13 +583,9 @@ function QuestionsStep({
 
   const handleAutoFill = async () => {
     const subjectId = examInfo.data?.subject_id
-    if (!subjectId) {
-      toast.error('Atur mata pelajaran dulu di langkah Informasi.')
-      return
-    }
     try {
       const banks = await listBanks({ pageSize: 100 })
-      const relevant = banks.rows.filter((b) => b.subject_id === subjectId)
+      const relevant = subjectId ? banks.rows.filter((b) => b.subject_id === subjectId) : banks.rows
       if (relevant.length === 0) {
         toast.error('Tidak ada bank soal untuk mapel ini. Buat bank dulu.')
         return
@@ -694,9 +719,27 @@ function QuestionsStep({
             ) : (
               <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
                 {items.map((item, index) => (
-                  <li key={item.question_id} className="flex items-center gap-3 px-3 py-3 sm:px-4">
+                  <li
+                    key={item.question_id}
+                    draggable
+                    onDragStart={() => setDragIndex(index)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => {
+                      if (dragIndex === null || dragIndex === index) return
+                      setItems((prev) => {
+                        const next = [...prev]
+                        const [moved] = next.splice(dragIndex, 1)
+                        next.splice(index, 0, moved)
+                        return next.map((it, idx) => ({ ...it, position: idx }))
+                      })
+                      setHasUnsaved(true)
+                      setDragIndex(null)
+                    }}
+                    onDragEnd={() => setDragIndex(null)}
+                    className={`flex items-center gap-3 px-3 py-3 sm:px-4 transition-colors ${dragIndex === index ? 'opacity-40 bg-primary-50' : 'hover:bg-slate-50/60'}`}
+                  >
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-50 text-xs font-bold text-primary-700 dark:bg-primary-600 dark:text-white">{index + 1}</span>
-                    <GripVertical className="hidden h-4 w-4 shrink-0 text-slate-200 sm:block" />
+                    <GripVertical className="h-5 w-5 shrink-0 cursor-grab text-slate-400 hover:text-slate-600 active:cursor-grabbing" />
                     <div className="min-w-0 flex-1">
                       <RichContent html={item.question.text} className="line-clamp-1 [&_*]:text-[13px]" />
                       <div className="mt-1 flex flex-wrap gap-1.5">
@@ -918,6 +961,7 @@ type SettingsFormDefaults = {
   show_result_to_student: boolean
   show_answers_after: boolean
   passing_grade: number
+  allow_outside_schedule: boolean
 }
 
 function SettingsStep({
@@ -934,29 +978,38 @@ function SettingsStep({
   onNext: () => void
 }) {
   const toast = useToast()
-  const [shuffleQuestions, setShuffleQuestions] = useState(true)
-  const [shuffleOptions, setShuffleOptions] = useState(true)
-  const [maxAttempts, setMaxAttempts] = useState(1)
-  const [passingGrade, setPassingGrade] = useState(0)
-  const [violationLimit, setViolationLimit] = useState(3)
-  const [autoSubmit, setAutoSubmit] = useState(true)
-  const [fullscreen, setFullscreen] = useState(false)
-  const [camera, setCamera] = useState(false)
-  const [showResult, setShowResult] = useState(true)
-  const [showAnswers, setShowAnswers] = useState(false)
+  const [shuffleQuestions, setShuffleQuestions] = useState(_defaults.shuffle_questions)
+  const [shuffleOptions, setShuffleOptions] = useState(_defaults.shuffle_options)
+  const [maxAttempts, setMaxAttempts] = useState(_defaults.max_attempts)
+  const [passingGrade, setPassingGrade] = useState(_defaults.passing_grade)
+  const [violationLimit, setViolationLimit] = useState(_defaults.violation_limit)
+  const [autoSubmit, setAutoSubmit] = useState(_defaults.auto_submit_on_limit)
+  const [fullscreen, setFullscreen] = useState(_defaults.fullscreen_required)
+  const [camera, setCamera] = useState(_defaults.camera_monitoring)
+  const [showResult, setShowResult] = useState(_defaults.show_result_to_student)
+  const [showAnswers, setShowAnswers] = useState(_defaults.show_answers_after)
+  const [allowOutside, setAllowOutside] = useState(_defaults.allow_outside_schedule ?? false)
   const [examCode, setExamCode] = useState(randomCode(6))
   const [pinCode, setPinCode] = useState('')
   const [saving, setSaving] = useState(false)
   const [loaded, setLoaded] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!examId || loaded === examId) {
-      if (!examId) {
-        setShuffleQuestions(_defaults.shuffle_questions)
-        setShuffleOptions(_defaults.shuffle_options)
-      }
+    if (!examId) {
+      setShuffleQuestions(_defaults.shuffle_questions)
+      setShuffleOptions(_defaults.shuffle_options)
+      setMaxAttempts(_defaults.max_attempts)
+      setPassingGrade(_defaults.passing_grade)
+      setViolationLimit(_defaults.violation_limit)
+      setAutoSubmit(_defaults.auto_submit_on_limit)
+      setFullscreen(_defaults.fullscreen_required)
+      setCamera(_defaults.camera_monitoring)
+      setShowResult(_defaults.show_result_to_student)
+      setShowAnswers(_defaults.show_answers_after)
+      setAllowOutside(_defaults.allow_outside_schedule ?? false)
       return
     }
+    if (loaded === examId) return
     setLoaded(examId)
     getExam(examId).then((exam) => {
       if (!exam) return
@@ -970,33 +1023,70 @@ function SettingsStep({
       setCamera(exam.camera_monitoring)
       setShowResult(exam.show_result_to_student)
       setShowAnswers(exam.show_answers_after)
+      setAllowOutside((exam as unknown as { allow_outside_schedule?: boolean }).allow_outside_schedule ?? false)
       setExamCode(exam.exam_code ?? randomCode(6))
       setPinCode(exam.pin_code ?? '')
     }).catch(() => undefined)
   }, [examId, loaded, _defaults])
 
+  useEffect(() => {
+    if (!showResult && showAnswers) setShowAnswers(false)
+  }, [showResult, showAnswers])
+
   const save = async (): Promise<boolean> => {
     if (!examId) return false
+    if (!Number.isFinite(maxAttempts) || maxAttempts < 1 || maxAttempts > 10) { toast.error('Maksimal percobaan harus 1–10.'); return false }
+    if (!Number.isFinite(violationLimit) || violationLimit < 1 || violationLimit > 20) { toast.error('Batas pelanggaran harus 1–20.'); return false }
+    if (!Number.isFinite(passingGrade) || passingGrade < 0 || passingGrade > 100) { toast.error('Passing grade harus 0–100.'); return false }
+    if (pinCode && !/^\d{3,8}$/.test(pinCode)) { toast.error('PIN harus 3–8 digit angka.'); return false }
+    const safeMax = Number.isFinite(maxAttempts) ? Math.trunc(maxAttempts) : 1
+    const safeViolation = Number.isFinite(violationLimit) ? Math.trunc(violationLimit) : 3
+    const safePassing = Number.isFinite(passingGrade) ? Number(passingGrade) : 0
     setSaving(true)
+    const basePayload: Record<string, unknown> = {
+      shuffle_questions: shuffleQuestions,
+      shuffle_options: shuffleOptions,
+      max_attempts: safeMax,
+      passing_grade: safePassing,
+      violation_limit: safeViolation,
+      auto_submit_on_limit: autoSubmit,
+      fullscreen_required: fullscreen,
+      camera_monitoring: camera,
+      show_result_to_student: showResult,
+      show_answers_after: showAnswers,
+      allow_outside_schedule: allowOutside,
+      exam_code: examCode.trim() || null,
+      pin_code: pinCode.trim() || null,
+    }
     try {
-      await updateExam(examId, {
-        shuffle_questions: shuffleQuestions,
-        shuffle_options: shuffleOptions,
-        max_attempts: maxAttempts,
-        passing_grade: passingGrade,
-        violation_limit: violationLimit,
-        auto_submit_on_limit: autoSubmit,
-        fullscreen_required: fullscreen,
-        camera_monitoring: camera,
-        show_result_to_student: showResult,
-        show_answers_after: showAnswers,
-        exam_code: examCode || null,
-        pin_code: pinCode || null,
-      })
+      await updateExam(examId, basePayload as unknown as Record<string, unknown>)
       toast.success('Pengaturan ujian tersimpan.')
       return true
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Gagal menyimpan pengaturan.')
+      const msg = err instanceof Error ? err.message : String(err)
+      const isMissingColumn = msg.toLowerCase().includes('allow_outside_schedule') || msg.includes('PGRST204') || msg.includes('column') && msg.includes('allow_outside_schedule')
+      if (isMissingColumn) {
+        const fallback = { ...basePayload }
+        delete (fallback as Record<string, unknown>).allow_outside_schedule
+        try {
+          await updateExam(examId, fallback as unknown as Record<string, unknown>)
+          toast.success('Pengaturan tersimpan (fitur luar-jadwal butuh migrasi 00024). Jalankan migrasi di Supabase SQL Editor agar toggle luar-jadwal permanen.')
+          return true
+        } catch (err2) {
+          const msg2 = err2 instanceof Error ? err2.message : String(err2)
+          if (msg2.toLowerCase().includes('duplicate') || msg2.includes('23505') || msg2.toLowerCase().includes('unique')) {
+            toast.error('Kode ujian sudah dipakai. Klik Acak untuk kode lain.')
+          } else {
+            toast.error(msg2 || 'Gagal menyimpan pengaturan.')
+          }
+          return false
+        }
+      }
+      if (msg.toLowerCase().includes('duplicate') || msg.includes('23505') || msg.toLowerCase().includes('unique')) {
+        toast.error('Kode ujian sudah dipakai. Klik Acak untuk kode lain.')
+      } else {
+        toast.error(msg || 'Gagal menyimpan pengaturan.')
+      }
       return false
     } finally {
       setSaving(false)
@@ -1027,9 +1117,13 @@ function SettingsStep({
           <ToggleSwitch checked={camera} onChange={setCamera} label="Aktifkan monitoring kamera" description="Preview kamera opsional selama ujian (membutuhkan izin browser)." />
         </Section>
 
+        <Section title="Akses Fleksibel">
+          <ToggleSwitch checked={allowOutside} onChange={setAllowOutside} label="Izinkan selesai di luar jadwal" description="Jika aktif, siswa boleh memulai & mengumpulkan ujian meskipun di luar jam terjadwal atau ujian ber-status Draf/Selesai (untuk susulan/remedial)." />
+        </Section>
+
         <Section title="Hasil & Pembahasan">
           <ToggleSwitch checked={showResult} onChange={setShowResult} label="Siswa boleh melihat nilai" />
-          <ToggleSwitch checked={showAnswers} onChange={setShowAnswers} label="Tampilkan pembahasan & kunci setelah submit" />
+          <ToggleSwitch checked={showAnswers} onChange={setShowAnswers} label="Tampilkan pembahasan & kunci setelah submit" disabled={!showResult} />
         </Section>
 
         <Section title="Kode & PIN Akses">
@@ -1090,7 +1184,6 @@ function ReviewStep({ examId, onBack, onDone }: { examId: string | null; onBack:
 
   const rows: [string, React.ReactNode][] = [
     ['Nama Ujian', exam.title],
-    ['Mata Pelajaran', exam.subjects?.name ?? '-'],
     ['Jadwal', `${formatDateTime(exam.starts_at)} → ${formatDateTime(exam.ends_at)}`],
     ['Durasi', `${exam.duration_minutes} menit`],
     ['Jumlah Soal', String(query.data.count)],
@@ -1099,7 +1192,7 @@ function ReviewStep({ examId, onBack, onDone }: { examId: string | null; onBack:
     ['Passing Grade', exam.passing_grade > 0 ? String(exam.passing_grade) : 'Tidak ada'],
     ['Percobaan Maks', String(exam.max_attempts)],
     ['Randomisasi', [exam.shuffle_questions && 'soal', exam.shuffle_options && 'opsi'].filter(Boolean).join(', ') || 'nonaktif'],
-    ['Anti-Curang', `limit ${exam.violation_limit}${exam.auto_submit_on_limit ? ' + auto-submit' : ''}${exam.fullscreen_required ? ' + fullscreen' : ''}${exam.camera_monitoring ? ' + kamera' : ''}`],
+    ['Anti-Curang', `limit ${exam.violation_limit}${exam.auto_submit_on_limit ? ' + auto-submit' : ''}${exam.fullscreen_required ? ' + fullscreen' : ''}${exam.camera_monitoring ? ' + kamera' : ''}${(exam as unknown as { allow_outside_schedule?: boolean }).allow_outside_schedule ? ' + luar-jadwal' : ''}`],
     ['Kode / PIN', [exam.exam_code, exam.pin_code ? `PIN: ${exam.pin_code}` : null].filter(Boolean).join(' · ') || '-'],
     ['Status', exam.status === 'published' ? 'AKTIF' : 'Draf'],
   ]

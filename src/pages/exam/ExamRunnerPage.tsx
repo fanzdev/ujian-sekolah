@@ -46,27 +46,18 @@ export default function ExamRunnerPage() {
   }, [])
 
   const [fsLoading, setFsLoading] = useState(false)
-  const [bypassFullscreen, setBypassFullscreen] = useState(false)
+  const [forceBypass, setForceBypass] = useState(false)
 
   const requestFs = useCallback(async () => {
     if (fsLoading) return
     setFsLoading(true)
-    const isMobile = typeof window !== 'undefined' && (window.innerWidth < 768 || ((navigator as unknown as { maxTouchPoints?: number }).maxTouchPoints ?? 0) > 0)
     if (!isFsSupported) {
-      if (isMobile) {
-        setBypassFullscreen(true)
-        setIsFullscreen(true)
-      }
       setFsLoading(false)
       return
     }
     const el = document.documentElement as unknown as { requestFullscreen?: (opts?: unknown) => Promise<void>; webkitRequestFullscreen?: () => Promise<void>; mozRequestFullScreen?: () => Promise<void> }
     const req = el.requestFullscreen ?? el.webkitRequestFullscreen ?? el.mozRequestFullScreen
     if (!req) {
-      if (isMobile) {
-        setBypassFullscreen(true)
-        setIsFullscreen(true)
-      }
       setFsLoading(false)
       return
     }
@@ -75,39 +66,22 @@ export default function ExamRunnerPage() {
       if (p && typeof p.then === 'function') {
         await p
         setIsFullscreen(checkFullscreen())
-        if (!checkFullscreen() && isMobile) {
-          setBypassFullscreen(true)
-          setIsFullscreen(true)
-        }
       } else {
-        window.setTimeout(() => {
-          const ok = checkFullscreen()
-          if (!ok && isMobile) {
-            setBypassFullscreen(true)
-            setIsFullscreen(true)
-          } else {
-            setIsFullscreen(ok)
-          }
-        }, 300)
+        window.setTimeout(() => setIsFullscreen(checkFullscreen()), 300)
       }
     } catch {
-      if (isMobile) {
-        setBypassFullscreen(true)
-        setIsFullscreen(true)
-      } else {
-        setIsFullscreen(checkFullscreen())
-      }
+      setIsFullscreen(checkFullscreen())
     } finally {
       setFsLoading(false)
     }
   }, [isFsSupported, fsLoading])
 
   useEffect(() => {
-    if (!isFsSupported) return
-    if (engine.phase === 'running' && !isFullscreen) {
+    if (!isFsSupported || forceBypass) return
+    if (engine.phase === 'running' && !isFullscreen && engine.payload?.exam.fullscreen_required) {
       requestFs()
     }
-  }, [engine.phase, isFullscreen, isFsSupported, requestFs])
+  }, [engine.phase, isFullscreen, isFsSupported, requestFs, engine.payload?.exam.fullscreen_required, forceBypass])
 
   if (engine.phase === 'loading') {
     return (
@@ -181,17 +155,21 @@ export default function ExamRunnerPage() {
         <ViolationFlash count={engine.violationFlash.count} limit={engine.violationLimit} />
       )}
 
-      {!isFullscreen && !bypassFullscreen && engine.phase === 'running' && (
+      {isFsSupported && !isFullscreen && !forceBypass && engine.payload?.exam.fullscreen_required && engine.phase === 'running' && (
         <button
           type="button"
           onClick={requestFs}
           className="flex w-full cursor-pointer items-center justify-center gap-1.5 bg-amber-50 py-2 text-xs font-bold text-amber-800 ring-1 ring-amber-200 dark:bg-amber-500/15 dark:text-amber-200 dark:ring-amber-500/30"
         >
-          <Maximize2 className="h-3.5 w-3.5" /> {isFsSupported ? 'Wajib Layar Penuh — klik untuk masuk fullscreen' : 'Fullscreen tidak didukung — klik untuk lanjut terbatas'}
+          <Maximize2 className="h-3.5 w-3.5" /> Wajib Layar Penuh — klik untuk masuk fullscreen
         </button>
       )}
 
-      {!isFullscreen && !bypassFullscreen && engine.phase === 'running' && (
+      {!isFsSupported && engine.payload?.exam.fullscreen_required && engine.phase === 'running' && !forceBypass && (
+        <p className="flex w-full items-center justify-center gap-1.5 bg-amber-50 py-2 text-xs font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-200">Perangkat tidak mendukung fullscreen — tetap fokus, pelanggaran tetap tercatat.</p>
+      )}
+
+      {isFsSupported && !isFullscreen && !forceBypass && engine.payload?.exam.fullscreen_required && engine.phase === 'running' && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/85 p-6 backdrop-blur-sm">
           <div className="card pointer-events-auto max-w-sm p-8 text-center animate-scale-in">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-300">
@@ -199,17 +177,22 @@ export default function ExamRunnerPage() {
             </div>
             <h2 className="mt-4 text-lg font-extrabold text-slate-900 dark:text-white">Wajib Layar Penuh</h2>
             <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-              {isFsSupported
-                ? 'Ujian harus dikerjakan dalam mode layar penuh. Keluar dari fullscreen tercatat sebagai pelanggaran dan dapat otomatis mengumpulkan jawaban.'
-                : 'Perangkat Anda tidak mendukung Fullscreen API. Anda tetap bisa melanjutkan, tapi pelanggaran keluar halaman tetap tercatat.'}
+              Ujian harus dikerjakan dalam mode layar penuh. Keluar dari fullscreen tercatat sebagai pelanggaran dan dapat otomatis mengumpulkan jawaban.
             </p>
             <p className="mt-2 text-xs font-semibold text-slate-400">
               Pelanggaran: {engine.violationCount}/{engine.violationLimit}
             </p>
             <Button type="button" size="lg" className="mt-6 w-full cursor-pointer" icon={<Maximize2 className="h-4 w-4" />} onClick={requestFs} loading={fsLoading}>
-              {isFsSupported ? 'Masuk Layar Penuh Sekarang' : 'Lanjutkan Tanpa Fullscreen'}
+              Masuk Layar Penuh Sekarang
             </Button>
-            <p className="mt-3 text-[11px] text-slate-400">{isFsSupported ? 'Tekan Esc tidak akan keluar — sistem akan mencatat pelanggaran dan meminta masuk kembali.' : 'Mode terbatas: tetap fokus di halaman, jangan pindah tab.'}</p>
+            <button
+              type="button"
+              onClick={() => setForceBypass(true)}
+              className="mt-3 w-full text-center text-xs font-medium text-slate-500 underline hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
+            >
+              Tetap lanjutkan tanpa fullscreen & kumpulkan nanti (pelanggaran tercatat)
+            </button>
+            <p className="mt-3 text-[11px] text-slate-400">Tekan Esc tidak akan keluar — sistem akan mencatat pelanggaran dan meminta masuk kembali.</p>
           </div>
         </div>
       )}
@@ -248,9 +231,11 @@ export default function ExamRunnerPage() {
             )}
           </div>
 
-          <div className="mt-5 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900 lg:hidden">
-            <NavigatorLegend stats={engine.stats} />
-            <div className="mt-3">
+          <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200/60 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:hidden">
+            <div className="bg-gradient-to-br from-slate-50 to-white px-4 py-4 dark:from-slate-900 dark:to-slate-800/40">
+              <NavigatorLegend stats={engine.stats} />
+            </div>
+            <div className="border-t border-slate-100 bg-white px-4 py-4 dark:border-slate-800 dark:bg-slate-900">
               <QuestionNavigator
                 order={order}
                 answers={engine.answers}
@@ -263,10 +248,12 @@ export default function ExamRunnerPage() {
         </section>
 
         <aside className="hidden lg:block">
-          <div className="sticky top-[80px] space-y-4">
-            <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-              <NavigatorLegend stats={engine.stats} />
-              <div className="mt-3">
+          <div className="sticky top-[84px] space-y-4">
+            <div className="overflow-hidden rounded-2xl border border-slate-200/60 bg-white shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/90">
+              <div className="bg-gradient-to-br from-slate-50 to-white px-5 py-4 dark:from-slate-900 dark:to-slate-800/40">
+                <NavigatorLegend stats={engine.stats} />
+              </div>
+              <div className="border-t border-slate-100 bg-white px-4 py-4 dark:border-slate-800 dark:bg-slate-900">
                 <QuestionNavigator
                   order={order}
                   answers={engine.answers}
@@ -275,8 +262,11 @@ export default function ExamRunnerPage() {
                   onJump={engine.goTo}
                 />
               </div>
+              <div className="border-t border-slate-100 bg-slate-50/60 px-4 py-2.5 dark:border-slate-800 dark:bg-slate-800/40">
+                <p className="text-center text-[11px] font-medium tracking-wide text-slate-400">Klik nomor untuk lompat • Tandai ragu untuk review</p>
+              </div>
             </div>
-            <Button variant="primary" size="lg" className="w-full" icon={<Send className="h-4 w-4" />} onClick={() => setConfirmOpen(true)}>
+            <Button variant="primary" size="lg" className="w-full shadow-lg shadow-primary-600/15 hover:shadow-xl hover:shadow-primary-600/20 hover:-translate-y-0.5 transition-all" icon={<Send className="h-4 w-4" />} onClick={() => setConfirmOpen(true)}>
               Kumpulkan Ujian
             </Button>
           </div>

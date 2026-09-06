@@ -63,17 +63,17 @@ export default function StudentsPage() {
       />
 
       <Card>
-        <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-          <SearchInput placeholder="Cari nama / NIS / NISN..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} />
+        <div className="grid grid-cols-1 gap-2 p-4 sm:grid-cols-[1fr_170px_170px] sm:items-center sm:gap-2">
+          <SearchInput className="w-full sm:!w-full" placeholder="Cari nama / NIS / NISN..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} />
           <Select
-            className="w-full sm:w-44"
+            className="w-full"
             placeholder="Semua Jurusan"
             value={departmentFilter}
             onChange={(e) => { setDepartmentFilter(e.target.value); setClassFilter(''); setPage(1) }}
             options={departments.map((d) => ({ value: d.id, label: `${d.code} · ${d.name}` }))}
           />
           <Select
-            className="w-full sm:w-48"
+            className="w-full"
             placeholder="Semua Kelas"
             value={classFilter}
             onChange={(e) => { setClassFilter(e.target.value); setPage(1) }}
@@ -335,15 +335,15 @@ function CreateStudentModal({
           </p>
         )}
         <div className="grid gap-4 sm:grid-cols-2">
-          <Input label="Nama Lengkap *" placeholder="Nama sesuai absen" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} required autoFocus />
-          <Input label="Username *" placeholder="cth: budi.santoso" autoCapitalize="none" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value.replace(/\s/g, '').toLowerCase() })} required hint="Digunakan untuk login." />
-          <Input label="Password Awal *" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required hint="Minimal 8 karakter."
+          <Input label="Nama Lengkap" placeholder="Nama sesuai absen" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} required autoFocus />
+          <Input label="Username" placeholder="cth: budi.santoso" autoCapitalize="none" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value.replace(/\s/g, '').toLowerCase() })} required hint="Digunakan untuk login." />
+          <Input label="Password Awal" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required hint="Minimal 8 karakter."
             rightSlot={
               <button type="button" onClick={() => setForm((f) => ({ ...f, password: randomCode(8) }))} className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200">Acak</button>
             }
           />
           <Select label="Jurusan" placeholder="Pilih jurusan (filter kelas)" value={deptId} onChange={(e) => { setDeptId(e.target.value); setForm((f) => ({ ...f, classId: '' })) }} options={departments.map((d) => ({ value: d.id, label: `${d.code} · ${d.name}` }))} />
-          <Select label="Kelas *" placeholder={filteredClassesCreate.length ? 'Pilih kelas' : 'Tidak ada kelas di jurusan ini'} required value={form.classId} onChange={(e) => setForm({ ...form, classId: e.target.value })} options={filteredClassesCreate.map((c) => ({ value: c.id, label: `${c.name}${c.departments?.code ? ` · ${c.departments.code}` : ''}` }))} />
+          <Select label="Kelas" placeholder={filteredClassesCreate.length ? 'Pilih kelas' : 'Tidak ada kelas di jurusan ini'} required value={form.classId} onChange={(e) => setForm({ ...form, classId: e.target.value })} options={filteredClassesCreate.map((c) => ({ value: c.id, label: `${c.name}${c.departments?.code ? ` · ${c.departments.code}` : ''}` }))} />
           <Input label="NIS" value={form.nis} onChange={(e) => setForm({ ...form, nis: e.target.value })} />
           <Input label="NISN" value={form.nisn} onChange={(e) => setForm({ ...form, nisn: e.target.value })} />
           <Select label="Jenis Kelamin" placeholder="Pilih" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} options={[{ value: 'L', label: 'Laki-laki' }, { value: 'P', label: 'Perempuan' }]} />
@@ -437,9 +437,9 @@ function EditStudentModal({
       <div className="space-y-5 px-6 py-5">
         <div className="grid gap-4 sm:grid-cols-2">
           <Input label="Username" value={form.username} disabled hint="Username tidak dapat diubah" />
-          <Select label="Jurusan *" placeholder="Pilih jurusan" required value={deptId} onChange={(e) => { setDeptId(e.target.value); setForm((f) => ({ ...f, classId: '' })) }} options={departments.map((d) => ({ value: d.id, label: `${d.code} · ${d.name}` }))} />
-          <Select label="Kelas *" placeholder={filteredForEdit.length ? 'Pilih kelas' : 'Tidak ada kelas di jurusan ini'} required value={form.classId} onChange={(e) => setForm({ ...form, classId: e.target.value })} options={filteredForEdit.map((c) => ({ value: c.id, label: `${c.name}${c.departments?.code ? ` · ${c.departments.code}` : ''}` }))} />
-          <Input label="Nama Lengkap *" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} required />
+          <Select label="Jurusan" placeholder="Pilih jurusan" required value={deptId} onChange={(e) => { setDeptId(e.target.value); setForm((f) => ({ ...f, classId: '' })) }} options={departments.map((d) => ({ value: d.id, label: `${d.code} · ${d.name}` }))} />
+          <Select label="Kelas" placeholder={filteredForEdit.length ? 'Pilih kelas' : 'Tidak ada kelas di jurusan ini'} required value={form.classId} onChange={(e) => setForm({ ...form, classId: e.target.value })} options={filteredForEdit.map((c) => ({ value: c.id, label: `${c.name}${c.departments?.code ? ` · ${c.departments.code}` : ''}` }))} />
+          <Input label="Nama Lengkap" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} required />
           <Select label="Jenis Kelamin" placeholder="Pilih" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} options={[{ value: 'L', label: 'Laki-laki' }, { value: 'P', label: 'Perempuan' }]} />
           <Input label="NIS" value={form.nis} onChange={(e) => setForm({ ...form, nis: e.target.value })} />
           <Input label="NISN" value={form.nisn} onChange={(e) => setForm({ ...form, nisn: e.target.value })} />

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   CalendarDays, PlayCircle, ClipboardCheck, IdCard, Clock3,
-  AlertCircle, Hourglass, TrendingUp, ShieldAlert,
+  AlertCircle, Hourglass, TrendingUp, ShieldAlert, Flame, Zap, Check, Sparkles,
 } from 'lucide-react'
 import { useAsync, useDocumentTitle } from '@/hooks/useAsync'
 import { useAuth } from '@/hooks/useAuth'
@@ -17,6 +17,189 @@ import { listAvailableExams, getMyAttempts } from '@/services/attempts.service'
 import { formatNumber } from '@/lib/utils'
 import { formatDateTime as fmtDT } from '@/lib/datetime'
 import { AVAILABLE_EXAM_STATUS_LABELS } from '@/lib/constants'
+import { useToast } from '@/hooks/useToast'
+
+function getWibTodayYmd(): string {
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+}
+
+function loadStreak(profileId: string): { count: number; lastDate: string | null; longest: number } {
+  try {
+    const raw = localStorage.getItem(`streak-${profileId}`)
+    if (raw) {
+      const parsed = JSON.parse(raw) as { count?: number; lastDate?: string | null; longest?: number }
+      return { count: Number(parsed.count) || 0, lastDate: parsed.lastDate ?? null, longest: Number(parsed.longest) || 0 }
+    }
+  } catch { /* ignore */ }
+  return { count: 0, lastDate: null, longest: 0 }
+}
+
+function saveStreak(profileId: string, data: { count: number; lastDate: string | null; longest: number }) {
+  try {
+    localStorage.setItem(`streak-${profileId}`, JSON.stringify(data))
+  } catch { /* ignore */ }
+}
+
+function StreakCard({ profileId }: { profileId: string }) {
+  const toast = useToast()
+  const [count, setCount] = useState(() => loadStreak(profileId).count)
+  const [lastDate, setLastDate] = useState<string | null>(() => loadStreak(profileId).lastDate)
+  const [longest, setLongest] = useState(() => loadStreak(profileId).longest)
+  const today = getWibTodayYmd()
+  const yesterday = (() => {
+    const d = new Date(`${today}T00:00:00+07:00`)
+    d.setDate(d.getDate() - 1)
+    return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d)
+  })()
+  const alreadyClaimed = lastDate === today
+  const streakBroken = lastDate !== null && lastDate !== today && lastDate !== yesterday
+
+  const handleClaim = () => {
+    if (alreadyClaimed) return
+    let nextCount: number
+    if (lastDate === yesterday) nextCount = count + 1
+    else if (lastDate === today) nextCount = count
+    else if (count === 0 || streakBroken) nextCount = 1
+    else nextCount = count + 1
+    const nextLongest = Math.max(longest, nextCount)
+    const next = { count: nextCount, lastDate: today, longest: nextLongest }
+    saveStreak(profileId, next)
+    setCount(nextCount)
+    setLastDate(today)
+    setLongest(nextLongest)
+    toast.success(nextCount === 1 && streakBroken ? 'Streak dimulai kembali! 🔥' : nextCount === 1 ? 'Streak dimulai! 🔥' : `Streak ${nextCount} hari! 🔥`)
+  }
+
+  const weekDots = (() => {
+    const dots: { date: string; label: string; active: boolean; isToday: boolean }[] = []
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(`${today}T00:00:00+07:00`)
+      d.setDate(d.getDate() - i)
+      const ymd = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d)
+      const label = new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', weekday: 'short' }).format(d).slice(0, 2)
+      const isToday = ymd === today
+      let active = false
+      if (alreadyClaimed) {
+        if (count > 0) {
+          const last = new Date(`${today}T00:00:00+07:00`)
+          for (let k = 0; k < count && k < 7; k++) {
+            const c = new Date(last)
+            c.setDate(last.getDate() - k)
+            const cy = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' }).format(c)
+            if (cy === ymd) active = true
+          }
+        }
+      } else {
+        if (count > 0 && lastDate === yesterday) {
+          const last = new Date(`${yesterday}T00:00:00+07:00`)
+          for (let k = 0; k < count && k < 7; k++) {
+            const c = new Date(last)
+            c.setDate(last.getDate() - k)
+            const cy = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' }).format(c)
+            if (cy === ymd) active = true
+          }
+        }
+      }
+      dots.push({ date: ymd, label, active, isToday })
+    }
+    return dots
+  })()
+
+  return (
+    <div className="relative overflow-hidden rounded-[20px] border border-white/15 shadow-xl" style={{ background: 'var(--app-gradient, linear-gradient(135deg, #f97316 0%, #ef4444 50%, #ec4899 100%))' }}>
+      <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-white/10 blur-2xl" aria-hidden />
+      <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full bg-white/5 blur-xl" aria-hidden />
+      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.07] via-transparent to-black/10" aria-hidden />
+      <div className="relative px-4 py-4 sm:px-5 sm:py-5">
+        <div className="flex gap-3.5 sm:gap-4">
+          <div className="relative shrink-0">
+            <div className="flex h-[56px] w-[56px] items-center justify-center rounded-[18px] bg-white shadow-[0_8px_20px_-8px_rgba(0,0,0,0.35)] ring-1 ring-white/20 sm:h-[52px] sm:w-[52px]">
+              <Flame className={`h-7 w-7 ${alreadyClaimed ? 'text-orange-500 animate-pulse' : 'text-orange-500'}`} />
+            </div>
+            {alreadyClaimed && (
+              <span className="absolute -top-1 -left-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white shadow-md ring-2 ring-white">
+                <Check className="h-3.5 w-3.5" />
+              </span>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <h3 className="text-[15px] font-extrabold tracking-tight text-white sm:text-[16px]">Streak Api</h3>
+              <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] font-extrabold leading-none text-orange-600 shadow-sm">
+                <Flame className="h-3 w-3" /> {count} hari
+              </span>
+              {alreadyClaimed ? (
+                <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2 py-1 text-[10px] font-bold leading-none text-white shadow-sm">
+                  <Check className="h-3 w-3" /> Aktif hari ini
+                </span>
+              ) : (
+                <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-1 text-[10px] font-bold leading-none text-white backdrop-blur">
+                  <Sparkles className="h-3 w-3" /> Harian
+                </span>
+              )}
+            </div>
+            <p className="mt-1.5 text-[12px] font-medium leading-snug text-white sm:text-[12.5px] sm:leading-snug">
+              {alreadyClaimed ? (
+                <span className="text-white">Sudah aktif hari ini · <span className="font-bold">streak {count} hari</span> terjaga 🔥</span>
+              ) : streakBroken && count > 0 ? (
+                <span className="text-white/95">Streak terputus di <span className="font-bold">{count} hari</span> · mulai lagi sekarang!</span>
+              ) : count === 0 ? (
+                <span className="text-white/95">Mulai streak harianmu — nyalakan tiap hari tanpa putus ✨</span>
+              ) : (
+                <span className="text-white/95">Lanjutkan <span className="font-bold">streak {count} hari</span> · klaim hari ini biar makin panjang!</span>
+              )}
+            </p>
+          </div>
+          <button
+            onClick={handleClaim}
+            disabled={alreadyClaimed}
+            className={`hidden shrink-0 items-center justify-center gap-1.5 rounded-xl px-5 py-3 text-sm font-extrabold shadow-[0_8px_20px_-8px_rgba(0,0,0,0.35)] transition-all active:scale-[0.98] sm:inline-flex ${alreadyClaimed ? 'bg-white/15 text-white/60 cursor-not-allowed backdrop-blur' : 'bg-white text-orange-600 hover:bg-white hover:shadow-xl hover:-translate-y-0.5'}`}
+          >
+            {alreadyClaimed ? 'Sudah Aktif ✓' : <><Zap className="h-4 w-4" /> Nyalakan Hari Ini</>}
+          </button>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between gap-1.5 rounded-2xl bg-white/10 p-2.5 backdrop-blur-md ring-1 ring-white/10 sm:mt-4 sm:p-3">
+          {weekDots.map((d) => (
+            <div key={d.date} className="flex flex-1 flex-col items-center gap-1">
+              <span className={`text-[10px] font-semibold leading-none ${d.isToday ? 'text-white' : 'text-white/60'}`}>{d.label}</span>
+              <span
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold shadow-sm transition-all sm:h-9 sm:w-9 ${
+                  d.active
+                    ? 'bg-white text-orange-600 shadow-md scale-105 ring-2 ring-white/30'
+                    : d.isToday
+                      ? 'bg-white/20 text-white ring-1 ring-white/30 backdrop-blur'
+                      : 'bg-white/10 text-white/50 ring-1 ring-white/5'
+                }`}
+              >
+                {d.active ? <Flame className="h-4 w-4" /> : <span className="text-[11px]">•</span>}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <button
+          onClick={handleClaim}
+          disabled={alreadyClaimed}
+          className={`mt-3 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-extrabold shadow-lg transition-all active:scale-[0.98] sm:hidden ${alreadyClaimed ? 'bg-white/15 text-white/70 backdrop-blur ring-1 ring-white/15' : 'bg-white text-orange-600 shadow-[0_8px_20px_-8px_rgba(0,0,0,0.35)]'}`}
+        >
+          {alreadyClaimed ? (
+            <>
+              <Check className="h-4 w-4" /> Sudah Aktif Hari Ini
+            </>
+          ) : (
+            <>
+              <Zap className="h-4 w-4" /> Nyalakan Streak Hari Ini
+            </>
+          )}
+        </button>
+        {!alreadyClaimed && (
+          <p className="mt-2 text-center text-[10px] font-medium leading-none text-white/70 sm:hidden">Klaim tiap hari · jangan sampai putus 🔥</p>
+        )}
+      </div>
+    </div>
+  )
+}
 
 export default function StudentDashboard() {
   useDocumentTitle('Beranda Siswa')
@@ -34,7 +217,7 @@ export default function StudentDashboard() {
   )
 
   const d = query.data
-  const inProgressAttempts = (d?.attempts ?? []).filter((a) => a.status === 'in_progress')
+  const inProgressAttempts = (d?.attempts ?? []).filter((a) => a.status === 'in_progress' && (a.exams as unknown as { status?: string } | null)?.status === 'published')
   const [showIncompletePopup, setShowIncompletePopup] = useState(false)
   useEffect(() => {
     if (inProgressAttempts.length > 0) {
@@ -64,9 +247,10 @@ export default function StudentDashboard() {
   const canStart = (d?.exams ?? []).filter((e) => e.status_for_me === 'can_start' || e.status_for_me === 'resume')
   const upcoming = (d?.exams ?? []).filter((e) => e.status_for_me === 'upcoming')
   const doneAttempts = (d?.attempts ?? []).filter((a) => a.status !== 'in_progress' && a.status !== 'cancelled')
+  const scorableAttempts = doneAttempts.filter((a) => (a.exams as unknown as { show_result_to_student?: boolean } | null)?.show_result_to_student !== false)
 
   // ---- grafik perkembangan nilai (kronologis) ----
-  const scoreTrend = [...doneAttempts]
+  const scoreTrend = [...scorableAttempts]
     .reverse()
     .map((a, i) => ({
       label: `U${i + 1}`,
@@ -80,7 +264,7 @@ export default function StudentDashboard() {
   let correct = 0
   let wrong = 0
   let empty = 0
-  for (const a of doneAttempts) {
+  for (const a of scorableAttempts) {
     const r = a.results?.[0]
     if (!r) continue
     correct += r.correct_count ?? 0
@@ -100,7 +284,7 @@ export default function StudentDashboard() {
     }))
     .reverse()
 
-  const lastScore = doneAttempts.find(
+  const lastScore = scorableAttempts.find(
     (a) => a.results?.[0]?.final_score !== null && a.results?.[0]?.final_score !== undefined,
   )
 
@@ -115,6 +299,12 @@ export default function StudentDashboard() {
         }
         icon={<IdCard className="h-5 w-5" />}
       />
+
+      {profile && (
+        <div className="mb-4 sm:mb-5">
+          <StreakCard profileId={profile.id} />
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         <StatCard label="Bisa Dikerjakan" value={canStart.length} icon={<PlayCircle className="h-5 w-5" />} tone="green" hint={canStart.some((e) => e.status_for_me === 'resume') ? 'Ada yang belum selesai!' : undefined} />
@@ -244,6 +434,8 @@ export default function StudentDashboard() {
                     </span>
                     {a.status === 'in_progress' ? (
                       <Badge tone="amber">Berlangsung</Badge>
+                    ) : (a.exams as unknown as { show_result_to_student?: boolean } | null)?.show_result_to_student === false ? (
+                      <Badge tone="gray">Disembunyikan</Badge>
                     ) : result?.final_score !== null && result?.final_score !== undefined ? (
                       <Badge tone={result.passed === true ? 'green' : result.passed === false ? 'red' : 'blue'}>
                         {formatNumber(Number(result.final_score), 1)}

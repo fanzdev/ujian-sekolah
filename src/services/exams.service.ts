@@ -44,13 +44,78 @@ export async function createExam(input: ExamInput): Promise<Exam> {
   const { code, ...rest } = input as ExamInput & { code?: never }
   void code
 
-  const { data, error } = await supabase
-    .from('exams')
-    .insert({ ...rest, created_by: uid })
-    .select()
-    .single()
-  if (error) throw error
-  void logAudit('CREATE_EXAM', 'exam', (data as Exam).id, { title: (data as Exam).title })
+  let defaults: Record<string, unknown> = {}
+  try {
+    const { data: def } = await supabase.from('system_settings').select('value').eq('key', 'exam_defaults').maybeSingle()
+    if (def?.value && typeof def.value === 'object') defaults = def.value as Record<string, unknown>
+  } catch { /* ignore */ }
+
+  const sanitizeNum = (v: unknown, fallback: number) => {
+    const n = Number(v)
+    return Number.isFinite(n) ? n : fallback
+  }
+  const merged: Record<string, unknown> = {
+    shuffle_questions: (defaults.shuffle_questions as boolean | undefined) ?? true,
+    shuffle_options: (defaults.shuffle_options as boolean | undefined) ?? true,
+    max_attempts: sanitizeNum(defaults.max_attempts, 1),
+    violation_limit: sanitizeNum(defaults.violation_limit, 3),
+    auto_submit_on_limit: (defaults.auto_submit_on_limit as boolean | undefined) ?? true,
+    fullscreen_required: (defaults.fullscreen_required as boolean | undefined) ?? true,
+    camera_monitoring: (defaults.camera_monitoring as boolean | undefined) ?? true,
+    show_result_to_student: (defaults.show_result_to_student as boolean | undefined) ?? true,
+    show_answers_after: (defaults.show_answers_after as boolean | undefined) ?? true,
+    passing_grade: sanitizeNum(defaults.passing_grade, 0),
+    allow_outside_schedule: (defaults.allow_outside_schedule as boolean | undefined) ?? false,
+    ...rest,
+  }
+  // Sanitize numeric fields from rest if they are NaN
+  for (const k of ['max_attempts', 'violation_limit', 'passing_grade'] as const) {
+    const v = merged[k]
+    if (v !== null && v !== undefined && !Number.isFinite(Number(v))) {
+      merged[k] = k === 'passing_grade' ? 0 : k === 'violation_limit' ? 3 : 1
+    } else if (typeof v === 'number') {
+      merged[k] = k === 'passing_grade' ? Number(v) : Math.trunc(Number(v))
+    }
+  }
+
+  const tryInsert = async (payload: Record<string, unknown>) => {
+    const { data, error } = await supabase.from('exams').insert({ ...payload, created_by: uid }).select().single()
+    if (error) throw error
+    return data
+  }
+
+  let data: Record<string, unknown>
+  try {
+    data = (await tryInsert(merged)) as Record<string, unknown>
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    const isMissingColumn = msg.toLowerCase().includes('allow_outside_schedule')
+    const isDuplicate = msg.toLowerCase().includes('duplicate') || msg.includes('23505') || msg.toLowerCase().includes('unique')
+    if (isMissingColumn) {
+      const fallback = { ...merged }
+      delete (fallback as Record<string, unknown>).allow_outside_schedule
+      try {
+        data = (await tryInsert(fallback)) as Record<string, unknown>
+      } catch (err2) {
+        const msg2 = err2 instanceof Error ? err2.message : String(err2)
+        if (msg2.toLowerCase().includes('duplicate') || msg2.includes('23505')) {
+          // retry with new random code
+          const retryPayload = { ...fallback, exam_code: (Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 4)).toUpperCase() }
+          data = (await tryInsert(retryPayload)) as Record<string, unknown>
+        } else {
+          throw err2
+        }
+      }
+    } else if (isDuplicate) {
+      const retryPayload = { ...merged, exam_code: (Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 4)).toUpperCase() }
+      // if allow_outside still missing, remove it for retry as well
+      if (String(msg).toLowerCase().includes('allow_outside_schedule')) delete (retryPayload as Record<string, unknown>).allow_outside_schedule
+      data = (await tryInsert(retryPayload)) as Record<string, unknown>
+    } else {
+      throw err
+    }
+  }
+  void logAudit('CREATE_EXAM', 'exam', (data as unknown as Exam).id, { title: (data as unknown as Exam).title })
   return mapExam(data as Record<string, unknown>)
 }
 

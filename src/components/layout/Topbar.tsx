@@ -230,11 +230,8 @@ export function Topbar({
           <path strokeLinecap="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
         </svg>
       </button>
-      <div className="hidden sm:block">
+      <div className="flex items-center shrink-0">
         <NetworkPing />
-      </div>
-      <div className="sm:hidden flex items-center">
-        <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" aria-hidden />
       </div>
 
       <div className="hidden sm:flex min-w-0 flex-1">
@@ -287,12 +284,12 @@ export function Topbar({
             <div
               onMouseDown={handleNotifDragStart}
               onTouchStart={handleNotifDragStart}
-              className="flex cursor-grab select-none items-center justify-between border-b border-slate-100 bg-gradient-to-r from-primary-600 to-sky-500 px-4 py-3 text-white active:cursor-grabbing dark:border-slate-800"
-              style={{ touchAction: 'none' }}
+              className="flex cursor-grab select-none items-center justify-between border-b border-slate-100 px-4 py-3 text-white active:cursor-grabbing dark:border-slate-800"
+              style={{ touchAction: 'none', background: 'var(--app-gradient, linear-gradient(to right, rgb(var(--c-primary-600)), rgb(var(--c-accent-600))))', color: 'white' }}
             >
-              <p className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                <span className="hidden sm:inline text-slate-400 dark:text-slate-500" aria-hidden>⠿</span> Notifikasi
-                <span className="hidden text-[10px] font-normal text-slate-400 sm:inline">— geser untuk pindah</span>
+              <p className="flex items-center gap-2 text-sm font-semibold text-white">
+                <span className="hidden sm:inline text-white/60" aria-hidden>⠿</span> Notifikasi
+                <span className="hidden text-[10px] font-normal text-white/70 sm:inline">— geser untuk pindah</span>
               </p>
               {unread > 0 && (
                 <button
