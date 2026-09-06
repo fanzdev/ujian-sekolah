@@ -2,7 +2,7 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/webp" href="/logo.webp" />
+    <link rel="icon" type="image/webp" href="%BASE_URL%logo.webp" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0f172a" />
     <meta name="description" content="SMK AL-FATA CBT - Sistem Ujian Berbasis Komputer" />
@@ -82,7 +82,7 @@
         <div class="ss-logo-wrap">
           <div class="ss-logo-glow"></div>
           <div class="ss-logo-card">
-            <img src="/logo.webp" alt="Logo SMK AL-FATA" width="60" height="60" style="width:60px; height:60px; object-fit:contain;" />
+            <img src="%BASE_URL%logo.webp" alt="Logo SMK AL-FATA" width="60" height="60" style="width:60px; height:60px; object-fit:contain;" />
           </div>
         </div>
         <div class="ss-title" id="ss-title">SMK AL-FATA CBT</div>
@@ -122,11 +122,11 @@
             }
             if (b.logo_url && !String(b.logo_url).includes('vcbt') && String(b.logo_url).indexOf('logo.svg')===-1 && String(b.logo_url).indexOf('favicon.svg')===-1) {
               var img = document.querySelector('#static-splash img[alt="Logo SMK AL-FATA"]')
-              if (img) { img.src = b.logo_url; img.onerror = function(){ this.onerror=null; this.src='/logo.webp'; } }
+              if (img) { img.src = b.logo_url; img.onerror = function(){ this.onerror=null; this.src='%BASE_URL%logo.webp'; } }
               var fav = document.querySelector('link[rel="icon"]')
               if (fav) fav.href = b.logo_url
             } else if (b.logo_url && String(b.logo_url).includes('vcbt')) {
-              try { var c=JSON.parse(localStorage.getItem('cbt-branding')||'{}'); if(c.logo_url&&String(c.logo_url).includes('vcbt')){ c.logo_url='/logo.webp'; localStorage.setItem('cbt-branding', JSON.stringify(c)); } } catch(e){}
+              try { var c=JSON.parse(localStorage.getItem('cbt-branding')||'{}'); if(c.logo_url&&String(c.logo_url).includes('vcbt')){ c.logo_url='%BASE_URL%logo.webp'; localStorage.setItem('cbt-branding', JSON.stringify(c)); } } catch(e){}
             }
             if (b.primary_color) {
               var pc = b.primary_color

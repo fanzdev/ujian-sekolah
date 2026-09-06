@@ -60,7 +60,7 @@ function RoleHome() {
 
 export function AppRoutes() {
   return (
-    <BrowserRouter basename={import.meta.env.BASE_URL || '/ujian/'}>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route path="/env-required" element={<S><SetupPage /></S>} />
         <Route path="/setup" element={<S><SetupWizardPage /></S>} />

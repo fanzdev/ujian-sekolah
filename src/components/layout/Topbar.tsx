@@ -34,7 +34,7 @@ function NetworkPing() {
         return
       }
       const start = performance.now()
-      const url = new URL('logo.webp', window.location.origin).toString()
+      const url = new URL(`${import.meta.env.BASE_URL}logo.webp`, window.location.origin).toString()
       const doFetch = async (method: 'HEAD' | 'GET') => {
         const ctrl = new AbortController()
         const t = window.setTimeout(() => ctrl.abort(), 2500)

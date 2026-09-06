@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import fs from 'node:fs'
 import path from 'node:path'
 
-const BASE_PATH = ''
+const BASE_PATH = process.env.VERCEL ? '/' : '/ujian/'
 
 const GH_REDIRECT_SCRIPT =
   '<script>(function(){try{var p=location.pathname;if(p.indexOf("' +
@@ -21,6 +21,7 @@ function ghPagesFallback(): Plugin {
     name: 'gh-pages-404-fallback',
     apply: 'build',
     closeBundle() {
+      if (BASE_PATH === '/') return
       const distDir = path.resolve(__dirname, 'dist')
       const indexPath = path.join(distDir, 'index.html')
       const fallbackPath = path.join(distDir, '404.html')
