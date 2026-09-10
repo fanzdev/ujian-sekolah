@@ -10,6 +10,7 @@ import { AppErrorBoundary } from './components/AppErrorBoundary'
 import { SplashScreen } from './components/ui/SplashScreen'
 import { fetchSchoolSettings, applyBranding } from './services/settings.service'
 import { initThemeEarly } from './hooks/useTheme'
+import { getDefaultLogo, resolveLogoUrl, sanitizeLogoUrl } from './lib/logo'
 
 initThemeEarly()
 
@@ -29,7 +30,7 @@ function BrandingBoot({ children }: { children: React.ReactNode }) {
       .then((s) => {
         applyBranding(s)
         try {
-          const cleanLogo = s.logo_url && !String(s.logo_url).includes('vcbt') && !String(s.logo_url).includes('logo.svg') ? s.logo_url : `${import.meta.env.BASE_URL}logo.webp`
+          const cleanLogo = sanitizeLogoUrl(s.logo_url) ? resolveLogoUrl(s.logo_url) : getDefaultLogo()
           localStorage.setItem('cbt-branding', JSON.stringify({ app_name: s.app_name, school_name: s.school_name, logo_url: cleanLogo, primary_color: s.primary_color, secondary_color: s.secondary_color }))
           if (s.app_name) document.title = s.app_name
           const metaDesc = document.querySelector<HTMLMetaElement>('meta[name="description"]')

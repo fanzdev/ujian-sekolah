@@ -1,5 +1,6 @@
 import { supabase } from './client'
 import type { SchoolSettings, SystemSettingsMap } from '@/types/models'
+import { getDefaultLogo, resolveLogoUrl, sanitizeLogoUrl } from '@/lib/logo'
 
 export async function fetchSchoolSettings(): Promise<SchoolSettings> {
   const { data, error } = await supabase
@@ -16,8 +17,8 @@ export async function fetchSchoolSettings(): Promise<SchoolSettings> {
     normalized ?? {
       app_name: 'SMK AL-FATA CBT',
       school_name: 'SMK AL-FATA',
-      logo_url: `${import.meta.env.BASE_URL}logo.webp`,
-      favicon_url: `${import.meta.env.BASE_URL}logo.webp`,
+      logo_url: getDefaultLogo(),
+      favicon_url: getDefaultLogo(),
       primary_color: '#0D868F',
       secondary_color: '#0CBCC9',
       extra_colors: [],
@@ -121,17 +122,8 @@ export function applyBranding(settings: SchoolSettings): void {
 
   document.title = settings.app_name || 'SMK AL-FATA CBT'
 
-  const fallbackLogo = `${import.meta.env.BASE_URL}logo.webp`
-  const sanitizeLogo = (u: string | null | undefined): string | null => {
-    if (!u || typeof u !== 'string') return null
-    const s = u.trim()
-    if (!s) return null
-    if (s.includes('vcbt')) return null
-    if (s.includes('logo.svg') || s.includes('favicon.svg')) return null
-    return s
-  }
-  const cleanLogo = sanitizeLogo(settings.logo_url) ?? fallbackLogo
-  const cleanFavicon = sanitizeLogo(settings.favicon_url) ?? cleanLogo
+  const cleanLogo = resolveLogoUrl(settings.logo_url)
+  const cleanFavicon = sanitizeLogoUrl(settings.favicon_url) ? resolveLogoUrl(settings.favicon_url) : cleanLogo
 
   let faviconLink = document.querySelector<HTMLLinkElement>("link[rel~='icon']")
   if (!faviconLink) {
@@ -149,20 +141,14 @@ export function applyBranding(settings: SchoolSettings): void {
   try {
     const raw = localStorage.getItem('cbt-branding')
     const prev = raw ? (JSON.parse(raw) as Record<string, unknown>) : {}
-    const fallbackLogo2 = `${import.meta.env.BASE_URL}logo.webp`
-    const cleanForStore = (u: string | null | undefined): string | null => {
-      if (!u || typeof u !== 'string') return null
-      const s = u.trim()
-      if (!s || s.includes('vcbt') || s.includes('logo.svg') || s.includes('favicon.svg')) return null
-      return s
-    }
+    const fallbackLogo2 = getDefaultLogo()
     localStorage.setItem(
       'cbt-branding',
       JSON.stringify({
         ...prev,
         app_name: settings.app_name,
         school_name: settings.school_name,
-        logo_url: cleanForStore(settings.logo_url) ?? fallbackLogo2,
+        logo_url: sanitizeLogoUrl(settings.logo_url) ? resolveLogoUrl(settings.logo_url) : fallbackLogo2,
         primary_color: settings.primary_color,
         secondary_color: settings.secondary_color,
       }),

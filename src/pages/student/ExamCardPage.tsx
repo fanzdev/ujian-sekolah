@@ -10,6 +10,7 @@ import { fetchSchoolSettings } from '@/services/settings.service'
 import { useAuth } from '@/hooks/useAuth'
 import { formatDateTime } from '@/lib/datetime'
 import { formatNumber } from '@/lib/utils'
+import { resolveLogoUrl } from '@/lib/logo'
 import { IdCard } from 'lucide-react'
 
 export default function ExamCardPage() {
@@ -46,7 +47,7 @@ export default function ExamCardPage() {
           <div id="print-area">
             <Card className="overflow-hidden animate-fade-in">
               <div className="flex items-center gap-4 bg-gradient-to-r from-primary-700 to-primary-900 px-6 py-5 text-white">
-                <img src={d.school.logo_url || `${import.meta.env.BASE_URL}logo.webp`} alt="" className="h-12 w-12 rounded-xl bg-white/10 object-contain p-1" width={48} height={48} />
+                <img src={resolveLogoUrl(d.school.logo_url)} alt="" className="h-12 w-12 rounded-xl bg-white/10 object-contain p-1" width={48} height={48} onError={(e)=>{ const t=e.currentTarget; const fb=resolveLogoUrl(null); if(t.src === fb || t.src.endsWith(fb)) return; t.onerror=null; t.src=fb }} />
                 <div>
                   <p className="text-sm font-extrabold uppercase tracking-wide">{d.school.app_name}</p>
                   <p className="text-xs text-white/70">{d.school.school_name}{d.school.academic_year ? ` · T.A. ${d.school.academic_year}` : ''}</p>

@@ -1,42 +1,41 @@
 import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { getDefaultLogo, resolveLogoUrl, sanitizeLogoUrl } from '@/lib/logo'
 
 export function SplashScreen({ visible }: { visible: boolean }) {
   const [mounted, setMounted] = useState(visible)
   const [branding, setBranding] = useState<{ app_name: string; school_name: string; logo_url: string | null; primary_color: string; secondary_color: string } | null>(null)
 
-  const sanitizeLogo = (u: string | null | undefined): string | null => {
-    if (!u || typeof u !== 'string') return null
-    const s = u.trim()
-    if (!s || s.includes('vcbt') || s.includes('logo.svg') || s.includes('favicon.svg')) return null
-    return s
-  }
+  const fallbackLogo = getDefaultLogo()
   useEffect(() => {
     let cancelled = false
     const cached = (() => {
       try {
         const raw = localStorage.getItem('cbt-branding')
         const c = raw ? (JSON.parse(raw) as { app_name?: string; school_name?: string; logo_url?: string; primary_color?: string; secondary_color?: string }) : null
-        if (c && c.logo_url && (c.logo_url.includes('vcbt') || c.logo_url.includes('logo.svg'))) {
+        const sanitized = sanitizeLogoUrl(c?.logo_url)
+        if (c && !sanitized) {
           c.logo_url = undefined
           try { localStorage.setItem('cbt-branding', JSON.stringify(c)) } catch { void 0 }
+        } else if (c?.logo_url && sanitized) {
+          c.logo_url = resolveLogoUrl(c.logo_url)
         }
         return c
       } catch (e: unknown) { void e; return null }
     })()
-    if (cached?.app_name) setBranding({ app_name: cached.app_name, school_name: cached.school_name ?? 'SMK AL-FATA', logo_url: sanitizeLogo(cached.logo_url) ?? null, primary_color: cached.primary_color || '#0D868F', secondary_color: cached.secondary_color || '#0CBCC9' })
+    if (cached?.app_name) setBranding({ app_name: cached.app_name, school_name: cached.school_name ?? 'SMK AL-FATA', logo_url: cached.logo_url ? resolveLogoUrl(cached.logo_url) : null, primary_color: cached.primary_color || '#0D868F', secondary_color: cached.secondary_color || '#0CBCC9' })
     import('@/services/settings.service').then(({ fetchSchoolSettings }) =>
       fetchSchoolSettings()
         .then((s) => {
           if (cancelled) return
-          const cleanLogo = sanitizeLogo(s.logo_url)
+          const cleanLogo = sanitizeLogoUrl(s.logo_url) ? resolveLogoUrl(s.logo_url) : null
           setBranding({ app_name: s.app_name, school_name: s.school_name, logo_url: cleanLogo, primary_color: s.primary_color || '#0D868F', secondary_color: s.secondary_color || '#0CBCC9' })
-          try { localStorage.setItem('cbt-branding', JSON.stringify({ app_name: s.app_name, school_name: s.school_name, logo_url: cleanLogo ?? `${import.meta.env.BASE_URL}logo.webp`, primary_color: s.primary_color, secondary_color: s.secondary_color })) } catch (e: unknown) { void e }
+          try { localStorage.setItem('cbt-branding', JSON.stringify({ app_name: s.app_name, school_name: s.school_name, logo_url: cleanLogo ?? fallbackLogo, primary_color: s.primary_color, secondary_color: s.secondary_color })) } catch (e: unknown) { void e }
         })
         .catch(() => undefined),
     )
     return () => { cancelled = true }
-  }, [])
+  }, [fallbackLogo])
 
   useEffect(() => {
     if (visible) {
@@ -97,10 +96,10 @@ export function SplashScreen({ visible }: { visible: boolean }) {
         <div className="relative" style={{ animation: 'ssLogo 2.2s ease-in-out infinite' }}>
           <div className="absolute inset-0 -z-10 scale-[1.75] rounded-[2rem] blur-[30px] will-change-transform" style={{ background: `${pc}24`, transform: 'translateZ(0)' }} />
           <div
-            className="flex h-[92px] w-[92px] items-center justify-center rounded-[20px] bg-white shadow-[0_12px_40px_rgba(15,23,42,0.12),0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-200/70 dark:bg-slate-900 dark:ring-slate-800 will-change-transform"
+            className="flex h-[92px] w-[92px] items-center justify-center rounded-[20px] bg-white shadow-[0_12px_40px_rgba(15,23,42,0.12),0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-200/70 dark:bg-white dark:ring-slate-200/70 will-change-transform"
             style={{ transform: 'translateZ(0)' }}
           >
-            <img src={branding?.logo_url || `${import.meta.env.BASE_URL}logo.webp`} alt="Logo SMK AL-FATA" className="h-[60px] w-[60px] object-contain" width={60} height={60} loading="eager" decoding="sync" onError={(e) => { const t=e.currentTarget; if(t.src.endsWith('logo.webp')) return; t.onerror=null; t.src=`${import.meta.env.BASE_URL}logo.webp` }} />
+            <img src={branding?.logo_url ? resolveLogoUrl(branding.logo_url) : fallbackLogo} alt="Logo SMK AL-FATA" className="h-[60px] w-[60px] object-contain bg-white" width={60} height={60} loading="eager" decoding="sync" onError={(e) => { const t=e.currentTarget; const fb=fallbackLogo; if(t.src === fb || t.src.endsWith(fb)) return; t.onerror=null; t.src=fb }} />
           </div>
         </div>
 

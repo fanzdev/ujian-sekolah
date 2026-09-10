@@ -1,14 +1,16 @@
-const CACHE_NAME = 'cbt-v2';
-const OFFLINE_URL = '/ujian/index.html';
+const CACHE_NAME = 'cbt-v3';
+const SCOPE = self.registration ? self.registration.scope : self.location.href;
+const BASE_PATH = new URL(SCOPE).pathname;
+const OFFLINE_URL = new URL('index.html', SCOPE).toString();
 const ASSETS = [
-  '/ujian/',
-  '/ujian/index.html',
-  '/ujian/logo.webp',
+  BASE_PATH,
+  OFFLINE_URL,
+  new URL('logo.webp', SCOPE).toString(),
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS).catch(() => undefined)).then(() => self.skipWaiting())
   );
 });
 
@@ -23,8 +25,7 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
-  // Network first for API/supabase, cache first for static
-  if (url.pathname.startsWith('/ujian/assets/') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css') || url.pathname.endsWith('.woff2') || url.pathname.endsWith('.svg') || url.pathname.endsWith('.webp')) {
+  if (url.pathname.includes('/assets/') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css') || url.pathname.endsWith('.woff2') || url.pathname.endsWith('.svg') || url.pathname.endsWith('.webp')) {
     event.respondWith(
       caches.match(req).then((cached) => {
         const fetched = fetch(req)
