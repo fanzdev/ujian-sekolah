@@ -46,21 +46,34 @@ function AppShell() {
   const [splashVisible, setSplashVisible] = useState(true)
   useEffect(() => {
     const el = document.getElementById('static-splash')
-    if (el) {
-      el.style.opacity = '0'
-      el.style.pointerEvents = 'none'
-      window.setTimeout(() => el.remove(), 700)
-    }
     const minMs = 1100
     const start = Date.now()
+    const fadeOutStatic = () => {
+      if (el) {
+        el.style.opacity = '0'
+      el.style.pointerEvents = 'none'
+        window.setTimeout(() => el.remove(), 700)
+      }
+    }
     const hide = () => {
       const elapsed = Date.now() - start
       const remain = Math.max(0, minMs - elapsed)
       window.setTimeout(() => setSplashVisible(false), remain)
     }
-    if (document.readyState === 'complete') hide()
-    else window.addEventListener('load', hide, { once: true })
-    const fallback = window.setTimeout(() => setSplashVisible(false), minMs + 1200)
+    const logoUrl = getDefaultLogo()
+    const img = new Image()
+    let settled = false
+    const onLogoReady = () => {
+      if (settled) return
+      settled = true
+      fadeOutStatic()
+      if (document.readyState === 'complete') hide()
+      else window.addEventListener('load', hide, { once: true })
+    }
+    img.onload = onLogoReady
+    img.onerror = onLogoReady
+    img.src = logoUrl
+    const fallback = window.setTimeout(() => { if (!settled) { settled = true; fadeOutStatic(); hide() } }, minMs + 1200)
     return () => {
       window.clearTimeout(fallback)
       window.removeEventListener('load', hide)

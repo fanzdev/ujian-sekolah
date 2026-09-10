@@ -4,9 +4,29 @@ import { getDefaultLogo, resolveLogoUrl, sanitizeLogoUrl } from '@/lib/logo'
 
 export function SplashScreen({ visible }: { visible: boolean }) {
   const [mounted, setMounted] = useState(visible)
-  const [branding, setBranding] = useState<{ app_name: string; school_name: string; logo_url: string | null; primary_color: string; secondary_color: string } | null>(null)
-
   const fallbackLogo = getDefaultLogo()
+  const [logoReady, setLogoReady] = useState(false)
+  useEffect(() => {
+    const img = new Image()
+    img.onload = () => setLogoReady(true)
+    img.onerror = () => setLogoReady(true)
+    img.src = fallbackLogo
+  }, [fallbackLogo])
+  const [branding, setBranding] = useState<{ app_name: string; school_name: string; logo_url: string | null; primary_color: string; secondary_color: string } | null>(() => {
+    try {
+      if (typeof window === 'undefined') return null
+      const raw = localStorage.getItem('cbt-branding')
+      const c = raw ? (JSON.parse(raw) as { app_name?: string; school_name?: string; logo_url?: string; primary_color?: string; secondary_color?: string }) : null
+      if (!c?.app_name) return null
+      const sanitized = sanitizeLogoUrl(c.logo_url)
+      if (!sanitized && c.logo_url) {
+        try { const copy = { ...c, logo_url: undefined }; localStorage.setItem('cbt-branding', JSON.stringify(copy)) } catch { void 0 }
+        return { app_name: c.app_name, school_name: c.school_name ?? 'SMK AL-FATA', logo_url: null, primary_color: c.primary_color || '#0D868F', secondary_color: c.secondary_color || '#0CBCC9' }
+      }
+      return { app_name: c.app_name, school_name: c.school_name ?? 'SMK AL-FATA', logo_url: c.logo_url ? resolveLogoUrl(c.logo_url) : null, primary_color: c.primary_color || '#0D868F', secondary_color: c.secondary_color || '#0CBCC9' }
+    } catch { return null }
+  })
+
   useEffect(() => {
     let cancelled = false
     const cached = (() => {
@@ -67,21 +87,19 @@ export function SplashScreen({ visible }: { visible: boolean }) {
     <div
       aria-hidden={!visible}
       className={cn(
-        'fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden bg-white dark:bg-slate-950 font-sans',
+        'fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden bg-[#0B1E24] font-sans',
         'will-change-[opacity] [transform:translateZ(0)]',
         visible ? 'opacity-100' : 'pointer-events-none opacity-0',
       )}
       style={{ transition: 'opacity 680ms cubic-bezier(0.22,1,0.36,1)', WebkitFontSmoothing: 'antialiased', overflow: 'hidden' }}
     >
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-50 via-white to-slate-50 dark:from-slate-900 dark:via-slate-950 dark:to-[#070e22]" />
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.035] dark:opacity-[0.055]"
-        style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgb(100 116 139) 1px, transparent 0)', backgroundSize: '24px 24px' }}
-      />
-      <div className="pointer-events-none absolute -top-28 -right-28 h-[620px] w-[620px] rounded-full bg-primary-500/10 blur-3xl dark:bg-primary-500/[0.09] will-change-transform" style={{ transform: 'translateZ(0)', animation: 'ssFloat 8s ease-in-out infinite' }} />
-      <div className="pointer-events-none absolute -bottom-44 -left-44 h-[640px] w-[640px] rounded-full blur-3xl will-change-transform" style={{ background: `${sc}1a`, animation: 'ssFloat 9s ease-in-out infinite reverse' }} />
-      <div className="pointer-events-none absolute left-1/2 top-1/2 h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-primary-200/20 dark:border-white/5" style={{ animation: 'ssPulseRing 3s ease-out infinite' }} />
-      <div className="pointer-events-none absolute left-1/2 top-1/2 h-[360px] w-[360px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-primary-300/10 dark:border-white/[0.03]" style={{ animation: 'ssPulseRing 3s ease-out 0.6s infinite' }} />
+      <div className="absolute inset-0" style={{ background: `radial-gradient(900px 600px at 50% -10%, ${pc}2e, transparent 60%), linear-gradient(180deg, #0F2A2E 0%, #0B1E24 55%, #081419 100%)` }} />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.06]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1.2px, transparent 0)', backgroundSize: '24px 24px' }} />
+      <div aria-hidden className="pointer-events-none absolute left-1/2 top-[46%] -translate-x-1/2 -translate-y-1/2 select-none font-black tracking-[-0.06em] text-transparent" style={{ fontSize: 'clamp(110px, 26vw, 220px)', WebkitTextStroke: '1.2px rgba(255,255,255,0.07)' }}>VEYRA</div>
+      <div className="pointer-events-none absolute -top-28 -right-28 h-[620px] w-[620px] rounded-full blur-[40px] will-change-transform" style={{ background: `${pc}24`, transform: 'translateZ(0)', animation: 'ssFloat 8s ease-in-out infinite' }} />
+      <div className="pointer-events-none absolute -bottom-44 -left-44 h-[640px] w-[640px] rounded-full blur-[36px] will-change-transform" style={{ background: `${sc}1a`, animation: 'ssFloat 9s ease-in-out infinite reverse' }} />
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-[440px] w-[440px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/8" style={{ animation: 'ssPulseRing 3s ease-out infinite' }} />
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-[360px] w-[360px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.04]" style={{ animation: 'ssPulseRing 3s ease-out 0.6s infinite' }} />
 
       <div
         className={cn(
@@ -93,41 +111,41 @@ export function SplashScreen({ visible }: { visible: boolean }) {
           transition: 'opacity 560ms cubic-bezier(0.22,1,0.36,1) 80ms, transform 620ms cubic-bezier(0.22,1,0.36,1) 80ms',
         }}
       >
-        <div className="relative" style={{ animation: 'ssLogo 2.2s ease-in-out infinite' }}>
-          <div className="absolute inset-0 -z-10 scale-[1.75] rounded-[2rem] blur-[30px] will-change-transform" style={{ background: `${pc}24`, transform: 'translateZ(0)' }} />
+        <div className="relative" style={{ animation: 'ssLogo 2.4s ease-in-out infinite' }}>
+          <div className="absolute inset-0 -z-10 scale-[1.7] rounded-[22px] blur-[28px] will-change-transform" style={{ background: `${pc}2e`, transform: 'translateZ(0)' }} />
           <div
-            className="flex h-[92px] w-[92px] items-center justify-center rounded-[20px] bg-white shadow-[0_12px_40px_rgba(15,23,42,0.12),0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-200/70 dark:bg-white dark:ring-slate-200/70 will-change-transform"
+            className="flex h-[96px] w-[96px] items-center justify-center rounded-[22px] bg-white shadow-[0_16px_48px_rgba(0,0,0,0.28)] ring-1 ring-white/90 will-change-transform"
             style={{ transform: 'translateZ(0)' }}
           >
-            <img src={branding?.logo_url ? resolveLogoUrl(branding.logo_url) : fallbackLogo} alt="Logo SMK AL-FATA" className="h-[60px] w-[60px] object-contain bg-white" width={60} height={60} loading="eager" decoding="sync" onError={(e) => { const t=e.currentTarget; const fb=fallbackLogo; if(t.src === fb || t.src.endsWith(fb)) return; t.onerror=null; t.src=fb }} />
+            <img src={fallbackLogo} alt={`Logo ${branding?.app_name ?? 'Veyra CBT'}`} className={cn('h-[64px] w-[64px] object-contain bg-white transition-opacity duration-300', logoReady ? 'opacity-100' : 'opacity-0')} width={64} height={64} loading="eager" decoding="sync" />
           </div>
         </div>
 
-        <h1 className="mt-7 bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-[22px] font-extrabold tracking-tight text-transparent dark:from-white dark:to-slate-300" style={{ letterSpacing: '-0.02em', animation: 'ssText 0.6s ease-out 0.2s both' }}>{branding?.app_name ?? 'SMK AL-FATA CBT'}</h1>
-        <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.18em] dark:text-primary-300" style={{ color: pc, animation: 'ssText 0.6s ease-out 0.3s both' }}>{branding?.school_name ? `${branding.school_name} • CBT` : 'Computer Based Test'}</p>
-        <p className="mt-2 max-w-[360px] text-xs leading-relaxed text-slate-500 dark:text-slate-400" style={{ animation: 'ssText 0.6s ease-out 0.4s both' }}>Sistem Ujian Digital — Aman, Cepat, Terintegrasi untuk Guru &amp; Siswa</p>
+        <h1 className="mt-7 text-[23px] font-black tracking-[-0.03em] text-white" style={{ letterSpacing: '-0.03em', animation: 'ssText 0.6s ease-out 0.2s both', textShadow: '0 1px 12px rgba(0,0,0,0.18)' }}>{branding?.app_name ?? 'Veyra CBT'}</h1>
+        <p className="mt-1.5 text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: '#E8B86A', animation: 'ssText 0.6s ease-out 0.3s both' }}>{branding?.school_name ? `${branding.school_name} • CBT` : 'Computer Based Test'}</p>
+        <p className="mt-2 max-w-[360px] text-xs leading-relaxed text-white/62" style={{ animation: 'ssText 0.6s ease-out 0.4s both' }}>Sistem Ujian Digital — Aman, Cepat, Terintegrasi untuk Guru &amp; Siswa</p>
 
         <div className="mt-8 flex items-center gap-2.5" aria-label="Memuat" style={{ animation: 'ssText 0.5s ease-out 0.5s both' }}>
-          <span className="h-2 w-2 rounded-full bg-primary-500 shadow-sm will-change-transform" style={{ boxShadow: `0 0 8px ${pc}4d`, animation: 'ssDotPro 1.1s cubic-bezier(0.4,0,0.2,1) infinite' }} />
-          <span className="h-2 w-2 rounded-full bg-primary-500 shadow-sm will-change-transform" style={{ boxShadow: `0 0 8px ${pc}4d`, animation: 'ssDotPro 1.1s cubic-bezier(0.4,0,0.2,1) 0.16s infinite' }} />
-          <span className="h-2 w-2 rounded-full bg-primary-500 shadow-sm will-change-transform" style={{ boxShadow: `0 0 8px ${pc}4d`, animation: 'ssDotPro 1.1s cubic-bezier(0.4,0,0.2,1) 0.32s infinite' }} />
+          <span className="h-2 w-2 rounded-full shadow-sm will-change-transform" style={{ background: '#C67C3B', boxShadow: `0 0 8px #C67C3B66`, animation: 'ssDotPro 1.1s cubic-bezier(0.4,0,0.2,1) infinite' }} />
+          <span className="h-2 w-2 rounded-full shadow-sm will-change-transform" style={{ background: pc, boxShadow: `0 0 8px ${pc}4d`, animation: 'ssDotPro 1.1s cubic-bezier(0.4,0,0.2,1) 0.16s infinite' }} />
+          <span className="h-2 w-2 rounded-full shadow-sm will-change-transform" style={{ background: pc, boxShadow: `0 0 8px ${pc}4d`, animation: 'ssDotPro 1.1s cubic-bezier(0.4,0,0.2,1) 0.32s infinite' }} />
         </div>
 
-        <div className="relative mt-5 h-[6px] w-48 overflow-hidden rounded-full bg-slate-200/80 p-[2px] shadow-inner dark:bg-slate-800" style={{ animation: 'ssText 0.5s ease-out 0.55s both' }}>
+        <div className="relative mt-5 h-[6px] w-48 overflow-hidden rounded-full bg-white/12 p-[2px] shadow-inner" style={{ animation: 'ssText 0.5s ease-out 0.55s both' }}>
           <div className="h-full w-full overflow-hidden rounded-full">
             <div
               className="h-full w-[44%] rounded-full will-change-transform"
-              style={{ background: `linear-gradient(90deg, ${pc}, ${sc}, ${pc})`, transform: 'translateZ(0)', animation: 'ssBarPro 1.15s cubic-bezier(0.4,0,0.6,1) infinite alternate', boxShadow: `0 0 10px ${pc}66` }}
+              style={{ background: `linear-gradient(90deg, ${pc}, #C67C3B, ${pc})`, transform: 'translateZ(0)', animation: 'ssBarPro 1.2s cubic-bezier(0.4,0,0.6,1) infinite alternate', boxShadow: `0 0 10px ${pc}66` }}
             />
           </div>
-          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0" style={{ animation: 'ssShine 1.6s ease-in-out infinite' }} />
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white/15 to-transparent opacity-0" style={{ animation: 'ssShine 1.6s ease-in-out infinite' }} />
         </div>
-        <p className="mt-3 text-[11px] font-medium tracking-wide text-slate-400 dark:text-slate-500" style={{ animation: 'ssText 0.5s ease-out 0.6s both' }}>Memuat sistem ujian…</p>
+        <p className="mt-3 font-mono text-[11px] tracking-[0.06em] text-white/55" style={{ animation: 'ssText 0.5s ease-out 0.6s both' }}>Memuat sistem ujian…</p>
       </div>
 
       <div className="absolute bottom-5 flex flex-col items-center gap-1.5 px-4 text-center" style={{ transition: 'opacity 560ms ease 200ms', opacity: visible ? 1 : 0 }}>
-        <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-slate-400 dark:text-slate-600">{branding?.school_name ?? 'SMK AL-FATA'} • v1.0 • Profesional • Aman • Cepat</p>
-        <p className="text-[11px] text-slate-400 dark:text-slate-500">© 2026 {branding?.app_name ?? 'SMK AL-FATA CBT'}</p>
+        <p className="font-mono text-[10px] tracking-[0.14em] text-white/35">{branding?.school_name ?? 'SMK AL-FATA'} • v1.0 • Profesional • Aman • Cepat</p>
+        <p className="font-mono text-[11px] text-white/45">© 2026 {branding?.app_name ?? 'Veyra CBT'}</p>
       </div>
 
       <style>{`@keyframes ssDotPro{0%,100%{opacity:1;transform:scale(1) translateY(0)}50%{opacity:.42;transform:scale(.76) translateY(1px)}}@keyframes ssBarPro{0%{transform:translateX(-18%)}100%{transform:translateX(132%)}}@keyframes ssShine{0%{transform:translateX(-100%);opacity:0}50%{opacity:1}100%{transform:translateX(100%);opacity:0}}@keyframes ssLogo{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}@keyframes ssBadge{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.06) rotate(2deg)}}@keyframes ssText{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}@keyframes ssFloat{0%,100%{transform:translate(0,0)}50%{transform:translate(-10px,12px)}}@keyframes ssPulseRing{0%{transform:translate(-50%,-50%) scale(0.9);opacity:0.6}100%{transform:translate(-50%,-50%) scale(1.12);opacity:0}}@media (prefers-reduced-motion:reduce){[style*="animation: ss"]{animation:none!important}}`}</style>

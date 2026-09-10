@@ -204,13 +204,28 @@ function ImportPanel() {
           if (!bankTitleRaw) throw new Error('bank_title wajib — isi judul Bank Soal tujuan (mapel otomatis ikut bank)')
           const bankId = bankByTitle.get(norm(bankTitleRaw))
           if (!bankId) throw new Error(`Bank Soal "${bankTitleRaw}" tidak ditemukan. Buat dulu di menu Bank Soal`)
-          const rawType = String(data.type ?? '').trim().toLowerCase()
+          const typeMap: Record<string, string> = {
+            'pilihan ganda': 'multiple_choice', 'pilihan_ganda': 'multiple_choice', 'pg': 'multiple_choice',
+            'pilihan ganda kompleks': 'multiple_response', 'pilihan_ganda_kompleks': 'multiple_response', 'pg kompleks': 'multiple_response',
+            'benar/salah': 'true_false', 'benar_salah': 'true_false', 'b/s': 'true_false',
+            'isian singkat': 'short_answer', 'isian_singkat': 'short_answer', 'jawaban singkat': 'short_answer',
+            'esai': 'essay', 'essay': 'essay', 'uraian': 'essay',
+            'menjodohkan': 'matching', 'jodohkan': 'matching',
+          }
+          const normType = (v: string) => {
+            const k = v.trim().toLowerCase().replace(/\s+/g, ' ').replace(/_/g, ' ')
+            return typeMap[k] ?? k.replace(/\s+/g, '_')
+          }
+          const rawTypeNorm = normType(String(data.type ?? ''))
           const allowedTypes = ['multiple_choice', 'multiple_response', 'true_false', 'short_answer', 'essay', 'matching']
-          if (!allowedTypes.includes(rawType)) throw new Error(`type harus salah satu: ${allowedTypes.join(', ')}`)
-          const type = rawType as 'multiple_choice' | 'multiple_response' | 'true_false' | 'short_answer' | 'essay' | 'matching'
+          if (!allowedTypes.includes(rawTypeNorm)) throw new Error(`Jenis soal harus: Pilihan Ganda / Pilihan Ganda Kompleks / Benar/Salah / Isian Singkat / Esai / Menjodohkan (ditemukan: "${String(data.type ?? '').trim()}")`)
+          const type = rawTypeNorm as 'multiple_choice' | 'multiple_response' | 'true_false' | 'short_answer' | 'essay' | 'matching'
           const text = String(data.question_text ?? '').trim()
-          if (text.length < 5) throw new Error('question_text minimal 5 karakter')
-          const difficulty = (String(data.difficulty ?? 'medium').trim().toLowerCase() || 'medium') as 'easy' | 'medium' | 'hard'
+          if (text.length < 5) throw new Error('Teks soal minimal 5 karakter')
+          const diffMap: Record<string, string> = { 'mudah': 'easy', 'sedang': 'medium', 'sulit': 'hard' }
+          const rawDiff = String(data.difficulty ?? 'medium').trim().toLowerCase()
+          const diffNorm = diffMap[rawDiff] ?? rawDiff
+          const difficulty = (diffNorm || 'medium') as 'easy' | 'medium' | 'hard'
           const points = Number(String(data.points ?? '10').trim() || 10)
           const explanation = String(data.explanation ?? '').trim() || null
           const correctRaw = String(data.correct_answer ?? '').trim()

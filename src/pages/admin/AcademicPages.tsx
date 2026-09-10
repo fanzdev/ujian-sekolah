@@ -57,7 +57,7 @@ export function ClassesPage() {
             columns={[
               { key: 'name', header: 'Nama Kelas', render: (c) => <span className="font-semibold text-slate-800">{c.name}</span> },
               { key: 'level', header: 'Tingkat', render: (c) => `Kelas ${c.level}` },
-              { key: 'dept', header: 'Jurusan', render: (c) => <Badge tone="blue">{c.departments?.code ?? '-'} · {c.departments?.name ?? '-'}</Badge> },
+              { key: 'dept', header: 'Jurusan', render: (c) => <Badge tone="blue"><span>{c.departments?.code ?? '-'}</span><span className="hidden sm:inline"> · {c.departments?.name ?? '-'}</span></Badge> },
               {
                 key: 'actions',
                 header: '',

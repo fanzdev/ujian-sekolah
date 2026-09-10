@@ -62,61 +62,86 @@ export function DashboardLayout() {
     navigate('/login', { replace: true })
   }
 
-  const sidebar = (
-    <div className="flex h-full flex-col">
-      <div className="flex h-16 items-center border-b border-slate-100 px-4 dark:border-slate-800">
-        <BrandMark appName={branding?.app_name} schoolName={branding?.school_name} />
-      </div>
-      <SidebarNav items={items} onNavigate={() => setDrawerOpen(false)} />
-      <Link to={`/${profile.role}/profile`} onClick={() => setDrawerOpen(false)} className="block border-t border-slate-100 bg-slate-50/80 px-4 py-3 transition-colors hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-800/40 dark:hover:bg-slate-800 group dark:hover:bg-slate-700">
-        <div className="flex items-center gap-3">
-          <Avatar name={profile.full_name} src={profile.avatar_url} size="sm" shape="xl" className="shadow-sm" />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold leading-none text-slate-900 dark:text-slate-100">{profile.full_name}</p>
-            <p className="truncate text-[11px] leading-tight text-slate-500 dark:text-slate-400" title={extra.email ?? `@${profile.username}`}>{extra.email ?? `@${profile.username}`}</p>
-          </div>
-          <span className="hidden h-7 w-7 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 group-hover:text-primary-600 dark:bg-slate-800 dark:ring-slate-700 dark:text-slate-500 sm:flex dark:hover:text-primary-300 dark:group-hover:text-primary-300">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-          </span>
-        </div>
-      </Link>
-      <div className="border-t border-slate-100 px-5 py-2.5 dark:border-slate-800">
-        <p className="text-[10px] leading-relaxed text-slate-300 dark:text-slate-500">SMK AL-FATA CBT v1.0</p>
-      </div>
-    </div>
-  )
-
   return (
-    <div className="min-h-dvh bg-slate-50 dark:bg-slate-950 overflow-visible">
+    <div className="min-h-dvh bg-[#FDF9F3] dark:bg-[#070D14] overflow-visible selection:bg-[#0D868F]/10">
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Fragment+Mono&display=swap');`}</style>
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.035] dark:opacity-[0.05]" style={{ backgroundImage: `radial-gradient(circle at 1px 1px, #0B1E24 1px, transparent 0)`, backgroundSize: '22px 22px' }} />
+        <div className="absolute -top-24 right-[-80px] h-[420px] w-[420px] rounded-full bg-gradient-to-br from-[#0D868F]/10 via-[#C67C3B]/8 to-transparent blur-3xl lg:h-[520px] lg:w-[520px]" />
+        <div className="absolute -bottom-32 left-[280px] h-[380px] w-[380px] rounded-full bg-gradient-to-tr from-[#0B1E24]/5 via-[#0D868F]/6 to-transparent blur-3xl lg:h-[480px] lg:w-[480px]" />
+      </div>
       <FullscreenPrompt role={profile.role} />
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 lg:block">
-        {sidebar}
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col overflow-hidden border-r border-[#0B1E24]/8 bg-[#0B1E24] dark:border-white/8 dark:bg-[#0B1E24] lg:flex">
+        <div className="relative flex h-full flex-col">
+          <div className="pointer-events-none absolute inset-0 opacity-[0.06]" style={{ backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`, backgroundSize: '20px 20px' }} />
+          <div className="relative flex h-16 items-center border-b border-white/10 px-4">
+            <BrandMark appName={branding?.app_name} schoolName={branding?.school_name} />
+          </div>
+          <SidebarNav items={items} onNavigate={() => setDrawerOpen(false)} />
+          <Link to={`/${profile.role}/profile`} onClick={() => setDrawerOpen(false)} className="relative flex items-center gap-3 border-t border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur transition-colors hover:bg-white/[0.06]">
+            <Avatar name={profile.full_name} src={profile.avatar_url} size="sm" shape="xl" className="shadow-sm ring-1 ring-white/10" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-bold leading-none text-white">{profile.full_name}</p>
+              <p className="truncate font-mono text-[10px] leading-tight tracking-wide text-white/55" title={extra.email ?? `@${profile.username}`}>{extra.email ?? `@${profile.username}`}</p>
+            </div>
+            <span className="hidden h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-[#0B1E24] shadow-sm sm:flex">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </span>
+          </Link>
+        </div>
       </aside>
 
       {drawerOpen && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
-          <button aria-label="Tutup menu" onClick={() => setDrawerOpen(false)} className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm animate-fade-in" />
-          <div className={cn('absolute inset-y-0 left-0 w-72 bg-white shadow-2xl animate-slide-in-right dark:bg-slate-900')}>
+          <button aria-label="Tutup menu" onClick={() => setDrawerOpen(false)} className="absolute inset-0 bg-[#0B1E24]/60 backdrop-blur-sm animate-fade-in" />
+          <div className={cn('absolute inset-y-0 left-0 flex w-[82%] max-w-[300px] flex-col overflow-hidden rounded-r-[24px] bg-[#0B1E24] shadow-2xl animate-slide-in-right')}>
+            <div className="pointer-events-none absolute inset-0 opacity-[0.06]" style={{ backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`, backgroundSize: '20px 20px' }} />
             <button
               onClick={() => setDrawerOpen(false)}
               aria-label="Tutup"
-              className="absolute top-4 right-3 rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:bg-slate-700 dark:bg-slate-700 dark:text-slate-200"
+              className="absolute top-3 right-3 z-10 flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white/80 backdrop-blur transition-colors hover:bg-white/15 active:scale-95 tap-target"
             >
               <X className="h-5 w-5" />
             </button>
-            {sidebar}
+            <div className="relative flex h-full flex-col pt-2">
+              <div className="px-4 pb-3 pt-8">
+                <BrandMark appName={branding?.app_name} schoolName={branding?.school_name} />
+              </div>
+              <SidebarNav items={items} onNavigate={() => setDrawerOpen(false)} />
+              <div className="mt-auto border-t border-white/10 p-4">
+                <div className="rounded-2xl bg-white p-3 shadow-sm">
+                  <Link to={`/${profile.role}/profile`} onClick={() => setDrawerOpen(false)} className="flex items-center gap-3">
+                    <Avatar name={profile.full_name} src={profile.avatar_url} size="sm" shape="xl" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-bold text-[#0B1E24]">{profile.full_name}</p>
+                      <p className="truncate text-xs text-slate-500">@{profile.username}</p>
+                    </div>
+                    <span className="hidden h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 sm:flex">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                    </span>
+                  </Link>
+                  <button
+                    onClick={async () => { setDrawerOpen(false); await handleSignOut() }}
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-rose-50 py-2.5 text-sm font-bold text-rose-600 transition-colors hover:bg-rose-100 active:scale-[0.98]"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    Keluar
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
       <div className="flex min-h-dvh flex-col lg:pl-64 overflow-visible">
         <Topbar profile={profile} extra={extra} onMenuClick={() => setDrawerOpen(true)} onSignOut={handleSignOut} />
-        <div className="pt-16 flex-1 overflow-visible">
-          <main id="main-content" className="w-full flex-1 bg-slate-50 px-4 py-4 dark:bg-slate-950 sm:px-5 lg:px-6 lg:py-6 safe-bottom overflow-visible">
-            <div className="w-full overflow-visible pb-20 lg:pb-0">
+        <div className="flex-1 overflow-visible pt-16 lg:pt-[64px]">
+          <main id="main-content" className="relative w-full flex-1 bg-[#FDF9F3] px-4 py-4 dark:bg-[#070D14] sm:px-5 lg:px-8 lg:py-7 safe-bottom overflow-visible">
+            <div className="pointer-events-none absolute inset-0 opacity-[0.03] dark:opacity-[0.04]" style={{ backgroundImage: `radial-gradient(circle at 1px 1px, #0B1E24 1px, transparent 0)`, backgroundSize: '22px 22px' }} />
+            <div className="relative w-full overflow-visible pb-24 lg:pb-0">
               <Outlet />
             </div>
-            <div className="h-20 lg:hidden shrink-0" aria-hidden />
           </main>
         </div>
         <BottomNav role={profile.role} onMoreClick={() => setDrawerOpen(true)} />

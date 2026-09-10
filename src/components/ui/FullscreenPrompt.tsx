@@ -15,18 +15,12 @@ function requestFs(): Promise<void> | void {
 
 export function FullscreenPrompt({ role }: { role: UserRole }) {
   const [show, setShow] = useState(false)
-  const [dismissed, setDismissed] = useState(false)
 
   const enterFs = useCallback(() => {
     const p = requestFs()
     if (p && typeof p.catch === 'function') {
       p.catch(() => {})
     }
-    setShow(false)
-  }, [])
-
-  const dismiss = useCallback(() => {
-    setDismissed(true)
     setShow(false)
   }, [])
 
@@ -46,7 +40,6 @@ export function FullscreenPrompt({ role }: { role: UserRole }) {
     const onFsChange = () => {
       if (getFullscreenElement()) {
         setShow(false)
-        setDismissed(false)
       } else {
         setShow(true)
       }
@@ -61,7 +54,7 @@ export function FullscreenPrompt({ role }: { role: UserRole }) {
     }
   }, [role])
 
-  if (role !== 'student' || !show || dismissed) return null
+  if (role !== 'student' || !show) return null
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-fade-in">
@@ -73,12 +66,9 @@ export function FullscreenPrompt({ role }: { role: UserRole }) {
         <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
           Aktifkan layar penuh untuk pengalaman ujian yang lebih fokus.
         </p>
-        <div className="mt-4 flex flex-col gap-2">
-          <Button size="sm" onClick={enterFs} icon={<Maximize className="h-4 w-4" />}>
+        <div className="mt-4">
+          <Button size="sm" onClick={enterFs} icon={<Maximize className="h-4 w-4" />} className="w-full">
             Aktifkan
-          </Button>
-          <Button size="sm" variant="ghost" onClick={dismiss}>
-            Nanti Saja
           </Button>
         </div>
       </div>

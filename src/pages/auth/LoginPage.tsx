@@ -1,6 +1,6 @@
 import { useState, type FormEvent, useRef, useCallback } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { LogIn, LockKeyhole, User } from 'lucide-react'
+import { LogIn, User } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { PasswordInput } from '@/components/ui/FormControls'
 import { Button } from '@/components/ui/Button'
@@ -13,6 +13,7 @@ import { fetchSchoolSettings, applyBranding } from '@/services/settings.service'
 import { friendlyError } from '@/lib/errors'
 import { ROLE_HOME } from '@/lib/constants'
 import { useDocumentTitle, useAsync } from '@/hooks/useAsync'
+import { getDefaultLogo } from '@/lib/logo'
 
 export default function LoginPage() {
   const { profile, refresh } = useAuth()
@@ -27,200 +28,247 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const leftRef = useRef<HTMLDivElement>(null)
+  const benchRef = useRef<HTMLDivElement>(null)
   const [mouse, setMouse] = useState({ x: 0.5, y: 0.5 })
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    const r = leftRef.current?.getBoundingClientRect()
+  const onMove = useCallback((e: React.MouseEvent) => {
+    const r = benchRef.current?.getBoundingClientRect()
     if (!r) return
     setMouse({ x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height })
   }, [])
-  const handleMouseLeave = useCallback(() => setMouse({ x: 0.5, y: 0.5 }), [])
+  const onLeave = useCallback(() => setMouse({ x: 0.5, y: 0.5 }), [])
 
   const { data: branding } = useAsync(() => fetchSchoolSettings().then((s) => {
     applyBranding(s)
     return s
   }), [])
-
-  // Gerbang setup pertama: belum ada admin → tampilkan wizard, bukan login.
   const setupCheck = useAsync(() => getSetupStatus(), [])
 
   if (!isEnvConfigured()) return <Navigate to="/env-required" replace />
   if (setupCheck.loading && !setupCheck.error) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-slate-50 dark:bg-slate-800 dark:text-slate-200">
+      <div className="flex min-h-dvh items-center justify-center bg-[#FDF9F3] dark:bg-slate-950">
         <Spinner className="h-8 w-8" />
       </div>
     )
   }
   const setupUnavailable = Boolean(setupCheck.error)
-  if (!setupUnavailable && setupCheck.data === true && !profile) {
-    return <Navigate to="/setup" replace />
-  }
-
+  if (!setupUnavailable && setupCheck.data === true && !profile) return <Navigate to="/setup" replace />
   if (profile) return <Navigate to={ROLE_HOME[profile.role]} replace />
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError('')
-    if (!username.trim() || !password) {
-      setError('Username dan password wajib diisi.')
-      return
-    }
+    if (!username.trim() || !password) { setError('Username dan password wajib diisi.'); return }
     setLoading(true)
     try {
       const signedIn = await signInWithUsername(username.trim(), password)
       await refresh()
       const from = (location.state as { from?: string } | null)?.from
       navigate(from && from !== '/login' ? from : ROLE_HOME[signedIn.role] ?? '/', { replace: true })
-    } catch (err) {
-      setError(friendlyError(err))
-    } finally {
-      setLoading(false)
-    }
+    } catch (err) { setError(friendlyError(err)) } finally { setLoading(false) }
   }
 
   return (
-    <div className="min-h-dvh bg-slate-50 lg:grid lg:min-h-dvh lg:grid-cols-[1.05fr_0.95fr] dark:bg-slate-800 dark:text-slate-200">
-      <div
-        ref={leftRef}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        className="group relative hidden overflow-hidden bg-gradient-to-br from-primary-600 via-primary-700 to-slate-900 lg:flex lg:flex-col lg:justify-between lg:p-10 xl:p-12"
-      >
+    <div className="min-h-dvh bg-[#FDF9F3] dark:bg-[#070D14] selection:bg-[#0D868F]/20 relative overflow-hidden">
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Fragment+Mono&display=swap');`}</style>
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 left-1/2 h-[700px] w-[900px] -translate-x-1/2 rounded-full bg-gradient-to-br from-[#0D868F]/10 via-[#C67C3B]/8 to-transparent blur-3xl" style={{ animation: 'pageOrb 18s ease-in-out infinite' }} />
+        <div className="absolute -bottom-40 right-[-120px] h-[600px] w-[600px] rounded-full bg-gradient-to-tl from-[#0B1E24]/6 via-[#0D868F]/6 to-transparent blur-3xl" style={{ animation: 'pageOrb 22s ease-in-out infinite reverse' }} />
+        <div className="absolute inset-0 opacity-[0.035] dark:opacity-[0.04]" style={{ backgroundImage: `radial-gradient(circle at 1px 1px, #0B1E24 1px, transparent 0)`, backgroundSize: '24px 24px', animation: 'gridDrift 32s linear infinite' }} />
+      </div>
+      <div className="relative mx-auto flex min-h-dvh max-w-[1280px] flex-col lg:grid lg:grid-cols-[1.15fr_0.85fr] lg:gap-0">
         <div
-          className="absolute -top-32 -right-32 h-[480px] w-[480px] rounded-full bg-white/[0.07] blur-3xl transition-transform duration-700 ease-out will-change-transform"
-          style={{ transform: `translate(${(mouse.x - 0.5) * 40}px, ${(mouse.y - 0.5) * 40}px)` }}
-        />
-        <div
-          className="absolute bottom-0 left-0 h-80 w-80 rounded-full bg-sky-400/15 blur-3xl transition-transform duration-700 ease-out will-change-transform"
-          style={{ transform: `translate(${(mouse.x - 0.5) * -30}px, ${(mouse.y - 0.5) * -30}px)` }}
-        />
-        <div className="absolute top-1/2 left-1/2 h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.06] transition-transform duration-700 ease-out" style={{ transform: `translate(-50%, -50%) scale(${1 + (mouse.x - 0.5) * 0.02})` }} />
-        <div
-          className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-          style={{ background: `radial-gradient(600px circle at ${mouse.x * 100}% ${mouse.y * 100}%, rgba(255,255,255,0.08), transparent 40%)` }}
-        />
-        <div className="relative flex h-full flex-col justify-between text-white transition-transform duration-700 ease-out will-change-transform" style={{ transform: `translate(${(mouse.x - 0.5) * 12}px, ${(mouse.y - 0.5) * 12}px)` }}>
-          <div className="flex items-center gap-3 transition-transform duration-700 ease-out" style={{ transform: `translate(${(mouse.x - 0.5) * -8}px, ${(mouse.y - 0.5) * -8}px)` }}>
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white p-2 shadow-lg transition-transform duration-500 group-hover:scale-105 group-hover:shadow-xl dark:bg-white">
-              <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="Logo" className="h-8 w-8 object-contain" width={32} height={32} />
-            </div>
-            <div>
-              <p className="text-[15px] font-extrabold tracking-tight leading-none">{branding?.app_name ?? 'SMK AL-FATA CBT'}</p>
-              <p className="text-xs font-medium text-white/60">{branding?.school_name ?? 'SMK AL-FATA'} • CBT</p>
-            </div>
+          ref={benchRef}
+          onMouseMove={onMove}
+          onMouseLeave={onLeave}
+          className="relative hidden overflow-hidden bg-[#0B1E24] shadow-[0_24px_60px_rgba(11,30,36,0.22)] will-change-transform lg:flex lg:flex-col lg:justify-between lg:rounded-[28px] lg:m-4 lg:mr-0 lg:min-h-[calc(100dvh-32px)]"
+          style={{ animation: 'floatCard 6s ease-in-out infinite' }}
+        >
+          <div className="pointer-events-none absolute inset-0 opacity-[0.07]" style={{ backgroundImage: `radial-gradient(circle at 1px 1px, white 1.2px, transparent 0)`, backgroundSize: '22px 22px' }} />
+          <div className="pointer-events-none absolute inset-0" style={{ background: `linear-gradient(180deg, rgba(13,134,143,0.14), transparent 55%, rgba(0,0,0,0.28))` }} />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute left-[-8%] top-[32%] select-none font-black leading-none tracking-[-0.06em] will-change-transform"
+            style={{
+              fontSize: 'clamp(120px, 16vw, 220px)',
+              color: 'transparent',
+              WebkitTextStroke: '1.2px rgba(255,255,255,0.10)',
+              transform: `translate(${(mouse.x - 0.5) * -18}px, ${(mouse.y - 0.5) * -10}px)`,
+              transition: 'transform 700ms cubic-bezier(0.22,1,0.36,1)',
+            }}
+          >
+            UJIAN
           </div>
-          <div className="max-w-[440px]">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/90 backdrop-blur">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" /> Sistem Aktif & Aman
-            </div>
-            <h2 className="mt-5 text-[32px] xl:text-[36px] leading-[1.1] font-black tracking-tight">
-              Ujian yang<br />Adil & Andal.
-            </h2>
-            <p className="mt-4 text-[14px] leading-relaxed text-white/70">
-              Platform ujian digital untuk 1000+ siswa — timer server, autosave, anti-curang, nilai real-time.
-            </p>
-            <div className="mt-8 grid grid-cols-3 gap-3">
-              <div className="rounded-2xl bg-white/10 p-3 backdrop-blur">
-                <p className="text-lg font-extrabold">100%</p>
-                <p className="text-[11px] leading-tight text-white/60">Sinkron Server</p>
+          <div className="pointer-events-none absolute left-6 top-6 h-10 w-10 border-l-2 border-t-2 border-white/15" />
+          <div className="pointer-events-none absolute bottom-6 right-6 h-10 w-10 border-b-2 border-r-2 border-white/10" />
+
+          <div className="relative p-8 xl:p-10">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white p-1.5 shadow-lg">
+                <img src={getDefaultLogo()} alt={`Logo ${branding?.app_name ?? 'Veyra CBT'}`} className="h-7 w-7 object-contain" width={28} height={28} />
               </div>
-              <div className="rounded-2xl bg-white/10 p-3 backdrop-blur">
-                <p className="text-lg font-extrabold">0.5s</p>
-                <p className="text-[11px] leading-tight text-white/60">Autosave</p>
-              </div>
-              <div className="rounded-2xl bg-white/10 p-3 backdrop-blur">
-                <p className="text-lg font-extrabold">24/7</p>
-                <p className="text-[11px] leading-tight text-white/60">Siap Ujian</p>
+              <div className="leading-none">
+                <p className="text-[13px] font-extrabold tracking-tight text-white">{branding?.app_name ?? 'Veyra CBT'}</p>
+                <p className="mt-0.5 font-mono text-[10px] tracking-[0.14em] text-white/55">{branding?.school_name ?? 'SMK AL-FATA'} — RUANG UJIAN</p>
               </div>
             </div>
           </div>
-          <div className="flex items-center justify-between text-xs text-white/45">
-            <p>© {new Date().getFullYear()} {branding?.school_name ?? 'SMK AL-FATA'}</p>
-            <p className="hidden xl:block">v1.0 • Aman • Cepat • Profesional</p>
+
+          <div className="relative px-8 pb-8 xl:px-10 xl:pb-10">
+            <div className="max-w-[520px]">
+              <p className="font-mono text-[10px] tracking-[0.18em] text-[#C67C3B]">PENILAIAN • KEJUJURAN • KETEPATAN</p>
+              <h1 className="mt-3 text-[40px] xl:text-[46px] font-black leading-[0.88] tracking-[-0.04em] text-white">
+                Ujian yang<br />
+                <span className="bg-gradient-to-r from-white via-white to-white/60 bg-clip-text text-transparent">terukur.</span>
+              </h1>
+              <p className="mt-4 max-w-[42ch] text-[13.5px] leading-relaxed text-white/65">
+                Waktu dari server, jawaban autosave tiap detik, dan pengawasan yang tidak mengganggu — seperti meja kerja bengkel: bersih, presisi, siap pakai.
+              </p>
+
+              <div className="mt-7 rounded-2xl border border-white/10 bg-white/[0.06] p-3 backdrop-blur">
+                <div className="flex items-center justify-between border-b border-white/10 px-2 pb-3">
+                  <span className="font-mono text-[10px] tracking-[0.12em] text-white/50">LEMBAR SOAL — PRATINJAU</span>
+                  <span className="rounded-full bg-[#C67C3B] px-2 py-0.5 font-mono text-[10px] font-bold text-white">TERKUNCI</span>
+                </div>
+                <div className="space-y-2.5 px-2 pt-3">
+                  <div className="flex gap-3">
+                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-white/80" />
+                    <p className="text-sm leading-snug text-white/85">Pilihan ganda — 4 opsi, 1 jawaban. Acak soal & opsi per peserta.</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-white/40" />
+                    <p className="text-sm leading-snug text-white/55">Essay dinilai guru, dibantu saran AI. Skor final tetap keputusan guru.</p>
+                  </div>
+                  <div className="flex items-center gap-2 pt-1 font-mono text-[10px] tracking-wide text-white/45">
+                    <span className="h-px flex-1 bg-white/10" />
+                    autosave 1s • anti-pindah tab • timer server
+                    <span className="h-px flex-1 bg-white/10" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex items-center gap-3 font-mono text-[10px] tracking-[0.12em] text-white/45">
+                <span>© {new Date().getFullYear()} {branding?.school_name ?? 'SMK AL-FATA'}</span>
+                <span className="h-3 w-px bg-white/15" />
+                <span>v1.0 — Bengkel Presisi</span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="flex min-h-dvh flex-col bg-slate-50 lg:min-h-0 lg:justify-center lg:bg-[#f8fafc] dark:bg-slate-900 lg:dark:bg-slate-900 lg:p-8 xl:p-10">
-        <div className="flex flex-1 flex-col lg:flex-none lg:justify-center">
-          <div className="relative overflow-hidden bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900 px-6 pb-10 pt-8 lg:hidden">
-            <div className="absolute -top-20 -right-20 h-64 w-64 rounded-full bg-white/10 blur-3xl animate-pulse" style={{ animationDuration: '3s' }} />
-            <div className="absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-sky-400/15 blur-3xl animate-pulse" style={{ animationDuration: '4s', animationDelay: '0.5s' }} />
-            <div className="relative flex flex-col items-center text-center text-white">
-              <div className="flex h-[72px] w-[72px] items-center justify-center rounded-[18px] bg-white shadow-xl dark:bg-white">
-                <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="Logo" className="h-11 w-11 object-contain" width={44} height={44} />
-              </div>
-              <h1 className="mt-4 text-xl font-extrabold tracking-tight">{branding?.app_name ?? 'SMK AL-FATA CBT'}</h1>
-              <p className="mt-1 text-[13px] font-medium text-white/80">{branding?.school_name ?? 'SMK AL-FATA'} • CBT</p>
-              <p className="mt-1 text-xs text-white/60">Masuk untuk mengakses dashboard</p>
-            </div>
-          </div>
-
-          <div className="flex-1 bg-slate-50 px-4 pb-8 pt-6 lg:bg-white lg:p-0 dark:bg-slate-900 lg:dark:bg-slate-900">
-            <div className="mx-auto w-full max-w-sm animate-fade-in">
-              <div className="hidden lg:block">
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900">Selamat Datang Kembali</h1>
-                <p className="mt-1.5 text-sm leading-relaxed text-slate-500">Masuk menggunakan username dan password yang diberikan admin.</p>
-              </div>
-              <div className="lg:hidden">
-                <div className="mb-1 flex items-center gap-2">
-                  <span className="h-1 w-8 rounded-full bg-primary-600" />
-                  <h2 className="text-[15px] font-bold tracking-tight text-slate-900">Masuk Akun</h2>
+        <div className="relative flex flex-1 flex-col bg-[#FDF9F3] dark:bg-[#070D14] lg:bg-transparent lg:dark:bg-transparent">
+          <div className="relative flex flex-1 flex-col lg:items-center lg:justify-center lg:p-6 xl:p-8">
+            <div className="relative overflow-hidden bg-gradient-to-br from-[#0B1E24] via-[#0D3A42] to-[#0D868F] px-6 pb-8 pt-8 lg:hidden">
+              <div className="pointer-events-none absolute inset-0 opacity-[0.07]" style={{ backgroundImage: `radial-gradient(circle at 1px 1px, white 1.2px, transparent 0)`, backgroundSize: '20px 20px' }} />
+              <div className="pointer-events-none absolute -top-16 -right-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+              <div aria-hidden className="pointer-events-none absolute left-1/2 top-[52%] -translate-x-1/2 select-none font-black tracking-[-0.06em] text-white/[0.07]" style={{ fontSize: '92px', WebkitTextStroke: '1px rgba(255,255,255,0.12)', color: 'transparent' }}>UJIAN</div>
+              <div className="relative flex flex-col items-center text-center text-white">
+                <div className="flex h-[64px] w-[64px] items-center justify-center rounded-[18px] bg-white shadow-xl">
+                  <img src={getDefaultLogo()} alt={`Logo ${branding?.app_name ?? 'Veyra CBT'}`} className="h-10 w-10 object-contain" width={40} height={40} />
                 </div>
-                <p className="text-xs text-slate-500">Gunakan username & password dari admin/guru</p>
+                <h1 className="mt-3 text-lg font-extrabold tracking-tight">{branding?.app_name ?? 'Veyra CBT'}</h1>
+                <p className="font-mono text-[10px] tracking-[0.14em] text-white/60">{branding?.school_name ?? 'SMK AL-FATA'} • CBT</p>
+              </div>
+            </div>
+
+            <div className="flex flex-1 flex-col px-4 pb-8 pt-6 sm:px-6 lg:w-full lg:max-w-[440px] lg:flex-none lg:px-0 lg:pb-0 lg:pt-0 will-change-transform" style={{ animation: 'floatCard 6.8s ease-in-out infinite reverse' }}>
+              <div className="hidden lg:block">
+                <p className="font-mono text-[10px] tracking-[0.16em] text-[#C67C3B]">MASUK — PESERTA & PENGAJAR</p>
+                <h2 className="mt-2 text-[28px] font-black leading-none tracking-[-0.03em] text-[#0B1E24] dark:text-white">Selamat datang.</h2>
+                <p className="mt-2 text-sm leading-relaxed text-[#5A6B73] dark:text-slate-400">Pakai username dari admin. Waktu ujian ikut server, bukan jam perangkat.</p>
+              </div>
+
+              <div className="lg:hidden">
+                <h2 className="flex items-center gap-2.5 text-[16px] font-black tracking-tight text-[#0B1E24] dark:text-white">
+                  <span className="h-1 w-7 rounded-full bg-[#C67C3B]" /> Masuk Akun
+                </h2>
+                <p className="mt-1 font-mono text-[11px] tracking-wide text-[#6B7A7F] dark:text-slate-400">Username & password dari admin/guru</p>
               </div>
 
               {setupUnavailable && (
-                <div role="status" className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-800">
-                  <p className="font-bold">Mode setup otomatis belum aktif.</p>
-                  <p className="mt-1">{setupCheck.error}</p>
+                <div role="status" className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-800">
+                  <p className="font-bold">Mode setup belum aktif.</p>
+                  <p className="mt-1 opacity-80">{setupCheck.error}</p>
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4 rounded-[24px] border border-slate-200/60 bg-white p-5 shadow-sm sm:p-6 lg:mt-6 lg:rounded-2xl lg:p-6 lg:shadow-sm dark:bg-slate-900 dark:border-slate-700">
-                <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-slate-200 lg:hidden" aria-hidden />
-                {error && (
-                  <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 animate-fade-in">
-                    {error}
-                  </div>
-                )}
-                <Input
-                  label="Username"
-                  name="username"
-                  autoComplete="username"
-                  autoCapitalize="none"
-                  placeholder="cth: budi.siswa"
-                  leftIcon={<User className="h-4 w-4" />}
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                />
-                <PasswordInput
-                  label="Password"
-                  name="password"
-                  autoComplete="current-password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                <Button type="submit" loading={loading} size="lg" icon={<LogIn className="h-4 w-4" />} className="mt-2 w-full rounded-xl shadow-md">
-                  Masuk Sekarang
-                </Button>
-                <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-3 text-xs leading-relaxed text-slate-500 dark:bg-slate-800 dark:text-slate-200">
-                  <LockKeyhole className="h-4 w-4 shrink-0 text-slate-400" />
-                  Akun dibuat admin • hubungi admin jika lupa password
-                </div>
-              </form>
+              <div className="relative mt-6 overflow-hidden rounded-[22px] border border-[#0B1E24]/10 bg-white p-6 shadow-[0_18px_50px_rgba(11,30,36,0.08),0_1px_3px_rgba(11,30,36,0.06)] dark:border-white/10 dark:bg-[#131F2A] sm:p-7 lg:shadow-[0_20px_60px_rgba(11,30,36,0.10),0_1px_4px_rgba(11,30,36,0.06)]">
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#0D868F] via-[#C67C3B] to-[#0D868F] opacity-90" />
+                <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-[#FDF9F3] opacity-60 blur-2xl dark:bg-white/5" />
+                <form onSubmit={handleSubmit} noValidate className="relative space-y-5">
+                  {error && (
+                    <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 dark:border-rose-900/30 dark:bg-rose-500/10 dark:text-rose-300">
+                      {error}
+                    </div>
+                  )}
+                  <Input
+                    label="Username"
+                    name="username"
+                    autoComplete="username"
+                    autoCapitalize="none"
+                    placeholder="budi.siswa"
+                    leftIcon={<User className="h-4 w-4" />}
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                  />
+                  <PasswordInput
+                    label="Password"
+                    name="password"
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <Button type="submit" loading={loading} size="lg" icon={<LogIn className="h-4 w-4" />} className="w-full rounded-xl bg-[#0B1E24] text-white shadow-md hover:bg-[#0B1E24]/90 dark:bg-white dark:text-[#0B1E24] dark:hover:bg-white/90">
+                    Masuk
+                  </Button>
+                  <p className="flex items-center justify-center gap-1.5 pt-1 text-center font-mono text-[10px] tracking-[0.08em] text-[#8A9AA0] dark:text-slate-500">
+                    <span className="h-px w-6 bg-[#0B1E24]/10 dark:bg-white/10" />
+                    AKUN DIBUAT ADMIN
+                    <span className="h-px w-6 bg-[#0B1E24]/10 dark:bg-white/10" />
+                  </p>
+                </form>
+              </div>
 
-              <p className="mt-6 text-center text-xs text-slate-400 lg:hidden">
+              <div className="hidden lg:block">
+                <div className="mt-4 rounded-2xl border border-[#0B1E24]/8 bg-white p-4 shadow-[0_8px_24px_rgba(11,30,36,0.06)] dark:border-white/10 dark:bg-white/[0.04] dark:backdrop-blur">
+                  <div className="flex items-center justify-between">
+                    <p className="font-mono text-[10px] tracking-[0.14em] text-[#8A9AA0] dark:text-slate-400">BANTUAN CEPAT</p>
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  </div>
+                  <div className="mt-3 grid grid-cols-3 gap-2.5">
+                    <div className="rounded-xl bg-[#FDF9F3] px-3 py-3 dark:bg-white/[0.06]">
+                      <p className="font-mono text-[10px] tracking-wide text-[#C67C3B]">01</p>
+                      <p className="mt-1 text-xs font-semibold leading-tight text-[#0B1E24] dark:text-white">Username dari admin</p>
+                      <p className="mt-0.5 text-[11px] leading-snug text-[#6B7A7F] dark:text-slate-400">Huruf kecil, tanpa spasi</p>
+                    </div>
+                    <div className="rounded-xl bg-[#FDF9F3] px-3 py-3 dark:bg-white/[0.06]">
+                      <p className="font-mono text-[10px] tracking-wide text-[#C67C3B]">02</p>
+                      <p className="mt-1 text-xs font-semibold leading-tight text-[#0B1E24] dark:text-white">Password awal</p>
+                      <p className="mt-0.5 text-[11px] leading-snug text-[#6B7A7F] dark:text-slate-400">Min. 8 karakter</p>
+                    </div>
+                    <div className="rounded-xl bg-[#FDF9F3] px-3 py-3 dark:bg-white/[0.06]">
+                      <p className="font-mono text-[10px] tracking-wide text-[#C67C3B]">03</p>
+                      <p className="mt-1 text-xs font-semibold leading-tight text-[#0B1E24] dark:text-white">Lupa? Hubungi</p>
+                      <p className="mt-0.5 text-[11px] leading-snug text-[#6B7A7F] dark:text-slate-400">Wali kelas / admin</p>
+                    </div>
+                  </div>
+                </div>
+                <p className="mt-3 text-center font-mono text-[10px] tracking-[0.08em] text-[#8A9AA0] dark:text-slate-500">
+                  © {new Date().getFullYear()} {branding?.school_name ?? 'SMK AL-FATA'} • Aman & Terpercaya
+                </p>
+              </div>
+
+              <p className="mt-6 text-center font-mono text-[10px] tracking-[0.08em] text-[#8A9AA0] dark:text-slate-500 lg:hidden">
                 © {new Date().getFullYear()} {branding?.school_name ?? 'SMK AL-FATA'} • Aman & Terpercaya
               </p>
             </div>
           </div>
         </div>
       </div>
+      <style>{`@keyframes gridDrift{0%{background-position:0 0}100%{background-position:22px 22px}}@keyframes orbFloat{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(12px, -8px) scale(1.02)}66%{transform:translate(-8px, 10px) scale(0.98)}}@keyframes floatCard{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}@keyframes pageOrb{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-14px, 10px) scale(1.03)}}@media (prefers-reduced-motion: reduce){[style*="gridDrift"],[style*="orbFloat"],[style*="floatCard"],[style*="pageOrb"]{animation:none!important}}`}</style>
     </div>
   )
 }

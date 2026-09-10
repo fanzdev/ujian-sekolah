@@ -1,6 +1,7 @@
 import { supabase } from './client'
 import type { SchoolSettings, SystemSettingsMap } from '@/types/models'
 import { getDefaultLogo, resolveLogoUrl, sanitizeLogoUrl } from '@/lib/logo'
+import { findPreset } from '@/lib/themePresets'
 
 export async function fetchSchoolSettings(): Promise<SchoolSettings> {
   const { data, error } = await supabase
@@ -15,13 +16,14 @@ export async function fetchSchoolSettings(): Promise<SchoolSettings> {
   }
   return (
     normalized ?? {
-      app_name: 'SMK AL-FATA CBT',
+      app_name: 'Veyra CBT',
       school_name: 'SMK AL-FATA',
       logo_url: getDefaultLogo(),
       favicon_url: getDefaultLogo(),
       primary_color: '#0D868F',
       secondary_color: '#0CBCC9',
       extra_colors: [],
+      theme_preset: 'bengkel-presisi',
       address: null,
       city: null,
       headmaster: null,
@@ -74,12 +76,84 @@ export function hexToRgbTriplet(hex: string): string {
   return triplet
 }
 
+function hexToHsl(hex: string): { h: number; s: number; l: number } | null {
+  let h = hex.replace('#', '').trim()
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('')
+  if (!/^[0-9a-fA-F]{6}$/.test(h)) return null
+  const r = parseInt(h.slice(0, 2), 16) / 255
+  const g = parseInt(h.slice(2, 4), 16) / 255
+  const b = parseInt(h.slice(4, 6), 16) / 255
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  let hh = 0
+  let ss = 0
+  const ll = (max + min) / 2
+  if (max !== min) {
+    const d = max - min
+    ss = ll > 0.5 ? d / (2 - max - min) : d / (max + min)
+    switch (max) {
+      case r: hh = (g - b) / d + (g < b ? 6 : 0); break
+      case g: hh = (b - r) / d + 2; break
+      case b: hh = (r - g) / d + 4; break
+    }
+    hh /= 6
+  }
+  return { h: hh * 360, s: ss * 100, l: ll * 100 }
+}
+
+function hslToHex(h: number, s: number, l: number): string {
+  const hh = h / 360
+  const ss = s / 100
+  const ll = l / 100
+  const hue2rgb = (p: number, q: number, t: number): number => {
+    if (t < 0) t += 1
+    if (t > 1) t -= 1
+    if (t < 1 / 6) return p + (q - p) * 6 * t
+    if (t < 1 / 2) return q
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6
+    return p
+  }
+  let r: number, g: number, b: number
+  if (ss === 0) {
+    r = g = b = ll
+  } else {
+    const q = ll < 0.5 ? ll * (1 + ss) : ll + ss - ll * ss
+    const p = 2 * ll - q
+    r = hue2rgb(p, q, hh + 1 / 3)
+    g = hue2rgb(p, q, hh)
+    b = hue2rgb(p, q, hh - 1 / 3)
+  }
+  const toHex = (x: number): string => {
+    const v = Math.round(x * 255).toString(16)
+    return v.length === 1 ? '0' + v : v
+  }
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`
+}
+
+export function darkenColor(hex: string, amount = 0.62): string {
+  const hsl = hexToHsl(hex)
+  if (!hsl) return '#0B1E24'
+  const l = Math.max(6, hsl.l * (1 - amount))
+  const s = Math.min(100, hsl.s * 0.9 + 10)
+  return hslToHex(hsl.h, s, l)
+}
+
 export function applyBranding(settings: SchoolSettings): void {
   const root = document.documentElement.style
   const html = document.documentElement
+  html.classList.remove('dark')
+  html.style.colorScheme = 'light'
+  root.removeProperty('--app-dark-bg')
+  root.removeProperty('--app-dark-bg-soft')
+  document.body.style.backgroundColor = ''
+  try { localStorage.setItem('cbt-theme', 'light') } catch { void 0 }
 
-  if (settings.primary_color && /^#/.test(settings.primary_color)) {
-    const t = hexToRgbTriplet(settings.primary_color)
+  const preset = findPreset((settings as unknown as { theme_preset?: string | null }).theme_preset)
+  const effectivePrimary = preset ? preset.primary : settings.primary_color
+  const effectiveSecondary = preset ? preset.secondary : settings.secondary_color
+
+  if (effectivePrimary && /^#/.test(effectivePrimary)) {
+    const t = hexToRgbTriplet(effectivePrimary)
     for (let shade = 50; shade <= 900; shade += 1) {
       const factor = ({ 50: 0.95, 100: 0.88, 200: 0.75, 300: 0.55, 400: 0.3, 500: 0.1, 600: 0, 700: -0.12, 800: -0.24, 900: -0.36 } as Record<number, number>)[shade]!
       const [r, g, b] = t.split(' ').map(Number)
@@ -88,13 +162,13 @@ export function applyBranding(settings: SchoolSettings): void {
       root.setProperty(`--c-primary-${shade}`, `${mix(r)} ${mix(g)} ${mix(b)}`)
     }
   }
-  if (settings.secondary_color) {
-    const t = hexToRgbTriplet(settings.secondary_color)
+  if (effectiveSecondary) {
+    const t = hexToRgbTriplet(effectiveSecondary)
     root.setProperty('--c-accent-600', t)
     root.setProperty('--c-accent-50', `rgb(${t.split(' ').map((n) => Math.min(255, Number(n) + 230)).join(' ')})`)
   }
 
-  const palette = [settings.primary_color, settings.secondary_color, ...((settings.extra_colors ?? []) as string[])]
+  const palette = [effectivePrimary, effectiveSecondary, ...((settings.extra_colors ?? []) as string[])]
     .filter((c): c is string => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c))
   let gradientStyle = document.getElementById('branding-gradient-style') as HTMLStyleElement | null
   if (palette.length > 1) {
@@ -120,7 +194,7 @@ export function applyBranding(settings: SchoolSettings): void {
     if (gradientStyle) gradientStyle.remove()
   }
 
-  document.title = settings.app_name || 'SMK AL-FATA CBT'
+  document.title = settings.app_name || 'Veyra CBT'
 
   const cleanLogo = resolveLogoUrl(settings.logo_url)
   const cleanFavicon = sanitizeLogoUrl(settings.favicon_url) ? resolveLogoUrl(settings.favicon_url) : cleanLogo
@@ -134,8 +208,8 @@ export function applyBranding(settings: SchoolSettings): void {
   faviconLink.href = cleanFavicon
 
   const metaTheme = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
-  if (metaTheme && settings.primary_color && /^#[0-9a-fA-F]{6}$/.test(settings.primary_color)) {
-    metaTheme.content = settings.primary_color
+  if (metaTheme && effectivePrimary && /^#[0-9a-fA-F]{6}$/.test(effectivePrimary)) {
+    metaTheme.content = effectivePrimary
   }
 
   try {
@@ -149,8 +223,9 @@ export function applyBranding(settings: SchoolSettings): void {
         app_name: settings.app_name,
         school_name: settings.school_name,
         logo_url: sanitizeLogoUrl(settings.logo_url) ? resolveLogoUrl(settings.logo_url) : fallbackLogo2,
-        primary_color: settings.primary_color,
-        secondary_color: settings.secondary_color,
+        primary_color: effectivePrimary,
+        secondary_color: effectiveSecondary,
+        theme_preset: (settings as unknown as { theme_preset?: string | null }).theme_preset ?? null,
       }),
     )
   } catch {

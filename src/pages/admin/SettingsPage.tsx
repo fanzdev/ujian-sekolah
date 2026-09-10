@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Settings, Palette, ShieldCheck, Save, Camera, Server } from 'lucide-react'
+import { Settings, Palette, ShieldCheck, Save, Camera, Server, Trash2, AlertTriangle, Skull } from 'lucide-react'
+import { useConfirm } from '@/hooks/useConfirm'
 import { useAsync, useDocumentTitle } from '@/hooks/useAsync'
 import { useToast } from '@/hooks/useToast'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -19,6 +20,7 @@ import {
 } from '@/services/settings.service'
 import type { SchoolSettings, SystemSettingsMap } from '@/types/models'
 import { getDefaultLogo, resolveLogoUrl, sanitizeLogoUrl } from '@/lib/logo'
+import { THEME_PRESETS, isContrastOk, suggestSecondary, type ThemePreset } from '@/lib/themePresets'
 
 export default function SettingsPage() {
   const [tab, setTab] = useState('branding')
@@ -35,6 +37,7 @@ export default function SettingsPage() {
           { id: 'exam', label: 'Default Ujian' },
           { id: 'security', label: 'Keamanan' },
           { id: 'ai', label: 'AI Grading' },
+          { id: 'danger', label: 'Bahaya' },
         ]}
       />
       <div className="mt-6 w-full">
@@ -42,6 +45,7 @@ export default function SettingsPage() {
         {tab === 'exam' && <ExamDefaultsPanel />}
         {tab === 'security' && <SecurityPanel />}
         {tab === 'ai' && <AiKeysPanel />}
+        {tab === 'danger' && <DangerPanel />}
       </div>
     </>
   )
@@ -53,6 +57,7 @@ function BrandingPanel() {
   const [form, setForm] = useState<SchoolSettings | null>(null)
   const [saving, setSaving] = useState(false)
   const [logoUploading, setLogoUploading] = useState(false)
+  const [showCustom, setShowCustom] = useState(false)
 
   useEffect(() => {
     if (query.data) {
@@ -60,13 +65,31 @@ function BrandingPanel() {
         ...query.data,
         extra_colors: Array.isArray(query.data.extra_colors) ? query.data.extra_colors : [],
         primary_color: query.data.primary_color || '#0D868F',
+        theme_preset: (query.data as unknown as { theme_preset?: string | null }).theme_preset ?? 'bengkel-presisi',
       } as SchoolSettings
       setForm(normalized)
+      const preset = THEME_PRESETS.find((p) => p.id === normalized.theme_preset)
+      setShowCustom(!preset || normalized.theme_preset === 'custom')
     }
   }, [query.data])
 
   if (query.error) return <ErrorState message={query.error} onRetry={query.reload} />
   if (!form) return <div className="flex justify-center py-14"><Spinner /></div>
+
+  const currentPreset = THEME_PRESETS.find((p) => p.id === (form as unknown as { theme_preset?: string | null }).theme_preset) ?? null
+  const effectivePrimary = currentPreset ? currentPreset.primary : form.primary_color || '#0D868F'
+  const effectiveSecondary = currentPreset ? currentPreset.secondary : form.secondary_color || '#0CBCC9'
+  const contrastOk = isContrastOk('#ffffff', effectivePrimary, 4.5)
+
+  const selectPreset = (preset: ThemePreset) => {
+    setForm((f) => ({ ...f!, primary_color: preset.primary, secondary_color: preset.secondary, theme_preset: preset.id } as SchoolSettings))
+    setShowCustom(false)
+  }
+
+  const selectCustom = () => {
+    setForm((f) => ({ ...f!, theme_preset: 'custom' } as unknown as SchoolSettings))
+    setShowCustom(true)
+  }
 
   const save = async () => {
     if (!form.app_name?.trim() || !form.school_name?.trim()) {
@@ -75,12 +98,13 @@ function BrandingPanel() {
     }
     setSaving(true)
     try {
-      const payload: Partial<SchoolSettings> = {
+      const payload: Record<string, unknown> = {
         app_name: form.app_name.trim(),
         school_name: form.school_name.trim(),
-        primary_color: form.primary_color || '#0D868F',
-        secondary_color: form.secondary_color || '#0CBCC9',
+        primary_color: effectivePrimary,
+        secondary_color: effectiveSecondary,
         extra_colors: form.extra_colors ?? [],
+        theme_preset: (form as unknown as { theme_preset?: string | null }).theme_preset ?? 'bengkel-presisi',
         logo_url: form.logo_url,
         favicon_url: form.favicon_url,
         address: form.address,
@@ -89,8 +113,8 @@ function BrandingPanel() {
         academic_year: form.academic_year,
         semester: form.semester,
       }
-      await updateSchoolSettings(payload)
-      applyBranding({ ...form, primary_color: form.primary_color || '#0D868F', secondary_color: form.secondary_color || '#0D868F', extra_colors: form.extra_colors ?? [] })
+      await updateSchoolSettings(payload as Partial<SchoolSettings>)
+      applyBranding({ ...form, primary_color: effectivePrimary, secondary_color: effectiveSecondary, theme_preset: payload.theme_preset as string } as SchoolSettings)
       toast.success('Branding tersimpan & diterapkan.')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Gagal menyimpan.')
@@ -125,7 +149,7 @@ function BrandingPanel() {
         <CardHeader title="Identitas Sekolah" subtitle="Diterapkan pada seluruh aplikasi termasuk halaman login & splash screen." />
         <CardBody className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2">
-            <Input label="Nama Aplikasi" value={form.app_name} onChange={(e) => setForm({ ...form, app_name: e.target.value })} required placeholder="VCBT SMK AL-FATA" />
+            <Input label="Nama Aplikasi" value={form.app_name} onChange={(e) => setForm({ ...form, app_name: e.target.value })} required placeholder="Veyra CBT" />
             <Input label="Nama Sekolah" value={form.school_name} onChange={(e) => setForm({ ...form, school_name: e.target.value })} required placeholder="SMK AL-FATA" />
             <Input label="Tahun Ajaran" placeholder="cth: 2026/2027" value={form.academic_year ?? ''} onChange={(e) => setForm({ ...form, academic_year: e.target.value })} />
             <Input label="Semester" placeholder="Ganjil / Genap" value={form.semester ?? ''} onChange={(e) => setForm({ ...form, semester: e.target.value })} />
@@ -134,26 +158,81 @@ function BrandingPanel() {
           </div>
           <Input label="Alamat" value={form.address ?? ''} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Alamat lengkap sekolah" />
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-700 dark:bg-slate-800/40">
-            <p className="mb-3 text-xs font-semibold text-slate-700 dark:text-slate-200">Warna Tema</p>
-            <div className="h-8 w-full rounded-lg border border-slate-200 shadow-inner dark:border-slate-700" style={{ background: `linear-gradient(90deg, ${form.primary_color || '#0D868F'}, ${form.secondary_color || '#0CBCC9'})` }} aria-hidden />
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
-                <input type="color" aria-label="Warna Utama" value={/^#[0-9a-fA-F]{6}$/.test(form.primary_color || '') ? form.primary_color! : '#0D868F'} onChange={(e) => setForm({ ...form, primary_color: e.target.value })} className="h-8 w-10 cursor-pointer rounded-md border-0 bg-transparent p-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-medium text-slate-500">Warna Utama</p>
-                  <input type="text" value={form.primary_color || '#0D868F'} onChange={(e) => setForm({ ...form, primary_color: e.target.value })} className="w-full bg-transparent font-mono text-xs outline-none dark:text-slate-100" maxLength={7} placeholder="#000000" />
-                </div>
+          <div className="rounded-[20px] border border-[#0B1E24]/8 bg-[#FDF9F3]/60 p-5 dark:border-white/10 dark:bg-white/[0.03]">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-mono text-[10px] tracking-[0.16em] text-[#C67C3B]">TEMA — PRESET TERKURASI</p>
+                <p className="mt-1 text-sm font-bold tracking-tight text-[#0B1E24] dark:text-white">Pilih nuansa yang paling Veyra</p>
+                <p className="text-xs text-[#6B7A7F] dark:text-white/60">Preset sudah diuji kontras & harmoni — aman untuk elegansi.</p>
               </div>
-              <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
-                <input type="color" aria-label="Warna Sekunder" value={/^#[0-9a-fA-F]{6}$/.test(form.secondary_color || '') ? form.secondary_color! : '#0CBCC9'} onChange={(e) => setForm({ ...form, secondary_color: e.target.value })} className="h-8 w-10 cursor-pointer rounded-md border-0 bg-transparent p-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-medium text-slate-500">Warna Sekunder</p>
-                  <input type="text" value={form.secondary_color || '#0CBCC9'} onChange={(e) => setForm({ ...form, secondary_color: e.target.value })} className="w-full bg-transparent font-mono text-xs outline-none dark:text-slate-100" maxLength={7} placeholder="#000000" />
+              <span className="hidden rounded-full bg-[#0B1E24] px-2.5 py-1 font-mono text-[10px] font-bold tracking-wide text-white dark:bg-white dark:text-[#0B1E24] sm:inline">4 PRESET</span>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {THEME_PRESETS.map((preset) => {
+                const active = (form as unknown as { theme_preset?: string | null }).theme_preset === preset.id
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => selectPreset(preset)}
+                    className={`group relative overflow-hidden rounded-2xl border-2 p-3 text-left transition-all ${active ? 'border-[#0B1E24] bg-white shadow-md dark:border-white dark:bg-white/[0.08]' : 'border-[#0B1E24]/8 bg-white hover:border-[#0B1E24]/15 hover:shadow-sm dark:border-white/10 dark:bg-white/[0.04]'}`}
+                  >
+                    <div className="h-14 w-full rounded-xl border border-black/5" style={{ background: `linear-gradient(135deg, ${preset.primary}, ${preset.secondary})` }} aria-hidden />
+                    <p className="mt-2.5 text-sm font-bold tracking-tight text-[#0B1E24] dark:text-white">{preset.label}</p>
+                    <p className="text-[11px] leading-snug text-[#6B7A7F] dark:text-white/60">{preset.description}</p>
+                    <div className="mt-2 flex items-center gap-1.5">
+                      <span className="h-3 w-3 rounded-full border border-black/10" style={{ background: preset.primary }} />
+                      <span className="h-3 w-3 rounded-full border border-black/10" style={{ background: preset.secondary }} />
+                      <span className="ml-auto font-mono text-[10px] text-[#8A9AA0]">{preset.primary} • {preset.secondary}</span>
+                    </div>
+                    {active && <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[#0B1E24] text-white dark:bg-white dark:text-[#0B1E24]">✓</span>}
+                  </button>
+                )
+              })}
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <button type="button" onClick={selectCustom} className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition ${showCustom ? 'bg-[#0B1E24] text-white dark:bg-white dark:text-[#0B1E24]' : 'border border-[#0B1E24]/10 bg-white text-[#0B1E24] hover:bg-[#FDF9F3] dark:border-white/10 dark:bg-white/10 dark:text-white'}`}>Kustom</button>
+              <span className="font-mono text-[11px] text-[#8A9AA0]">Atur manual 2 warna — untuk advance</span>
+              {!contrastOk && <span className="rounded-full bg-rose-50 px-2.5 py-1 font-mono text-[11px] font-bold text-rose-600 dark:bg-rose-500/15 dark:text-rose-300">Kontras rendah</span>}
+            </div>
+            {showCustom && (
+              <div className="mt-4 grid gap-3 rounded-2xl border border-[#0B1E24]/8 bg-white p-4 dark:border-white/10 dark:bg-[#0B1E24]/20 sm:grid-cols-2">
+                <div className="flex items-center gap-2 rounded-xl border border-[#0B1E24]/10 bg-[#FDF9F3] px-3 py-2.5 dark:border-white/10 dark:bg-white/5">
+                  <input type="color" aria-label="Warna Utama" value={/^#[0-9a-fA-F]{6}$/.test(form.primary_color || '') ? form.primary_color! : '#0D868F'} onChange={(e) => setForm({ ...form, primary_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="h-8 w-10 cursor-pointer rounded-md border-0 bg-transparent p-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-mono text-[10px] tracking-wide text-[#8A9AA0]">Warna Utama</p>
+                    <input type="text" value={form.primary_color || '#0D868F'} onChange={(e) => setForm({ ...form, primary_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="w-full bg-transparent font-mono text-xs font-bold text-[#0B1E24] outline-none dark:text-white" maxLength={7} placeholder="#0D868F" />
+                  </div>
                 </div>
+                <div className="flex items-center gap-2 rounded-xl border border-[#0B1E24]/10 bg-[#FDF9F3] px-3 py-2.5 dark:border-white/10 dark:bg-white/5">
+                  <input type="color" aria-label="Warna Sekunder" value={/^#[0-9a-fA-F]{6}$/.test(form.secondary_color || '') ? form.secondary_color! : '#C67C3B'} onChange={(e) => setForm({ ...form, secondary_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="h-8 w-10 cursor-pointer rounded-md border-0 bg-transparent p-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-mono text-[10px] tracking-wide text-[#8A9AA0]">Warna Sekunder</p>
+                    <input type="text" value={form.secondary_color || '#C67C3B'} onChange={(e) => setForm({ ...form, secondary_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="w-full bg-transparent font-mono text-xs font-bold text-[#0B1E24] outline-none dark:text-white" maxLength={7} placeholder="#C67C3B" />
+                  </div>
+                </div>
+                <p className="sm:col-span-2 font-mono text-[10px] tracking-wide text-[#8A9AA0]">Saran: {suggestSecondary(effectivePrimary)} untuk harmoni. Gradasi dipakai di header & tombol.</p>
+              </div>
+            )}
+            <div className="mt-4 grid gap-3 lg:grid-cols-[1.1fr_0.9fr]">
+              <div className="rounded-xl border border-[#0B1E24]/8 bg-white p-3 dark:border-white/10 dark:bg-[#0B1E24]">
+                <p className="font-mono text-[10px] tracking-[0.12em] text-[#8A9AA0]">PRATINJAU — HEADER & TOMBOL</p>
+                <div className="mt-2 flex items-center gap-2 rounded-xl px-3 py-2.5 text-white" style={{ background: `linear-gradient(135deg, ${effectivePrimary}, ${effectiveSecondary})` }}>
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/20 text-xs font-black">CBT</span>
+                  <span className="text-sm font-bold">Veyra CBT</span>
+                  <span className="ml-auto rounded-full bg-white px-2.5 py-1 text-xs font-bold" style={{ color: effectivePrimary }}>Masuk</span>
+                </div>
+                <div className="mt-2 h-2 w-full rounded-full bg-[#FDF9F3] dark:bg-white/10">
+                  <div className="h-2 rounded-full" style={{ width: '62%', background: `linear-gradient(90deg, ${effectivePrimary}, ${effectiveSecondary})` }} />
+                </div>
+                <p className="mt-2 font-mono text-[10px] text-[#8A9AA0]">{contrastOk ? 'Kontras aman ✓' : 'Kontras rendah — teks putih sulit dibaca'}</p>
+              </div>
+              <div className="rounded-xl border border-[#0B1E24]/8 bg-white p-3 dark:border-white/10 dark:bg-[#0B1E24]">
+                <p className="font-mono text-[10px] tracking-[0.12em] text-[#8A9AA0]">GRADASI</p>
+                <div className="mt-2 h-10 w-full rounded-xl border border-black/5" style={{ background: `linear-gradient(135deg, ${effectivePrimary}, ${effectiveSecondary})` }} />
+                <p className="mt-2 font-mono text-[11px] text-[#6B7A7F] dark:text-white/60">{effectivePrimary} → {effectiveSecondary}</p>
               </div>
             </div>
-            <p className="mt-2 text-[11px] text-slate-400">Gradasi warna diterapkan pada header, tombol utama, splash screen, dan profil.</p>
           </div>
 
           <div className="space-y-3">
@@ -300,6 +379,131 @@ function SecurityPanel() {
             Durasi sesi login (JWT expiry) dikelola langsung di Supabase Dashboard → Authentication → Settings.
           </p>
           <Button onClick={saveAll} loading={saving}>Simpan Pengaturan Keamanan</Button>
+        </CardBody>
+      </Card>
+    </div>
+  )
+}
+
+function DangerPanel() {
+  const toast = useToast()
+  const confirm = useConfirm()
+  const [busy, setBusy] = useState<string | null>(null)
+  const [confirmText, setConfirmText] = useState('')
+  const [wipeAllConfirm, setWipeAllConfirm] = useState('')
+
+  const run = async (key: string, fn: () => Promise<unknown>, label: string) => {
+    const ok = await confirm.confirm({
+      title: `Hapus ${label}?`,
+      message: `Data ${label} akan dihapus permanen dari database dan tidak bisa dipulihkan. Lanjutkan?`,
+      danger: true,
+      confirmText: 'Hapus Permanen',
+    })
+    if (!ok) return
+    setBusy(key)
+    try {
+      await fn()
+      toast.success(`${label} berhasil dihapus permanen.`)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : `Gagal menghapus ${label}`)
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const wipeAll = async (includeAdmin: boolean) => {
+    const expected = includeAdmin ? 'HAPUS SEMUA' : 'HAPUS'
+    const input = includeAdmin ? wipeAllConfirm : confirmText
+    if (input.trim() !== expected) {
+      toast.error(`Ketik "${expected}" untuk konfirmasi.`)
+      return
+    }
+    const label = includeAdmin ? 'SEMUA DATA termasuk admin' : 'SEMUA DATA (kecuali akun Anda)'
+    const ok = await confirm.confirm({
+      title: `Hapus ${label}?`,
+      message: `Ini akan menghapus ${label} secara permanen. Aksi tidak bisa dibatalkan.`,
+      danger: true,
+      confirmText: 'Ya, Hapus Semua',
+    })
+    if (!ok) return
+    setBusy(includeAdmin ? 'wipeAllAdmin' : 'wipeAll')
+    try {
+      const mod = await import('@/services/danger.service')
+      if (includeAdmin) {
+        await mod.wipeAllIncludingAdmin()
+        toast.success('Semua data termasuk admin dihapus. Anda akan logout.')
+        setTimeout(() => { window.location.href = '/login' }, 1200)
+      } else {
+        const { data: { user } } = await (await import('@/services/client')).supabase.auth.getUser()
+        await mod.wipeAll(user?.id)
+        toast.success('Semua data berhasil dihapus (akun Anda tetap).')
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Gagal wipe')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const items: { key: string; label: string; desc: string; fn: () => Promise<unknown> }[] = [
+    { key: 'students', label: 'Siswa + Akun', desc: 'Hapus semua siswa & akun login siswa', fn: async () => (await import('@/services/danger.service')).wipeStudents() },
+    { key: 'teachers', label: 'Guru + Akun', desc: 'Hapus semua guru & akun (kecuali Anda)', fn: async () => { const { supabase } = await import('@/services/client'); const { data: { user } } = await supabase.auth.getUser(); return (await import('@/services/danger.service')).wipeTeachers(user?.id) } },
+    { key: 'classes', label: 'Kelas', desc: 'Hapus semua kelas', fn: async () => (await import('@/services/danger.service')).wipeClasses() },
+    { key: 'departments', label: 'Jurusan', desc: 'Hapus semua jurusan', fn: async () => (await import('@/services/danger.service')).wipeDepartments() },
+    { key: 'subjects', label: 'Mata Pelajaran', desc: 'Hapus semua mapel', fn: async () => (await import('@/services/danger.service')).wipeSubjects() },
+    { key: 'banks', label: 'Bank Soal', desc: 'Hapus semua bank & soal', fn: async () => (await import('@/services/danger.service')).wipeBanks() },
+    { key: 'exams', label: 'Ujian', desc: 'Hapus semua ujian & peserta', fn: async () => (await import('@/services/danger.service')).wipeExams() },
+    { key: 'results', label: 'Hasil Ujian', desc: 'Hapus attempts & nilai', fn: async () => (await import('@/services/danger.service')).wipeResults() },
+    { key: 'violations', label: 'Pelanggaran', desc: 'Hapus log pelanggaran', fn: async () => (await import('@/services/danger.service')).wipeViolations() },
+    { key: 'audit', label: 'Audit Log', desc: 'Hapus jejak audit', fn: async () => (await import('@/services/danger.service')).wipeAudit() },
+  ]
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-[20px] border-2 border-rose-200 bg-rose-50 p-5 dark:border-rose-900/40 dark:bg-rose-950/30">
+        <div className="flex items-start gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-600 text-white">
+            <AlertTriangle className="h-5 w-5" />
+          </span>
+          <div>
+            <h3 className="text-sm font-black tracking-tight text-rose-900 dark:text-rose-100">Zona Bahaya — Hapus Permanen</h3>
+            <p className="mt-1 text-xs leading-relaxed text-rose-700 dark:text-rose-300">Setiap tombol di bawah akan menghapus dari <strong>database</strong> (hard delete) sehingga username/NIS/NIP bisa dipakai lagi. Tidak ada sampah soft-delete.</p>
+            <p className="mt-2 font-mono text-[11px] text-rose-600 dark:text-rose-400">Gunakan dengan hati-hati. Tidak bisa di-undo.</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {items.map((it) => (
+          <div key={it.key} className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div>
+              <p className="text-sm font-bold text-slate-900 dark:text-white">{it.label}</p>
+              <p className="mt-1 text-xs leading-snug text-slate-500 dark:text-slate-400">{it.desc}</p>
+            </div>
+            <Button size="sm" variant="outline" className="mt-3 w-full border-rose-200 text-rose-600 hover:bg-rose-50 dark:border-rose-900/40 dark:text-rose-300" loading={busy === it.key} icon={<Trash2 className="h-4 w-4" />} onClick={() => void run(it.key, it.fn, it.label)}>Hapus {it.label}</Button>
+          </div>
+        ))}
+      </div>
+
+      <Card>
+        <CardHeader title={<span className="flex items-center gap-2 text-rose-700 dark:text-rose-300"><Skull className="h-4 w-4" /> Wipe Total</span>} subtitle="Hapus banyak tabel sekaligus. Pilih yang Anda butuhkan." />
+        <CardBody className="space-y-4">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/30 dark:bg-amber-950/20">
+            <p className="text-xs font-bold text-amber-900 dark:text-amber-100">Hapus SEMUA DATA (kecuali akun Anda)</p>
+            <p className="mt-1 text-xs leading-relaxed text-amber-700 dark:text-amber-300">Akan menghapus: hasil, ujian, bank soal, soal, mapel, kelas, jurusan, guru, siswa, pelanggaran, audit, notifikasi. Akun admin yang sedang login tetap.</p>
+            <div className="mt-3 flex gap-2">
+              <Input placeholder='Ketik HAPUS untuk konfirmasi' value={confirmText} onChange={(e) => setConfirmText(e.target.value)} className="flex-1" />
+              <Button variant="outline" className="border-rose-200 text-rose-600 hover:bg-rose-50" loading={busy === 'wipeAll'} onClick={() => void wipeAll(false)} icon={<Trash2 className="h-4 w-4" />}>Hapus Semua</Button>
+            </div>
+          </div>
+          <div className="rounded-xl border-2 border-rose-300 bg-rose-50 p-4 dark:border-rose-800 dark:bg-rose-950/30">
+            <p className="flex items-center gap-2 text-xs font-black tracking-wide text-rose-800 dark:text-rose-200"><Skull className="h-4 w-4" /> HAPUS SEMUA TERMASUK AKUN ADMIN</p>
+            <p className="mt-1 text-xs leading-relaxed text-rose-700 dark:text-rose-300">Termasuk akun admin yang sedang login. Setelah ini Anda akan logout dan harus buat admin baru via <code className="rounded bg-white px-1">/setup</code>.</p>
+            <div className="mt-3 flex gap-2">
+              <Input placeholder='Ketik HAPUS SEMUA' value={wipeAllConfirm} onChange={(e) => setWipeAllConfirm(e.target.value)} className="flex-1" />
+              <Button variant="danger" loading={busy === 'wipeAllAdmin'} onClick={() => void wipeAll(true)} icon={<Skull className="h-4 w-4" />}>Hapus Total</Button>
+            </div>
+          </div>
         </CardBody>
       </Card>
     </div>

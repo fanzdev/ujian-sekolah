@@ -126,7 +126,7 @@ export default function StudentsPage() {
                   render: (s) => {
                     const dept = s.classes?.departments
                     if (!dept) return <span className="text-xs text-slate-400">-</span>
-                    return <Badge tone="sky">{dept.code} · {dept.name}</Badge>
+                    return <Badge tone="sky"><span>{dept.code}</span><span className="hidden sm:inline"> · {dept.name}</span></Badge>
                   },
                 },
                 { key: 'gender', header: 'L/P', render: (s) => (s.gender === 'L' ? 'Laki-laki' : s.gender === 'P' ? 'Perempuan' : '-') },

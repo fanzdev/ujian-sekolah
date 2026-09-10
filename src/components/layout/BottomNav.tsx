@@ -69,10 +69,10 @@ export function BottomNav({
   return (
     <nav
       aria-label="Navigasi bawah"
-      className="fixed inset-x-3 bottom-3 z-40 mx-auto max-w-md lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[560px] lg:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <div className="flex items-center justify-around rounded-[20px] border border-slate-200/60 bg-white/90 px-1 pb-2 pt-2 shadow-[0_8px_32px_-8px_rgba(15,23,42,0.18)] backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/90 dark:shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)]">
+      <div className="mx-3 mb-3 flex items-center justify-around rounded-[24px] border border-[#0B1E24]/8 bg-white px-1.5 pb-2 pt-2 shadow-[0_12px_40px_-12px_rgba(11,30,36,0.22)] backdrop-blur-xl dark:border-white/10 dark:bg-[#0B1E24] dark:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.6)]">
         {items.map((item) => {
           const active = isActivePath(location.pathname, item.path)
           const Icon = item.icon
@@ -82,21 +82,21 @@ export function BottomNav({
               to={item.path}
               aria-current={active ? 'page' : undefined}
               className={cn(
-                'relative flex flex-1 flex-col items-center justify-center gap-1 px-1 py-1 text-[10px] font-bold leading-none transition-all active:scale-95',
+                'relative flex flex-1 flex-col items-center justify-center gap-1.5 px-1 py-1.5 text-[10px] font-bold leading-none transition-all active:scale-95',
                 active
-                  ? 'text-primary-600 dark:text-primary-400'
-                  : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300',
+                  ? 'text-[#0B1E24] dark:text-white'
+                  : 'text-[#8A9AA0] dark:text-white/50',
               )}
             >
               <span className={cn(
                 'flex h-11 w-11 items-center justify-center rounded-[14px] transition-all',
                 active
-                  ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/30 dark:bg-primary-500 dark:shadow-primary-500/30'
-                  : 'bg-transparent',
+                  ? 'bg-[#0B1E24] text-white shadow-md dark:bg-white dark:text-[#0B1E24]'
+                  : 'bg-[#FDF9F3] text-[#8A9AA0] dark:bg-white/10 dark:text-white/60',
               )}>
-                <Icon className={cn('h-[22px] w-[22px]', active ? 'text-white' : 'text-current')} />
+                <Icon className="h-[22px] w-[22px]" />
               </span>
-              <span className={cn('transition-colors', active ? 'text-primary-600 dark:text-primary-400' : '')}>{item.label}</span>
+              <span className="tracking-wide">{item.label}</span>
             </Link>
           )
         })}

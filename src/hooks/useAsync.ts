@@ -66,7 +66,7 @@ export function useOnline(): boolean {
 export function useDocumentTitle(title: string): void {
   useEffect(() => {
     const prev = document.title
-    document.title = title ? `${title} · SMK AL-FATA CBT` : 'SMK AL-FATA CBT'
+    document.title = title ? `${title} · Veyra CBT` : 'Veyra CBT'
     return () => {
       document.title = prev
     }

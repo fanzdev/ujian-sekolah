@@ -285,6 +285,7 @@ export interface SchoolSettings {
   primary_color: string
   secondary_color: string
   extra_colors: string[] | null
+  theme_preset: string | null
   address: string | null
   city: string | null
   headmaster: string | null

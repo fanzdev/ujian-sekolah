@@ -1,4 +1,9 @@
 export function getDefaultLogo(): string {
+  if (typeof window !== 'undefined') {
+    const p = window.location.pathname
+    if (p.startsWith('/ujian/')) return '/ujian/logo.webp'
+    if (import.meta.env.BASE_URL === '/ujian/' && p === '/ujian') return '/ujian/logo.webp'
+  }
   return `${import.meta.env.BASE_URL}logo.webp`
 }
 

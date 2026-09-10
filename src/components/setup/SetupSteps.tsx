@@ -100,7 +100,7 @@ export function StepSchool({
       <StepHeader icon={<Building2 className="h-5 w-5" />} title="Profil Sekolah & Aplikasi" />
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Input label="Nama Aplikasi" placeholder="SMK AL-FATA CBT" value={school.appName} onChange={(e) => set({ appName: e.target.value })} error={errors.appName} required autoFocus />
+        <Input label="Nama Aplikasi" placeholder="Veyra CBT" value={school.appName} onChange={(e) => set({ appName: e.target.value })} error={errors.appName} required autoFocus />
         <Input label="Nama Sekolah" placeholder="SMK AL-FATA" value={school.schoolName} onChange={(e) => set({ schoolName: e.target.value })} error={errors.schoolName} required />
         <Input label="Kota / Kabupaten" placeholder="cth: Bandung" value={school.city} onChange={(e) => set({ city: e.target.value })} />
         <Input label="Tahun Ajaran" placeholder="2026/2027" value={school.academicYear} onChange={(e) => set({ academicYear: e.target.value })} error={errors.academicYear} />

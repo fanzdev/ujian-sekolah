@@ -7,7 +7,6 @@ import { listMyNotifications, markAllNotificationsRead, markNotificationRead } f
 import { relativeTime } from '@/lib/datetime'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
-import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { Breadcrumb } from './Breadcrumb'
 import { ChatAiCard } from '@/components/ai/ChatAiCard'
 import { supabase } from '@/services/client'
@@ -221,21 +220,26 @@ export function Topbar({
   const chatButtonRef = useRef<HTMLButtonElement>(null)
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-30 flex h-16 items-center gap-1.5 border-b border-slate-200/50 bg-white/95 px-3 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/95 sm:gap-3 sm:px-6 lg:left-64">
+    <header className="fixed top-0 left-0 right-0 z-30 flex h-14 items-center gap-1.5 border-b border-[#0B1E24]/8 bg-white/90 px-2 backdrop-blur-xl dark:border-white/10 dark:bg-[#0B1E24]/90 sm:gap-2 sm:px-4 lg:left-64 lg:h-16 lg:px-6">
       <button
         onClick={onMenuClick}
         aria-label="Buka menu"
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-700 transition-colors hover:bg-slate-100 active:bg-slate-200 tap-target dark:text-slate-300 dark:hover:bg-slate-800 sm:rounded-xl lg:hidden dark:hover:bg-slate-700 dark:bg-slate-700 dark:text-slate-200"
+        type="button"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#0B1E24] text-white shadow-sm transition-colors active:scale-95 dark:bg-white dark:text-[#0B1E24] lg:hidden"
       >
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
           <path strokeLinecap="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
         </svg>
       </button>
-      <div className="flex items-center shrink-0">
+      <div className="hidden items-center gap-2 lg:flex shrink-0">
+        <span className="hidden h-6 w-px bg-[#0B1E24]/10 dark:bg-white/10 sm:block" aria-hidden />
+        <NetworkPing />
+      </div>
+      <div className="flex items-center gap-2 lg:hidden shrink-0">
         <NetworkPing />
       </div>
 
-      <div className="hidden sm:flex min-w-0 flex-1">
+      <div className="hidden min-w-0 flex-1 sm:flex">
         <Breadcrumb />
       </div>
       <div className="flex min-w-0 flex-1 items-center sm:hidden" />
@@ -251,12 +255,11 @@ export function Topbar({
             }}
             aria-label="Chat AI"
             aria-expanded={chatOpen}
-            className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 sm:rounded-xl sm:border sm:border-slate-200 sm:bg-white sm:hover:border-slate-300 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 sm:dark:border-slate-700 sm:dark:bg-slate-900 sm:dark:hover:border-slate-600 dark:hover:bg-slate-700"
+            className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 sm:h-9 sm:w-9 sm:rounded-xl sm:border sm:border-slate-200 sm:bg-white sm:hover:border-slate-300 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 sm:dark:border-slate-700 sm:dark:bg-slate-900 sm:dark:hover:border-slate-600"
           >
-            <MessageSquare className="h-[18px] w-[18px]" />
+            <MessageSquare className="h-[16px] w-[16px] sm:h-[18px] sm:w-[18px]" />
           </button>
         )}
-        <ThemeToggle />
 
         <div className="relative" ref={notifRef}>
         <button
@@ -267,9 +270,9 @@ export function Topbar({
           }}
           aria-label="Notifikasi"
           aria-expanded={notifOpen}
-          className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 sm:rounded-xl sm:border sm:border-slate-200 sm:bg-white sm:hover:border-slate-300 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 sm:dark:border-slate-700 sm:dark:bg-slate-900 sm:dark:hover:border-slate-600 dark:hover:bg-slate-700"
+          className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 sm:h-9 sm:w-9 sm:rounded-xl sm:border sm:border-slate-200 sm:bg-white sm:hover:border-slate-300 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 sm:dark:border-slate-700 sm:dark:bg-slate-900 sm:dark:hover:border-slate-600"
         >
-          <Bell className="h-[18px] w-[18px]" />
+          <Bell className="h-[16px] w-[16px] sm:h-[18px] sm:w-[18px]" />
           {unread > 0 && (
             <span className="absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
               {unread > 9 ? '9+' : unread}
@@ -422,10 +425,10 @@ export function BrandMark({ appName, schoolName }: { appName?: string; schoolNam
   }, [])
   return (
     <div className="flex items-center gap-3 px-2">
-      <img src={logo ? resolveLogoUrl(logo) : fallbackLogo} alt="Logo" className="h-9 w-9 shrink-0 rounded-lg bg-white object-contain p-1 shadow-sm ring-1 ring-slate-200 dark:bg-white dark:ring-slate-200" width={36} height={36} onError={(e)=>{ const t=e.currentTarget; const fb=fallbackLogo; if(t.src === fb || t.src.endsWith(fb)) return; t.onerror=null; t.src=fb }} />
+      <img src={logo ? resolveLogoUrl(logo) : fallbackLogo} alt={`Logo ${appName ?? 'Veyra CBT'}`} className="h-9 w-9 shrink-0 rounded-lg bg-white object-contain p-1 shadow-sm ring-1 ring-white/20" width={36} height={36} onError={(e)=>{ const t=e.currentTarget; const fb=fallbackLogo; try { if(new URL(t.src, location.href).pathname === new URL(fb, location.href).pathname) return; } catch { if(t.src === fb) return; } t.onerror=null; t.src=fb }} />
       <div className="min-w-0 leading-tight">
-        <p className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{schoolName ?? 'SMK AL-FATA'}</p>
-        <p className="truncate text-[11px] font-medium text-slate-500 dark:text-slate-400">{appName ?? 'SMK AL-FATA CBT'}</p>
+        <p className="truncate text-sm font-bold text-white">{schoolName ?? 'SMK AL-FATA'}</p>
+        <p className="truncate text-[11px] font-medium text-white/60">{appName ?? 'Veyra CBT'}</p>
       </div>
     </div>
   )

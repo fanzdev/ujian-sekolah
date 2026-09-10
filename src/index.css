@@ -30,7 +30,7 @@
     max-width: 100%;
   }
   body {
-    @apply bg-slate-50 text-slate-800 antialiased font-sans;
+    @apply bg-[#FDF9F3] text-slate-800 antialiased font-sans;
     font-feature-settings: 'cv11', 'ss01';
     overflow-y: auto;
     overflow-x: clip;
@@ -181,7 +181,7 @@ html.dark {
 }
 
 html.dark body {
-  background-color: #020617;
+  background-color: var(--app-dark-bg, #0B1E24);
   color: #e2e8f0;
 }
 
@@ -357,4 +357,5 @@ html.dark .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
 
 html.dark .animate-fade-in,
 html.dark .animate-scale-in,
-html.dark .animate-slide-in-right { animation-duration: 0.2s; }
+html.dark .animate-slide-in-right,
+html.dark .animate-slide-in-top { animation-duration: 0.2s; }

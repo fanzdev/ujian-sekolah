@@ -144,27 +144,57 @@ async function createViaSignUp(data: CreateUserData): Promise<{ user_id: string 
 }
 
 export async function createFullUser(data: CreateUserData): Promise<{ user_id: string }> {
+  const uname = data.username.trim().toLowerCase()
+  try {
+    const { data: dup } = await supabase.from('profiles').select('id, is_active, username').ilike('username', uname).maybeSingle()
+    if (dup) {
+      const isActive = (dup as unknown as { is_active?: boolean }).is_active
+      if (isActive === false) {
+        try { await supabase.rpc('admin_delete_user', { p_user_id: (dup as unknown as { id: string }).id }) } catch { void 0 }
+        try { await supabase.from('profiles').delete().eq('id', (dup as unknown as { id: string }).id) } catch { void 0 }
+      } else {
+        throw new Error(`Username "${uname}" sudah digunakan.`)
+      }
+    }
+  } catch (e) {
+    if (e instanceof Error && e.message.includes('sudah digunakan')) throw e
+  }
   try {
     const result = await invokeEdge<{ user_id: string; email: string }>('manage-user', {
       action: 'create_user',
-      username: data.username,
+      username: uname,
       password: data.password,
       full_name: data.fullName,
       role: data.role,
       student: data.student,
       teacher: data.teacher,
     })
-    void logAudit('CREATE_USER', 'profile', result.user_id, { role: data.role, username: data.username })
+    void logAudit('CREATE_USER', 'profile', result.user_id, { role: data.role, username: uname })
     return result
   } catch (err) {
     if (!isEdgeMissingError(err)) throw err
     try {
-      return await createViaRpc(data)
+      return await createViaRpc({ ...data, username: uname })
     } catch (rpcErr) {
       const rpcMsg = rpcErr instanceof Error ? rpcErr.message : String(rpcErr)
       const rpcMissing = rpcMsg.includes('does not exist') || rpcMsg.includes('Could not find the function') || rpcMsg.includes('not found') || rpcMsg.includes('PGRST202')
       if (!rpcMissing) throw rpcErr
-      return await createViaSignUp(data)
+      try {
+        return await createViaSignUp({ ...data, username: uname })
+      } catch (signErr) {
+        const msg = signErr instanceof Error ? signErr.message : String(signErr)
+        if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('User already registered')) {
+          try {
+            const { data: orphan } = await supabase.from('profiles').select('id').ilike('username', uname).maybeSingle()
+            if (orphan) {
+              try { await supabase.rpc('admin_delete_user', { p_user_id: (orphan as unknown as { id: string }).id }) } catch { void 0 }
+              try { await supabase.from('profiles').delete().eq('id', (orphan as unknown as { id: string }).id) } catch { void 0 }
+            }
+          } catch { void 0 }
+          throw new Error(`Username "${uname}" masih terdaftar di sistem auth. Coba lagi setelah 1 menit atau hubungi admin untuk hard delete via SQL: delete from auth.users where email = '${uname}@cbt.local'`)
+        }
+        throw signErr
+      }
     }
   }
 }
@@ -218,9 +248,25 @@ export async function deleteUser(userId: string): Promise<void> {
     const rpcMissing = rpcMsg.includes('does not exist') || rpcMsg.includes('Could not find the function') || rpcMsg.includes('not found') || rpcMsg.includes('PGRST202')
     if (!rpcMissing) throw rpcErr
   }
+  try {
+    await supabase.from('students').delete().eq('profile_id', userId)
+  } catch { void 0 }
+  try {
+    await supabase.from('teachers').delete().eq('profile_id', userId)
+  } catch { void 0 }
+  try {
+    await supabase.from('teacher_subjects').delete().eq('teacher_id', userId)
+  } catch { void 0 }
+  const { data: prof } = await supabase.from('profiles').select('username').eq('id', userId).maybeSingle()
+  const oldUsername = (prof as unknown as { username?: string } | null)?.username
+  if (oldUsername) {
+    try {
+      await supabase.from('profiles').update({ username: `${oldUsername}_deleted_${Date.now()}_${Math.random().toString(36).slice(2, 6)}` }).eq('id', userId)
+    } catch { void 0 }
+  }
   const { error } = await supabase.from('profiles').delete().eq('id', userId)
   if (error) throw error
-  void logAudit('DELETE_USER', 'profile', userId, { via: 'fallback' })
+  void logAudit('DELETE_USER', 'profile', userId, { via: 'fallback_hard' })
 }
 
 export async function listProfiles(params: {

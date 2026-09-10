@@ -77,10 +77,28 @@ export async function updateStudent(id: string, input: StudentInput): Promise<vo
 export async function deleteStudentRow(id: string): Promise<void> {
   const { data, error: fetchErr } = await supabase.from('students').select('profile_id').eq('id', id).single()
   if (fetchErr) throw fetchErr
+  const pid = data?.profile_id as string | undefined
+  if (pid) {
+    try {
+      const { deleteUser } = await import('@/services/users.service')
+      await deleteUser(pid)
+      return
+    } catch { void 0 }
+  }
   const { error: delErr } = await supabase.from('students').delete().eq('id', id)
   if (delErr) throw delErr
-  if (data?.profile_id) {
-    const { error: profErr } = await supabase.from('profiles').delete().eq('id', data.profile_id)
+  if (pid) {
+    try {
+      await supabase.from('teacher_subjects').delete().eq('teacher_id', pid)
+    } catch { void 0 }
+    const { data: prof } = await supabase.from('profiles').select('username').eq('id', pid).maybeSingle()
+    const oldUsername = (prof as unknown as { username?: string } | null)?.username
+    if (oldUsername) {
+      try {
+        await supabase.from('profiles').update({ username: `${oldUsername}_deleted_${Date.now()}` }).eq('id', pid)
+      } catch { void 0 }
+    }
+    const { error: profErr } = await supabase.from('profiles').delete().eq('id', pid)
     if (profErr) throw profErr
     void logAudit('DELETE_USER', 'student', id)
   }

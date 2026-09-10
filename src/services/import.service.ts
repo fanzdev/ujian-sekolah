@@ -6,21 +6,59 @@ export interface ParsedCsv {
   errors: string[]
 }
 
+const HEADER_ALIASES: Record<string, string> = {
+  'nama_lengkap': 'full_name',
+  'jenis_kelamin': 'gender',
+  'nama_kelas': 'class_name',
+  'telepon': 'phone',
+  'kode': 'code',
+  'nama': 'name',
+  'deskripsi': 'description',
+  'nama_bank': 'bank_title',
+  'teks_soal': 'question_text',
+  'jenis_soal': 'type',
+  'poin': 'points',
+  'pilihan_a': 'option_a',
+  'pilihan_b': 'option_b',
+  'pilihan_c': 'option_c',
+  'pilihan_d': 'option_d',
+  'pilihan_e': 'option_e',
+  'kunci_jawaban': 'correct_answer',
+  'pembahasan': 'explanation',
+  'judul': 'title',
+  'kode_mapel': 'subject_code',
+  'waktu_mulai': 'starts_at',
+  'waktu_selesai': 'ends_at',
+  'durasi_menit': 'duration_minutes',
+  'kkm': 'passing_grade',
+  'judul_ujian': 'exam_title',
+  'nilai': 'score',
+  'umpan_balik': 'feedback',
+}
+function normalizeHeader(h: string): string {
+  const key = h.trim().toLowerCase().replace(/\s+/g, '_')
+  return HEADER_ALIASES[key] ?? key
+}
+function normalizeRow(row: Record<string, string>): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const [k, v] of Object.entries(row)) out[normalizeHeader(k)] = v
+  return out
+}
 export function parseCsvFile(file: File): Promise<ParsedCsv> {
   return new Promise((resolve) => {
     Papa.parse<Record<string, string>>(file, {
       header: true,
       skipEmptyLines: 'greedy',
       delimiter: '',
-      transformHeader: (h) => h.trim().toLowerCase().replace(/\s+/g, '_'),
+      transformHeader: (h) => normalizeHeader(h),
       complete: (result) => {
-        let rows = result.data as Record<string, string>[]
+        let rows = (result.data as Record<string, string>[]).map(normalizeRow)
         let errors = result.errors.map((e) => `Baris ${e.row ?? '?'}: ${e.message}`)
         if (rows.length > 0 && Object.keys(rows[0] ?? {}).length === 1) {
           const singleKey = Object.keys(rows[0] ?? {})[0] ?? ''
           if (singleKey.includes(';') || singleKey.includes(',')) {
             const delim = singleKey.includes(';') ? ';' : ','
-            const headers = singleKey.split(delim).map((h) => h.trim().toLowerCase().replace(/\s+/g, '_'))
+            const headers = singleKey.split(delim).map((h) => normalizeHeader(h))
             const fixed: Record<string, string>[] = []
             for (const r of rows) {
               const raw = Object.values(r)[0] as string
@@ -51,7 +89,7 @@ export async function parseExcelFile(file: File): Promise<ParsedCsv> {
   const rows = json.map((obj) => {
     const out: Record<string, string> = {}
     for (const [k, v] of Object.entries(obj)) {
-      out[k.trim().toLowerCase().replace(/\s+/g, '_')] = String(v ?? '')
+      out[normalizeHeader(k)] = String(v ?? '')
     }
     return out
   })
@@ -130,11 +168,51 @@ export const questionBankRowSchema = z.object({
   tags: z.string().optional().default(''),
 })
 
+const TYPE_ID_MAP: Record<string, string> = {
+  'pilihan ganda': 'multiple_choice',
+  'pilihan_ganda': 'multiple_choice',
+  'pg': 'multiple_choice',
+  'pilgan': 'multiple_choice',
+  'pilihan ganda kompleks': 'multiple_response',
+  'pilihan_ganda_kompleks': 'multiple_response',
+  'pg kompleks': 'multiple_response',
+  'kompleks': 'multiple_response',
+  'benar/salah': 'true_false',
+  'benar_salah': 'true_false',
+  'b/s': 'true_false',
+  'isian singkat': 'short_answer',
+  'isian_singkat': 'short_answer',
+  'jawaban singkat': 'short_answer',
+  'isai singkat': 'short_answer',
+  'esai': 'essay',
+  'essay': 'essay',
+  'uraian': 'essay',
+  'menjodohkan': 'matching',
+  'jodohkan': 'matching',
+  'pasangan': 'matching',
+}
+function normType(v: string): string {
+  const k = v.trim().toLowerCase().replace(/\s+/g, ' ').replace(/_/g, ' ')
+  return TYPE_ID_MAP[k] ?? k.replace(/\s+/g, '_')
+}
+const DIFF_ID_MAP: Record<string, string> = {
+  'mudah': 'easy',
+  'gampang': 'easy',
+  'sedang': 'medium',
+  'menengah': 'medium',
+  'sulit': 'hard',
+  'susah': 'hard',
+}
+function normDiff(v: string): string {
+  const k = v.trim().toLowerCase()
+  if (!k) return 'medium'
+  return DIFF_ID_MAP[k] ?? k
+}
 export const soalRowSchema = z.object({
   bank_title: z.string().optional().default(''),
   question_text: z.string().min(5, 'teks soal minimal 5 karakter'),
-  type: z.enum(['multiple_choice', 'multiple_response', 'true_false', 'short_answer', 'essay', 'matching']).or(z.string()).transform((v) => v.trim().toLowerCase()).refine((v) => ['multiple_choice', 'multiple_response', 'true_false', 'short_answer', 'essay', 'matching'].includes(v), 'type harus: multiple_choice / multiple_response / true_false / short_answer / essay / matching'),
-  difficulty: z.enum(['easy', 'medium', 'hard', '']).optional().default('medium').transform((v) => (v === '' ? 'medium' : v)),
+  type: z.string().transform((v) => normType(v)).refine((v) => ['multiple_choice', 'multiple_response', 'true_false', 'short_answer', 'essay', 'matching'].includes(v), 'jenis harus: Pilihan Ganda / Pilihan Ganda Kompleks / Benar/Salah / Isian Singkat / Esai / Menjodohkan'),
+  difficulty: z.string().optional().default('medium').transform((v) => normDiff(String(v))).refine((v) => ['easy', 'medium', 'hard'].includes(v), 'tingkat kesulitan harus: Mudah / Sedang / Sulit'),
   points: z.union([z.string(), z.number()]).optional().default(10).transform((v) => Number(v)).refine((n) => Number.isFinite(n) && n > 0 && n <= 100, 'poin 1-100'),
   option_a: z.string().optional().default(''),
   option_b: z.string().optional().default(''),
@@ -338,108 +416,108 @@ export function downloadHeaderOnlyCsv(filename: string, headers: string[]): void
 
 export const importKindMeta: Record<string, { headers: string[]; examples: string[][]; required: string[]; desc: Record<string, string> }> = {
   students: {
-    headers: ['username', 'password', 'full_name', 'nis', 'nisn', 'gender', 'class_name', 'phone', 'email'],
+    headers: ['username', 'password', 'nama_lengkap', 'nis', 'nisn', 'jenis_kelamin', 'nama_kelas', 'telepon', 'email'],
     examples: [
       ['budi.siswa', 'Password123', 'Budi Santoso', '12345', '0012345678', 'L', 'X IPA 1', '081234567890', 'budi@example.com'],
       ['siti.aminah', 'Siswa2026!', 'Siti Aminah', '12346', '0012345679', 'P', 'X IPA 1', '081234567891', ''],
       ['ahmad.rifai', 'Rifai2026', 'Ahmad Rifai', '12347', '', 'L', 'XI IPS 2', '', 'ahmad@example.com'],
     ],
-    required: ['username', 'password', 'full_name', 'class_name'],
+    required: ['username', 'password', 'nama_lengkap', 'nama_kelas'],
     desc: {
       username: 'Unik 3-30 karakter (huruf/angka/._-). Contoh: budi.siswa',
       password: 'Minimal 8 karakter. Contoh: Password123',
-      full_name: 'Nama lengkap siswa',
+      nama_lengkap: 'Nama lengkap siswa',
       nis: 'Nomor Induk Siswa (opsional)',
       nisn: 'Nomor Induk Nasional (opsional)',
-      gender: 'L atau P (kosongkan jika tidak ada)',
-      class_name: 'Harus sama persis dengan nama kelas di sistem (cth: X IPA 1)',
-      phone: 'Opsional',
+      jenis_kelamin: 'L atau P (kosongkan jika tidak ada)',
+      nama_kelas: 'Harus sama persis dengan nama kelas di sistem (cth: X IPA 1)',
+      telepon: 'Opsional',
       email: 'Opsional, harus valid jika diisi',
     },
   },
   teachers: {
-    headers: ['username', 'password', 'full_name', 'nip', 'phone', 'email'],
+    headers: ['username', 'password', 'nama_lengkap', 'nip', 'telepon', 'email'],
     examples: [
       ['pak.ahmad', 'Guru2026!', 'Ahmad Fauzi, S.Pd', '198765432109', '081234567892', 'ahmad@smk.sch.id'],
       ['bu.siti', 'SitiGuru1', 'Siti Rahma, M.Pd', '198765432110', '081234567893', ''],
       ['pak.joko', 'Joko12345', 'Joko Prasetyo', '', '081234567894', 'joko@example.com'],
     ],
-    required: ['username', 'password', 'full_name'],
+    required: ['username', 'password', 'nama_lengkap'],
     desc: {
       username: 'Unik 3-30 karakter',
       password: 'Minimal 8 karakter',
-      full_name: 'Nama lengkap guru',
+      nama_lengkap: 'Nama lengkap guru',
       nip: 'Opsional',
-      phone: 'Opsional',
+      telepon: 'Opsional',
       email: 'Opsional, valid jika diisi',
     },
   },
   subjects: {
-    headers: ['code', 'name', 'description'],
+    headers: ['kode', 'nama', 'deskripsi'],
     examples: [
       ['MTK', 'Matematika', 'Mata pelajaran matematika wajib'],
       ['BINDO', 'Bahasa Indonesia', 'Bahasa Indonesia kelas X-XII'],
       ['FIS', 'Fisika', ''],
     ],
-    required: ['code', 'name'],
+    required: ['kode', 'nama'],
     desc: {
-      code: 'Kode unik (huruf/angka/_/-). Contoh: MTK',
-      name: 'Nama mata pelajaran',
-      description: 'Opsional',
+      kode: 'Kode unik (huruf/angka/_/-). Contoh: MTK',
+      nama: 'Nama mata pelajaran',
+      deskripsi: 'Opsional',
     },
   },
   question_banks: {
-    headers: ['bank_title', 'question_text', 'type', 'points', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'explanation'],
+    headers: ['nama_bank', 'teks_soal', 'jenis_soal', 'poin', 'pilihan_a', 'pilihan_b', 'pilihan_c', 'pilihan_d', 'kunci_jawaban', 'pembahasan'],
     examples: [
-      ['Bank UTS MTK X', 'Ibu kota Indonesia adalah?', 'multiple_choice', '10', 'Jakarta', 'Surabaya', 'Bandung', 'Medan', 'A', 'Jakarta adalah ibu kota negara Indonesia'],
-      ['Bank UTS MTK X', 'Air mendidih pada suhu 100°C', 'true_false', '5', '', '', '', '', 'Benar', 'Titik didih air 100°C pada tekanan 1 atm'],
-      ['Bank UAS Fisika', 'Jelaskan proses fotosintesis pada tumbuhan', 'essay', '20', '', '', '', '', '', 'Dinilai dari kelengkapan, ketepatan konsep, dan keruntutan penjelasan'],
+      ['Bank UTS MTK X', 'Ibu kota Indonesia adalah?', 'Pilihan Ganda', '10', 'Jakarta', 'Surabaya', 'Bandung', 'Medan', 'A', 'Jakarta adalah ibu kota negara Indonesia'],
+      ['Bank UTS MTK X', 'Air mendidih pada suhu 100°C', 'Benar/Salah', '5', '', '', '', '', 'Benar', 'Titik didih air 100°C pada tekanan 1 atm'],
+      ['Bank UAS Fisika', 'Jelaskan proses fotosintesis pada tumbuhan', 'Esai', '20', '', '', '', '', '', 'Dinilai dari kelengkapan, ketepatan konsep, dan keruntutan penjelasan'],
     ],
-    required: ['bank_title', 'question_text', 'type', 'correct_answer'],
+    required: ['nama_bank', 'teks_soal', 'jenis_soal', 'kunci_jawaban'],
     desc: {
-      bank_title: 'Judul Bank Soal tujuan (harus persis, mapel otomatis ikut bank)',
-      question_text: 'Teks pertanyaan (HTML didukung, min 5 karakter)',
-      type: 'Jenis: multiple_choice / multiple_response / true_false / short_answer / essay / matching',
-      points: 'Bobot poin 1-100 (default 10)',
-      option_a: 'Pilihan A (wajib untuk PG)',
-      option_b: 'Pilihan B',
-      option_c: 'Pilihan C (opsional)',
-      option_d: 'Pilihan D (opsional)',
-      correct_answer: 'Kunci: PG="A" atau "A,C" (kompleks), TF="Benar/Salah", Isian="Jakarta; DKI Jakarta"',
-      explanation: 'Pembahasan opsional untuk siswa',
+      nama_bank: 'Judul Bank Soal tujuan (harus persis, mapel otomatis ikut bank)',
+      teks_soal: 'Teks pertanyaan (HTML didukung, min 5 karakter)',
+      jenis_soal: 'Jenis: Pilihan Ganda / Pilihan Ganda Kompleks / Benar/Salah / Isian Singkat / Esai / Menjodohkan',
+      poin: 'Bobot poin 1-100 (default 10)',
+      pilihan_a: 'Pilihan A (wajib untuk Pilihan Ganda)',
+      pilihan_b: 'Pilihan B',
+      pilihan_c: 'Pilihan C (opsional)',
+      pilihan_d: 'Pilihan D (opsional)',
+      kunci_jawaban: 'Kunci: Pilihan Ganda="A" atau "A,C" (kompleks), Benar/Salah="Benar/Salah", Isian="Jakarta; DKI Jakarta"',
+      pembahasan: 'Pembahasan opsional untuk siswa',
     },
   },
   exams: {
-    headers: ['title', 'subject_code', 'starts_at', 'ends_at', 'duration_minutes', 'passing_grade', 'description'],
+    headers: ['judul', 'kode_mapel', 'waktu_mulai', 'waktu_selesai', 'durasi_menit', 'kkm', 'deskripsi'],
     examples: [
       ['PTS Matematika Ganjil', 'MTK', '2026-09-01T08:00', '2026-09-01T10:00', '90', '70', 'PTS semester ganjil'],
       ['UAS Bahasa Indonesia', 'BINDO', '2026-09-02T08:00', '2026-09-02T11:00', '120', '65', ''],
       ['Ujian Fisika XI', 'FIS', '2026-09-10T07:30', '2026-09-10T09:00', '90', '75', 'Bab 1-3'],
     ],
-    required: ['title', 'starts_at', 'ends_at', 'duration_minutes'],
+    required: ['judul', 'waktu_mulai', 'waktu_selesai', 'durasi_menit'],
     desc: {
-      title: 'Judul ujian (min 4 karakter)',
-      subject_code: 'Kode mapel (opsional, harus ada jika diisi)',
-      starts_at: 'Format: YYYY-MM-DDTHH:mm (WIB, cth: 2026-09-01T08:00)',
-      ends_at: 'Harus setelah starts_at',
-      duration_minutes: 'Durasi pengerjaan 1-1440',
-      passing_grade: '0-100 (default 0)',
-      description: 'Opsional',
+      judul: 'Judul ujian (min 4 karakter)',
+      kode_mapel: 'Kode mapel (opsional, harus ada jika diisi)',
+      waktu_mulai: 'Format: YYYY-MM-DDTHH:mm (WIB, cth: 2026-09-01T08:00)',
+      waktu_selesai: 'Harus setelah waktu mulai',
+      durasi_menit: 'Durasi pengerjaan 1-1440',
+      kkm: '0-100 (default 0)',
+      deskripsi: 'Opsional',
     },
   },
   grades: {
-    headers: ['exam_title', 'nis', 'score', 'feedback'],
+    headers: ['judul_ujian', 'nis', 'nilai', 'umpan_balik'],
     examples: [
       ['PTS Matematika Ganjil', '12345', '85', 'Bagus, tingkatkan lagi'],
       ['PTS Matematika Ganjil', '12346', '92', 'Sangat baik'],
       ['UAS Bahasa Indonesia', '12345', '78', ''],
     ],
-    required: ['exam_title', 'nis', 'score'],
+    required: ['judul_ujian', 'nis', 'nilai'],
     desc: {
-      exam_title: 'Judul ujian persis sesuai di sistem',
+      judul_ujian: 'Judul ujian persis sesuai di sistem',
       nis: 'NIS siswa',
-      score: '0-100',
-      feedback: 'Opsional',
+      nilai: '0-100',
+      umpan_balik: 'Opsional',
     },
   },
 }
