@@ -121,7 +121,7 @@ export default function ExamDetailPage() {
       <Card className="overflow-hidden animate-fade-in">
         <div className="bg-gradient-to-br from-primary-600 to-primary-800 px-4 py-6 text-white sm:px-8 sm:py-8">
           <Badge tone="sky" className="!bg-white/15 !text-white !ring-white/30">
-            {exam.subject_name ?? 'Ujian'}
+            Ujian
           </Badge>
           <h1 className="mt-3 text-lg leading-snug font-extrabold tracking-tight break-words sm:text-2xl">{exam.title}</h1>
           {exam.teacher_name && <p className="mt-1 text-sm text-white/70">Pengawas: {exam.teacher_name}</p>}

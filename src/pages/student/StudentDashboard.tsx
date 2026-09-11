@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   CalendarDays, PlayCircle, ClipboardCheck, IdCard, Clock3,
-  AlertCircle, Hourglass, TrendingUp, ShieldAlert, Flame, Zap, Check, Sparkles,
+  AlertCircle, Hourglass, TrendingUp, ShieldAlert, Flame, Zap, Check, Sparkles, Award, Target, BookOpen,
 } from 'lucide-react'
 import { useAsync, useDocumentTitle } from '@/hooks/useAsync'
 import { useAuth } from '@/hooks/useAuth'
@@ -249,7 +249,6 @@ export default function StudentDashboard() {
   const doneAttempts = (d?.attempts ?? []).filter((a) => a.status !== 'in_progress' && a.status !== 'cancelled')
   const scorableAttempts = doneAttempts.filter((a) => (a.exams as unknown as { show_result_to_student?: boolean } | null)?.show_result_to_student !== false)
 
-  // ---- grafik perkembangan nilai (kronologis) ----
   const scoreTrend = [...scorableAttempts]
     .reverse()
     .map((a, i) => ({
@@ -260,7 +259,6 @@ export default function StudentDashboard() {
     }))
     .slice(-10)
 
-  // ---- kualitas jawaban agregat ----
   let correct = 0
   let wrong = 0
   let empty = 0
@@ -272,8 +270,8 @@ export default function StudentDashboard() {
     empty += r.unanswered_count ?? 0
   }
   const totalAnswered = correct + wrong + empty
+  const accuracy = totalAnswered > 0 ? Math.round((correct / totalAnswered) * 100) : 0
 
-  // ---- durasi pengerjaan (menit) 5 terakhir ----
   const durations = doneAttempts
     .filter((a) => a.results?.[0]?.duration_seconds != null)
     .slice(0, 5)
@@ -287,6 +285,7 @@ export default function StudentDashboard() {
   const lastScore = scorableAttempts.find(
     (a) => a.results?.[0]?.final_score !== null && a.results?.[0]?.final_score !== undefined,
   )
+  const avgScore = scorableAttempts.length > 0 ? scorableAttempts.reduce((sum, a) => sum + Number(a.results?.[0]?.final_score ?? 0), 0) / scorableAttempts.length : 0
 
   return (
     <>
@@ -306,20 +305,24 @@ export default function StudentDashboard() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
         <StatCard label="Bisa Dikerjakan" value={canStart.length} icon={<PlayCircle className="h-5 w-5" />} tone="green" hint={canStart.some((e) => e.status_for_me === 'resume') ? 'Ada yang belum selesai!' : undefined} />
         <StatCard label="Akan Datang" value={upcoming.length} icon={<Hourglass className="h-5 w-5" />} tone="amber" />
         <StatCard label="Sudah Dikerjakan" value={doneAttempts.length} icon={<ClipboardCheck className="h-5 w-5" />} tone="blue" />
         <StatCard label="Nilai Terakhir" value={lastScore ? formatNumber(Number(lastScore.results![0].final_score), 1) : '-'} icon={<TrendingUp className="h-5 w-5" />} tone="purple" />
       </div>
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-4 sm:gap-4 lg:grid-cols-4">
+        <StatCard label="Rata-rata Nilai" value={avgScore ? formatNumber(avgScore, 1) : '-'} icon={<Award className="h-5 w-5" />} tone="amber" hint={`${scorableAttempts.length} ujian`} />
+        <StatCard label="Akurasi Jawaban" value={`${accuracy}%`} icon={<Target className="h-5 w-5" />} tone={accuracy >= 70 ? 'green' : accuracy >= 50 ? 'amber' : 'rose'} hint={`${correct} benar`} />
+        <StatCard label="Streak" value={`${loadStreak(profile?.id ?? '').count} hari`} icon={<Flame className="h-5 w-5" />} tone="rose" hint={`Terpanjang ${loadStreak(profile?.id ?? '').longest}`} />
+        <StatCard label="Koleksi Soal" value={totalAnswered} icon={<BookOpen className="h-5 w-5" />} tone="blue" hint={`${d?.exams.length ?? 0} ujian tersedia`} />
+      </div>
 
-      {/* ---------- Grafik ---------- */}
       {(scoreTrend.length > 0 || totalAnswered > 0) && (
         <section className="mt-6 sm:mt-8">
           <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-400 sm:mb-4">
             <TrendingUp className="h-4 w-4" /> Statistik Pribadi
           </h2>
-
           <div className="grid gap-3 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3">
             <div className="card min-w-0 p-4 animate-fade-in sm:p-5 sm:lg:col-span-2">
               <div className="mb-2">
@@ -328,7 +331,6 @@ export default function StudentDashboard() {
               </div>
               <AreaChart points={scoreTrend.length > 0 ? scoreTrend : [{ label: '-', value: 0 }]} height={185} yMinZero={false} />
             </div>
-
             <div className="card min-w-0 p-4 animate-fade-in sm:p-5">
               <div className="mb-3">
                 <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Kualitas Jawaban</h3>
@@ -351,7 +353,6 @@ export default function StudentDashboard() {
               )}
             </div>
           </div>
-
           {durations.length > 0 && (
             <div className="card mt-3 min-w-0 p-4 animate-fade-in sm:mt-5 sm:p-5">
               <div className="mb-3 flex items-center gap-2">
@@ -371,7 +372,6 @@ export default function StudentDashboard() {
         </section>
       )}
 
-      {/* ---------- List ujian & riwayat ---------- */}
       <div className="mt-6 grid gap-3 sm:mt-8 sm:gap-5 lg:grid-cols-3">
         <div className="space-y-3 sm:space-y-5 lg:col-span-2">
           <Card className="min-w-0">
@@ -405,7 +405,7 @@ export default function StudentDashboard() {
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{exam.title}</span>
-                        <span className="block truncate text-xs text-slate-400">{exam.subject_name ?? '-'} · {fmtDT(exam.starts_at)}</span>
+                        <span className="block truncate text-xs text-slate-400">{fmtDT(exam.starts_at)}</span>
                       </span>
                       <Badge tone={exam.status_for_me === 'resume' ? 'red' : exam.status_for_me === 'can_start' ? 'green' : 'sky'}>
                         {AVAILABLE_EXAM_STATUS_LABELS[exam.status_for_me]}

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CalendarDays, Clock3, BookOpen, School } from 'lucide-react'
+import { CalendarDays, Clock3, School } from 'lucide-react'
 import { useAsync, useDocumentTitle } from '@/hooks/useAsync'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState, ErrorState, Spinner } from '@/components/ui/Feedback'
@@ -78,11 +78,6 @@ export default function TeacherSchedulePage() {
                   </div>
                   {s.description && <p className="mt-1 text-xs text-slate-500">{s.description}</p>}
                   <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
-                    {s.subjects?.name && (
-                      <span className="flex items-center gap-1 rounded-md bg-primary-50 px-2 py-0.5 text-primary-700">
-                        <BookOpen className="h-3 w-3" /> {s.subjects.name}
-                      </span>
-                    )}
                     {s.classes?.name && (
                       <span className="flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-emerald-700">
                         <School className="h-3 w-3" /> {s.classes.name}

@@ -25,7 +25,7 @@ export async function listAvailableExams(): Promise<AvailableExam[]> {
 
 let cachedIp: string | null | undefined
 
-async function getPublicIp(): Promise<string | null> {
+export async function getPublicIp(): Promise<string | null> {
   if (cachedIp !== undefined) return cachedIp
   try {
     const controller = new AbortController()
@@ -42,12 +42,22 @@ async function getPublicIp(): Promise<string | null> {
 
 function collectDeviceInfo(): Record<string, unknown> {
   try {
+    let deviceId: string | null = null
+    try {
+      deviceId = localStorage.getItem('cbt-device-id')
+      if (!deviceId) {
+        deviceId = `dev_${Math.random().toString(36).slice(2, 10)}_${Date.now().toString(36)}`
+        localStorage.setItem('cbt-device-id', deviceId)
+      }
+    } catch { deviceId = null }
     return {
+      device_id: deviceId,
       platform: navigator.platform ?? null,
       language: navigator.language ?? null,
       screen: `${window.screen.width}x${window.screen.height}`,
       dpr: window.devicePixelRatio ?? 1,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? null,
+      userAgent: navigator.userAgent.slice(0, 300),
     }
   } catch {
     return {}

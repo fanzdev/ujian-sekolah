@@ -218,11 +218,6 @@ function BankCardGrid({
               </div>
 
               <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                {bank.subjects?.name && (
-                  <span className="inline-flex items-center rounded-lg bg-primary-50/80 px-2 py-0.5 text-[11px] font-semibold text-primary-600 ring-1 ring-primary-200/50 dark:bg-primary-500/10 dark:text-primary-300 dark:ring-primary-400/20">
-                    {bank.subjects.name}
-                  </span>
-                )}
                 {bank.grade_level && (
                   <span className="inline-flex items-center rounded-lg bg-sky-50/80 px-2 py-0.5 text-[11px] font-semibold text-sky-600 ring-1 ring-sky-200/50 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-400/20">
                     Kelas {bank.grade_level}
@@ -304,7 +299,6 @@ function BankEditorModal({
   const [form, setForm] = useState<BankInput>({
     title: '',
     description: '',
-    subject_id: '',
     grade_level: null,
     status: 'draft',
     tags: [],
@@ -317,7 +311,6 @@ function BankEditorModal({
     setForm({
       title: editing?.title ?? '',
       description: editing?.description ?? '',
-      subject_id: editing?.subject_id ?? '',
       grade_level: editing?.grade_level ?? null,
       status: editing?.status ?? 'draft',
       tags: editing?.tags ?? [],
@@ -335,7 +328,6 @@ function BankEditorModal({
       const payload: BankInput = {
         ...form,
         title: form.title.trim(),
-        subject_id: form.subject_id || null,
         tags: tagText.split(',').map((t) => t.trim()).filter(Boolean),
       }
       if (editing) {

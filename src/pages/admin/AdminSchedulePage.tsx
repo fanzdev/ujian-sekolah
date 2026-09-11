@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { CalendarDays, Plus, Pencil, Trash2, BookOpen, User, School } from 'lucide-react'
+import { CalendarDays, Plus, Pencil, Trash2, User, School } from 'lucide-react'
 import { useAsync, useDocumentTitle } from '@/hooks/useAsync'
 import { useToast } from '@/hooks/useToast'
 import { useConfirm } from '@/hooks/useConfirm'
@@ -32,7 +32,7 @@ export default function AdminSchedulePage() {
 
   const [classes, setClasses] = useState<{ id: string; name: string }[]>([])
   const [teachers, setTeachers] = useState<{ id: string; name: string }[]>([])
-  const [examsList, setExamsList] = useState<{ id: string; title: string; subject_id: string | null }[]>([])
+  const [examsList, setExamsList] = useState<{ id: string; title: string }[]>([])
 
   useEffect(() => {
     let active = true
@@ -41,12 +41,12 @@ export default function AdminSchedulePage() {
         const [c, t, e] = await Promise.all([
           supabase.from('classes').select('id, name').order('name'),
           supabase.from('teachers').select('id, profiles(full_name)').order('id'),
-          supabase.from('exams').select('id, title, subject_id').order('title').limit(100),
+          supabase.from('exams').select('id, title').order('title').limit(100),
         ])
         if (!active) return
         setClasses((c.data as { id: string; name: string }[]) ?? [])
         setTeachers((t.data as unknown as { id: string; profiles?: { full_name: string } }[])?.map((x) => ({ id: x.id, name: x.profiles?.full_name ?? '' })) ?? [])
-        setExamsList((e.data as { id: string; title: string; subject_id: string | null }[]) ?? [])
+        setExamsList((e.data as { id: string; title: string }[]) ?? [])
       } catch { /* ignore */ }
     }
     void load()
@@ -171,7 +171,6 @@ export default function AdminSchedulePage() {
                       </div>
                       {s.description && <p className="mt-1 text-xs text-slate-500">{s.description}</p>}
                       <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
-                        {s.subjects?.name && <span className="flex items-center gap-1"><BookOpen className="h-3 w-3" /> {s.subjects.name}</span>}
                         {s.teachers?.profiles?.full_name && <span className="flex items-center gap-1"><User className="h-3 w-3" /> {s.teachers.profiles.full_name}</span>}
                         {s.classes?.name && <span className="flex items-center gap-1"><School className="h-3 w-3" /> {s.classes.name}</span>}
                       </div>
@@ -206,7 +205,7 @@ function ScheduleFormModal({
   initial: Schedule | null
   classes: { id: string; name: string }[]
   teachers: { id: string; name: string }[]
-  examsList: { id: string; title: string; subject_id: string | null }[]
+  examsList: { id: string; title: string }[]
 }) {
   const toast = useToast()
   const [saving, setSaving] = useState(false)
@@ -224,7 +223,7 @@ function ScheduleFormModal({
     if (open) {
       setTitle(initial?.title ?? '')
       setDescription(initial?.description ?? '')
-      const inferred = initial ? examsList.find((e) => e.title === initial.title)?.id ?? examsList.find((e) => e.subject_id === initial.subject_id)?.id ?? '' : ''
+      const inferred = initial ? examsList.find((e) => e.title === initial.title)?.id ?? '' : ''
       setExamId(inferred)
       setTeacherId(initial?.teacher_id ?? '')
       setClassId(initial?.class_id ?? '')
@@ -242,11 +241,9 @@ function ScheduleFormModal({
     }
     setSaving(true)
     try {
-      const selectedExam = examsList.find((e) => e.id === examId)
       const payload = {
         title: title.trim(),
         description: description.trim() || undefined,
-        subject_id: selectedExam?.subject_id ?? initial?.subject_id ?? undefined,
         teacher_id: teacherId || undefined,
         class_id: classId || undefined,
         day_of_week: Number(dayOfWeek),

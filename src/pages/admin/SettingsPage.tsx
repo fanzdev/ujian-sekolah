@@ -812,7 +812,6 @@ function DangerPanel() {
     { key: 'teachers', label: 'Guru + Akun', desc: 'Hapus semua guru & akun (kecuali Anda)', fn: async () => { const { supabase } = await import('@/services/client'); const { data: { user } } = await supabase.auth.getUser(); return (await import('@/services/danger.service')).wipeTeachers(user?.id) } },
     { key: 'classes', label: 'Kelas', desc: 'Hapus semua kelas', fn: async () => (await import('@/services/danger.service')).wipeClasses() },
     { key: 'departments', label: 'Jurusan', desc: 'Hapus semua jurusan', fn: async () => (await import('@/services/danger.service')).wipeDepartments() },
-    { key: 'subjects', label: 'Mata Pelajaran', desc: 'Hapus semua mapel', fn: async () => (await import('@/services/danger.service')).wipeSubjects() },
     { key: 'banks', label: 'Bank Soal', desc: 'Hapus semua bank & soal', fn: async () => (await import('@/services/danger.service')).wipeBanks() },
     { key: 'exams', label: 'Ujian', desc: 'Hapus semua ujian & peserta', fn: async () => (await import('@/services/danger.service')).wipeExams() },
     { key: 'results', label: 'Hasil Ujian', desc: 'Hapus attempts & nilai', fn: async () => (await import('@/services/danger.service')).wipeResults() },
@@ -852,7 +851,7 @@ function DangerPanel() {
         <CardBody className="space-y-4">
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/30 dark:bg-amber-950/20">
             <p className="text-xs font-bold text-amber-900 dark:text-amber-100">Hapus SEMUA DATA (kecuali akun Anda)</p>
-            <p className="mt-1 text-xs leading-relaxed text-amber-700 dark:text-amber-300">Akan menghapus: hasil, ujian, bank soal, soal, mapel, kelas, jurusan, guru, siswa, pelanggaran, audit, notifikasi. Akun admin yang sedang login tetap.</p>
+            <p className="mt-1 text-xs leading-relaxed text-amber-700 dark:text-amber-300">Akan menghapus: hasil, ujian, bank soal, soal, kelas, jurusan, guru, siswa, pelanggaran, audit, notifikasi. Akun admin yang sedang login tetap.</p>
             <div className="mt-3 flex gap-2">
               <Input placeholder='Ketik HAPUS untuk konfirmasi' value={confirmText} onChange={(e) => setConfirmText(e.target.value)} className="flex-1" />
               <Button variant="outline" className="border-rose-200 text-rose-600 hover:bg-rose-50" loading={busy === 'wipeAll'} onClick={() => void wipeAll(false)} icon={<Trash2 className="h-4 w-4" />}>Hapus Semua</Button>

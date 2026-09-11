@@ -125,7 +125,6 @@ function ExamGroup({
                   {AVAILABLE_EXAM_STATUS_LABELS[exam.status_for_me]}
                 </Badge>
               </div>
-              <p className="mt-1.5 text-xs font-medium text-primary-600 dark:text-primary-300">{exam.subject_name ?? '-'}</p>
 
               <dl className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-x-4 sm:gap-y-2 text-xs">
                 <Info label="Mulai" value={formatDateTime(exam.starts_at)} />

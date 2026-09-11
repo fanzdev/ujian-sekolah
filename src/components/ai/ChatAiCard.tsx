@@ -1,11 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
-import { Send, Bot, User, Trash2, Loader2, ChevronDown, Sparkles } from 'lucide-react'
+import { Send, Bot, User, Trash2, Loader2, ChevronDown, Sparkles, Plus, BookOpen, Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { supabase, invokeEdge } from '@/services/client'
+import { useToast } from '@/hooks/useToast'
+import { listBanks, createQuestion, createBank } from '@/services/questions.service'
+import type { QuestionType, Difficulty } from '@/types/models'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
+}
+
+interface AiGeneratedQuestion {
+  text: string
+  type: QuestionType
+  difficulty: Difficulty
+  points: number
+  explanation?: string | null
+  options?: { option_text: string; is_correct: boolean }[]
+  pairs?: { left_text: string; right_text: string }[]
 }
 
 type ResizeDir = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
@@ -23,7 +36,7 @@ export function ChatAiCard({
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
   const [size, setSize] = useState({ w: 380, h: 480 })
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: 'Halo! Saya asisten AI SMK AL-FATA CBT. Tanya apa saja tentang ujian, materi, atau bantuan belajar.' },
+    { role: 'assistant', content: 'Halo! Saya asisten AI SMK AL-FATA CBT. Tanya apa saja tentang ujian, materi, atau minta saya buatkan soal.' },
   ])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
@@ -42,6 +55,15 @@ export function ChatAiCard({
     startPosX: number
     startPosY: number
   } | null>(null)
+  const toast = useToast()
+
+  const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false)
+  const [generatedQuestions, setGeneratedQuestions] = useState<AiGeneratedQuestion[] | null>(null)
+  const [generatedBankTitle, setGeneratedBankTitle] = useState('')
+  const [selectedBankId, setSelectedBankId] = useState('')
+  const [banks, setBanks] = useState<{ id: string; title: string }[]>([])
+  const [isAddingToBank, setIsAddingToBank] = useState(false)
+  const [banksLoading, setBanksLoading] = useState(false)
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -73,6 +95,24 @@ export function ChatAiCard({
     }
     if (open) loadSettings()
   }, [open])
+
+  useEffect(() => {
+    if (generatedQuestions && open) {
+      const loadBanks = async () => {
+        setBanksLoading(true)
+        try {
+          const { rows } = await listBanks({ pageSize: 100 })
+          setBanks(rows.map((b) => ({ id: b.id, title: b.title })))
+          if (rows.length > 0 && !selectedBankId) setSelectedBankId(rows[0].id)
+        } catch {
+          setBanks([])
+        } finally {
+          setBanksLoading(false)
+        }
+      }
+      void loadBanks()
+    }
+  }, [generatedQuestions, open, selectedBankId])
 
   useEffect(() => {
     if (!modelMenuOpen) return
@@ -122,7 +162,7 @@ export function ChatAiCard({
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, sending])
+  }, [messages, sending, generatedQuestions])
 
   useEffect(() => {
     if (!open) return
@@ -270,6 +310,150 @@ export function ChatAiCard({
     window.addEventListener('touchend', onUp)
   }
 
+  const extractJsonArray = (text: string): unknown | null => {
+    const codeBlock = text.match(/```(?:json)?\s*([\s\S]*?)```/i)
+    const candidate = codeBlock ? codeBlock[1] : text
+    const start = candidate.indexOf('[')
+    const end = candidate.lastIndexOf(']')
+    if (start === -1 || end === -1 || end <= start) return null
+    const jsonStr = candidate.slice(start, end + 1).trim()
+    try {
+      return JSON.parse(jsonStr)
+    } catch {
+      return null
+    }
+  }
+
+  const isQuestionGenerationIntent = (text: string): boolean => {
+    const lower = text.toLowerCase()
+    return /(buat|bikin|buatkan|buatin|generate|create).*(soal|pertanyaan|question)/i.test(lower) || /(soal|pertanyaan).*?(buat|bikin|generate|tambah)/i.test(lower)
+  }
+
+  const parseGenerationRequest = (text: string) => {
+    const lower = text.toLowerCase()
+    const countMatch = text.match(/(\d+)\s*soal/i)
+    const count = countMatch ? Math.min(10, Math.max(1, parseInt(countMatch[1], 10))) : 5
+    let type: QuestionType = 'multiple_choice'
+    if (/benar.*salah|true.*false/i.test(lower)) type = 'true_false'
+    else if (/isian|short/i.test(lower)) type = 'short_answer'
+    else if (/essay|uraian/i.test(lower)) type = 'essay'
+    else if (/pilihan ganda|multiple/i.test(lower)) type = 'multiple_choice'
+    let difficulty: Difficulty = 'medium'
+    if (/mudah|easy/i.test(lower)) difficulty = 'easy'
+    else if (/sulit|hard|sukar/i.test(lower)) difficulty = 'hard'
+    const topicRaw = text.replace(/buatkan|buatin|buat|bikin|generate|create|soal|pertanyaan|tentang|materi|topik/gi, ' ').replace(/\d+/g, ' ').replace(/\s+/g, ' ').trim()
+    const topic = topicRaw.slice(0, 80) || text.slice(0, 60) || 'Umum'
+    return { topic, count, type, difficulty, points: 10 }
+  }
+
+  const handleAutoGenerate = async (userRequest: string) => {
+    if (!model) {
+      toast.error('Pilih model AI terlebih dahulu di pengaturan.')
+      return
+    }
+    const { topic, count, type, difficulty, points } = parseGenerationRequest(userRequest)
+    setIsGeneratingQuestions(true)
+    setGeneratedQuestions(null)
+    setGeneratedBankTitle(`AI - ${topic.slice(0, 30)} - ${count} Soal`)
+    setMessages((m) => [...m, { role: 'assistant', content: `Siap! Saya buatkan ${count} soal ${type} tentang "${topic}" (${difficulty})...` }])
+    try {
+      const systemPrompt = `Kamu adalah AI Agent SMK AL-FATA CBT. Kamu memahami seluruh data non-sensitif: daftar bank soal, kelas, jurusan, ujian, dan struktur soal. Jangan pernah minta data sensitif. Tugasmu membuat soal sesuai permintaan guru. Output HARUS JSON valid.`
+      const prompt = `Buatkan ${count} soal tipe "${type}" tingkat "${difficulty}" tentang "${topic}" untuk SMK. Setiap soal poin ${points}. Output HARUS JSON array valid tanpa teks lain, format: [{"text":"...","type":"${type}","difficulty":"${difficulty}","points":${points},"explanation":"...","options":[{"option_text":"...","is_correct":true/false}]}]. Untuk multiple_choice 4 opsi (1 benar), true_false 2 opsi, short_answer/essay kosongkan options.`
+      const result = await invokeEdge<{ reply: string; model: string }>('chat-ai', {
+        messages: [
+          { role: 'system', content: systemPrompt } as unknown as ChatMessage,
+          { role: 'user', content: prompt },
+        ],
+        model,
+        max_tokens: 2500,
+      })
+      const raw = result.reply ?? ''
+      const parsed = extractJsonArray(raw)
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        setMessages((m) => [...m, { role: 'assistant', content: `AI mengembalikan format tidak dikenali. Coba lagi. Raw: ${raw.slice(0, 600)}` }])
+        toast.error('Gagal parsing soal dari AI.')
+        return
+      }
+      const normalized: AiGeneratedQuestion[] = parsed.map((q: unknown) => {
+        const obj = q as Record<string, unknown>
+        const opts = Array.isArray(obj.options) ? (obj.options as unknown[]).map((o) => {
+          const oo = o as Record<string, unknown>
+          return { option_text: String(oo.option_text ?? oo.text ?? ''), is_correct: Boolean(oo.is_correct) }
+        }).filter((o) => o.option_text) : []
+        return {
+          text: String(obj.text ?? obj.question ?? obj.soal ?? ''),
+          type: (obj.type as QuestionType) ?? type,
+          difficulty: (obj.difficulty as Difficulty) ?? difficulty,
+          points: Number(obj.points ?? points) || points,
+          explanation: obj.explanation ? String(obj.explanation) : null,
+          options: opts,
+        }
+      }).filter((q) => q.text)
+      if (normalized.length === 0) {
+        toast.error('AI tidak menghasilkan soal yang valid.')
+        return
+      }
+      setGeneratedQuestions(normalized)
+      setMessages((m) => [...m, { role: 'assistant', content: `Berhasil membuat ${normalized.length} soal tentang "${topic}" (${type}, ${difficulty}). Bank Soal "${`AI - ${topic.slice(0, 30)}`}" siap — klik "Tambahkan ke Bank Soal" di bawah untuk menyimpan.` }])
+      toast.success(`${normalized.length} soal berhasil dibuat.`)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      toast.error(`Gagal generate soal: ${msg.slice(0, 200)}`)
+      setMessages((m) => [...m, { role: 'assistant', content: `Gagal membuat soal: ${msg.slice(0, 400)}` }])
+    } finally {
+      setIsGeneratingQuestions(false)
+    }
+  }
+
+  const handleAddToBank = async () => {
+    if (!generatedQuestions || generatedQuestions.length === 0) return
+    setIsAddingToBank(true)
+    let targetBankId = selectedBankId
+    try {
+      if (!targetBankId) {
+        const title = generatedBankTitle.trim() || `AI - Bank Soal - ${new Date().toLocaleDateString('id-ID')}`
+        const newBank = await createBank({ title, description: `Dibuat otomatis oleh AI Agent pada ${new Date().toLocaleString('id-ID')}`, status: 'draft' })
+        targetBankId = newBank.id
+        setSelectedBankId(targetBankId)
+        toast.success(`Bank Soal baru "${title}" dibuat.`)
+      }
+      let success = 0
+      let failed = 0
+      for (const q of generatedQuestions) {
+        try {
+          const opts = q.options && q.options.length ? q.options : undefined
+          const isMC = q.type === 'multiple_choice' || q.type === 'multiple_response'
+          if (isMC && (!opts || opts.filter((o) => o.is_correct).length === 0)) {
+            if (opts && opts.length) opts[0].is_correct = true
+          }
+          await createQuestion({
+            bank_id: targetBankId,
+            type: q.type,
+            text: q.text,
+            difficulty: q.difficulty,
+            points: q.points,
+            explanation: q.explanation ?? null,
+            options: opts,
+          })
+          success++
+        } catch {
+          failed++
+        }
+      }
+      if (success > 0) {
+        toast.success(`${success} soal berhasil ditambahkan ke Bank Soal.${failed ? ` ${failed} gagal.` : ''}`)
+        setGeneratedQuestions(null)
+        setGeneratedBankTitle('')
+      } else {
+        toast.error('Gagal menambahkan soal. Periksa bank tujuan.')
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal membuat Bank Soal.')
+    } finally {
+      setIsAddingToBank(false)
+    }
+  }
+
   const send = async () => {
     if (!model) {
       setMessages((m) => [...m, { role: 'assistant', content: 'Silakan setup model AI terlebih dahulu di pengaturan AI Grading.' }])
@@ -277,16 +461,26 @@ export function ChatAiCard({
     }
     const text = input.trim()
     if (!text || sending) return
+    if (isQuestionGenerationIntent(text)) {
+      setMessages((m) => [...m, { role: 'user', content: text }])
+      setInput('')
+      await handleAutoGenerate(text)
+      return
+    }
     setMessages((m) => [...m, { role: 'user', content: text }])
     setInput('')
     setSending(true)
     try {
       let reply = ''
       try {
+        const systemPrompt = `Kamu adalah AI Agent SMK AL-FATA CBT. Kamu adalah asisten cerdas yang memahami seluruh data non-sensitif sistem: daftar bank soal, kelas, jurusan, ujian, jadwal, dan struktur soal. Kamu TIDAK boleh mengakses atau membocorkan data sensitif seperti password, token, atau kunci jawaban yang tidak seharusnya dilihat siswa. Jika diminta membuat soal, ikuti instruksi pembuatan soal JSON. Jawab dengan bahasa Indonesia yang ramah dan membantu.`
         const result = await invokeEdge<{ reply: string; model: string }>('chat-ai', {
-          messages: [{ role: 'user', content: text }],
+          messages: [
+            { role: 'system', content: systemPrompt } as unknown as ChatMessage,
+            { role: 'user', content: text },
+          ],
           model,
-          max_tokens: 500,
+          max_tokens: 800,
         })
         reply = result.reply ?? ''
       } catch (err) {
@@ -299,6 +493,27 @@ export function ChatAiCard({
       }
       if (!reply) reply = `Maaf, saya belum bisa terhubung ke AI saat ini (model: ${model}). Coba lagi nanti atau hubungi admin untuk cek API Key.`
       setMessages((m) => [...m, { role: 'assistant', content: reply }])
+      const maybeJson = extractJsonArray(reply)
+      if (Array.isArray(maybeJson) && maybeJson.length > 0 && maybeJson[0] && typeof (maybeJson[0] as Record<string, unknown>).text === 'string') {
+        try {
+          const normalized: AiGeneratedQuestion[] = (maybeJson as unknown[]).map((q) => {
+            const obj = q as Record<string, unknown>
+            const opts = Array.isArray(obj.options) ? (obj.options as unknown[]).map((o) => {
+              const oo = o as Record<string, unknown>
+              return { option_text: String(oo.option_text ?? ''), is_correct: Boolean(oo.is_correct) }
+            }) : []
+            return {
+              text: String(obj.text ?? ''),
+              type: (obj.type as QuestionType) ?? 'multiple_choice',
+              difficulty: (obj.difficulty as Difficulty) ?? 'medium',
+              points: Number(obj.points ?? 10) || 10,
+              explanation: obj.explanation ? String(obj.explanation) : null,
+              options: opts,
+            }
+          }).filter((q) => q.text)
+          if (normalized.length > 0) setGeneratedQuestions(normalized)
+        } catch { void 0 }
+      }
     } finally {
       setSending(false)
     }
@@ -346,21 +561,74 @@ export function ChatAiCard({
         </div>
       </div>
 
+      {generatedQuestions && (
+        <div className="border-b border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+          <div className="rounded-xl border border-primary-200 bg-primary-50/60 p-3 dark:border-white/10 dark:bg-white/[0.04]">
+            <div className="flex items-center justify-between gap-2">
+              <p className="flex items-center gap-1.5 text-xs font-bold text-primary-700 dark:text-white"><BookOpen className="h-3.5 w-3.5" /> Bank Soal AI: {generatedBankTitle || 'Soal Baru'} — {generatedQuestions.length} soal</p>
+              <button onClick={() => setGeneratedQuestions(null)} className="rounded-full p-1 text-slate-400 hover:bg-white dark:hover:bg-white/10"><X className="h-3.5 w-3.5" /></button>
+            </div>
+            <div className="mt-2 max-h-40 overflow-y-auto space-y-2 pr-1 scrollbar-thin">
+              {generatedQuestions.map((q, idx) => (
+                <div key={idx} className="rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-white/10 dark:bg-slate-800">
+                  <p className="text-xs font-semibold leading-snug text-slate-800 dark:text-white">{idx + 1}. {q.text}</p>
+                  {q.options && q.options.length > 0 && (
+                    <ul className="mt-1.5 space-y-0.5">
+                      {q.options.map((o, j) => (
+                        <li key={j} className={`flex items-center gap-1.5 text-[11px] ${o.is_correct ? 'font-bold text-emerald-600 dark:text-emerald-400' : 'text-slate-500'}`}>
+                          <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px] ${o.is_correct ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/20' : 'border-slate-200 bg-white dark:border-white/10'}`}>{String.fromCharCode(65 + j)}</span>
+                          <span className="truncate">{o.option_text}</span>
+                          {o.is_correct && <Check className="h-3 w-3 shrink-0" />}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {q.explanation && <p className="mt-1 text-[11px] italic leading-snug text-slate-400">Penjelasan: {q.explanation}</p>}
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 space-y-2">
+              <input
+                value={generatedBankTitle}
+                onChange={(e) => setGeneratedBankTitle(e.target.value)}
+                placeholder="Nama Bank Soal (mis: Fotosintesis Kelas 10)"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+              />
+              <select value={selectedBankId} onChange={(e) => setSelectedBankId(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+                <option value="">+ Buat Bank Baru (dari judul di atas)</option>
+                {banksLoading ? <option>Memuat bank...</option> : banks.map((b) => <option key={b.id} value={b.id}>Tambah ke: {b.title}</option>)}
+              </select>
+              <Button onClick={handleAddToBank} loading={isAddingToBank} icon={<Plus className="h-3.5 w-3.5" />} size="sm" className="w-full">Tambahkan {generatedQuestions.length} Soal ke Bank Soal</Button>
+              <p className="text-center font-mono text-[10px] leading-relaxed text-slate-400">Soal akan langsung tersedia di menu Bank Soal sesuai kategori bank yang dipilih. AI Agent memahami seluruh data non-sensitif.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50 p-3 scrollbar-thin dark:bg-slate-950">
         {messages.map((m, i) => (
           <div key={i} className={`flex gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             {m.role === 'assistant' && <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-500/20 dark:text-white"><Bot className="h-3.5 w-3.5" /></span>}
-            <div className={`max-w-[78%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed shadow-sm ${m.role === 'user' ? 'bg-primary-600 text-white rounded-br-sm' : 'bg-white text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 rounded-bl-sm'}`}>
-              {m.content}
+            <div className={`max-w-[78%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed shadow-sm ${m.role === 'user' ? 'bg-primary-600 text-white rounded-br-sm' : 'bg-white text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 rounded-tl-sm'}`}>
+              <span className="whitespace-pre-wrap break-words">{m.content}</span>
             </div>
             {m.role === 'user' && <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300"><User className="h-3.5 w-3.5" /></span>}
           </div>
         ))}
+
         {sending && (
           <div className="flex gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-500/20 dark:text-white"><Bot className="h-3.5 w-3.5" /></span>
-            <div className="rounded-2xl bg-white px-3.5 py-2.5 text-xs text-slate-400 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 flex items-center gap-1.5">
+            <div className="rounded-2xl rounded-tl-sm bg-white px-3.5 py-2.5 text-xs text-slate-400 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 flex items-center gap-1.5">
               <Loader2 className="h-3.5 w-3.5 animate-spin" /> Mengetik&hellip;
+            </div>
+          </div>
+        )}
+        {isGeneratingQuestions && (
+          <div className="flex gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-500/20 dark:text-white"><Bot className="h-3.5 w-3.5" /></span>
+            <div className="rounded-2xl rounded-tl-sm bg-white px-3.5 py-2.5 text-xs text-slate-400 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 flex items-center gap-1.5">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Membuat soal...
             </div>
           </div>
         )}

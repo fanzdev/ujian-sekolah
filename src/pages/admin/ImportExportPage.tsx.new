@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Upload, Download, FileSpreadsheet, Users, GraduationCap, Database, CheckCircle2, XCircle, Loader2, FileDown, Table2, AlertCircle, Info } from 'lucide-react'
+import { Upload, Download, FileSpreadsheet, Users, GraduationCap, Database, CheckCircle2, XCircle, Loader2, FileDown, Table2, AlertCircle, Info, Sparkles, Shield, FileText, ArrowRight } from 'lucide-react'
 import { useAsync, useDocumentTitle } from '@/hooks/useAsync'
 import { useToast } from '@/hooks/useToast'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -40,12 +40,28 @@ const KIND_LABELS: Record<ImportKind, string> = {
   grades: 'Hasil / Nilai',
 }
 
+const KIND_DESCS: Record<ImportKind, string> = {
+  students: 'Siswa + akun login otomatis',
+  teachers: 'Guru + akun login',
+  question_banks: 'Soal pilihan ganda & essay',
+  exams: 'Jadwal & pengaturan ujian',
+  grades: 'Nilai & hasil',
+}
+
 const KIND_ICONS: Record<ImportKind, React.ReactNode> = {
-  students: <GraduationCap className="h-4 w-4" />,
-  teachers: <Users className="h-4 w-4" />,
-  question_banks: <FileSpreadsheet className="h-4 w-4" />,
-  exams: <Table2 className="h-4 w-4" />,
-  grades: <FileSpreadsheet className="h-4 w-4" />,
+  students: <GraduationCap className="h-5 w-5" />,
+  teachers: <Users className="h-5 w-5" />,
+  question_banks: <FileSpreadsheet className="h-5 w-5" />,
+  exams: <Table2 className="h-5 w-5" />,
+  grades: <FileText className="h-5 w-5" />,
+}
+
+const KIND_COLORS: Record<ImportKind, string> = {
+  students: 'from-emerald-500 to-teal-500',
+  teachers: 'from-violet-500 to-purple-500',
+  question_banks: 'from-sky-500 to-blue-500',
+  exams: 'from-amber-500 to-orange-500',
+  grades: 'from-rose-500 to-pink-500',
 }
 
 export default function ImportExportPage() {
@@ -54,7 +70,52 @@ export default function ImportExportPage() {
 
   return (
     <>
-      <PageHeader title="Import & Export Data" subtitle="Kelola data massal dengan aman melalui validasi berlapis" icon={<Database className="h-5 w-5" />} />
+      <div className="relative overflow-hidden rounded-[24px] p-[1px] mb-6" style={{ background: 'var(--app-gradient, linear-gradient(135deg, #0D868F, #C67C3B))' }}>
+        <div className="rounded-[23px] bg-white dark:bg-slate-900 overflow-hidden">
+          <div className="relative p-6 sm:p-8" style={{ background: 'var(--app-gradient, linear-gradient(135deg, #0D868F, #C67C3B))' }}>
+            <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '20px 20px' }} />
+            <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
+            <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex gap-4">
+                <div className="hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white text-primary-600 shadow-lg sm:flex">
+                  <Database className="h-7 w-7" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-black tracking-tight text-white sm:text-2xl">Import & Export Data</h1>
+                  <p className="mt-1 max-w-[60ch] text-sm leading-relaxed text-white/80">Kelola data massal dengan aman — validasi berlapis, pratinjau, dan template siap pakai. Semua mengikuti tema yang Anda atur.</p>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-xs font-bold text-white backdrop-blur"><Shield className="h-3 w-3" /> Validasi ketat</span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-xs font-bold text-white backdrop-blur"><Sparkles className="h-3 w-3" /> Auto-detect CSV/Excel</span>
+                  </div>
+                </div>
+              </div>
+              <div className="hidden sm:flex items-center gap-2">
+                <div className="rounded-2xl bg-white/10 p-3 backdrop-blur text-white">
+                  <p className="font-mono text-[10px] tracking-wide text-white/70">FORMAT</p>
+                  <p className="text-sm font-bold">CSV / XLSX</p>
+                </div>
+                <div className="rounded-2xl bg-white p-3 shadow-lg">
+                  <p className="font-mono text-[10px] tracking-wide text-slate-400">MAX</p>
+                  <p className="text-sm font-black text-slate-900">500 baris</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 bg-slate-50/50 px-6 py-3 dark:border-white/5 dark:bg-white/[0.02]">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white"><CheckCircle2 className="h-3.5 w-3.5" /></span>
+              Validasi header wajib
+            </div>
+            <span className="hidden h-4 w-px bg-slate-200 dark:bg-white/10 sm:block" />
+            <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-500 text-white"><FileDown className="h-3.5 w-3.5" /></span>
+              Template siap unduh
+            </div>
+            <span className="ml-auto flex items-center gap-1 text-xs font-bold text-primary-600"><ArrowRight className="h-3 w-3" /> 3 langkah mudah</span>
+          </div>
+        </div>
+      </div>
+
       <Tabs active={tab} onChange={setTab} tabs={[{ id: 'import', label: 'Import' }, { id: 'export', label: 'Export' }]} />
       <div className="mt-6">{tab === 'import' ? <ImportPanel /> : <ExportPanel />}</div>
     </>
@@ -375,31 +436,43 @@ function ImportPanel() {
           </div>
         )}
 
-        <Card>
-          <CardHeader
-            title="Langkah 1 · Pilih Jenis & Unduh Template"
-            subtitle="Template berisi header yang wajib sama persis. Contoh tabel di bawah adalah isi file yang benar."
-            action={
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" icon={<Download className="h-4 w-4" />} onClick={handleDownloadCsv}>
-                  CSV
-                </Button>
-                <Button size="sm" icon={<FileDown className="h-4 w-4" />} onClick={handleDownloadExcel}>
-                  Excel
-                </Button>
-              </div>
-            }
-          />
+        <Card className="overflow-hidden">
+          <div className="relative overflow-hidden p-[1px]" style={{ background: 'var(--app-gradient, linear-gradient(135deg, #0D868F, #C67C3B))' }}>
+            <div className="rounded-[11px] bg-white dark:bg-slate-900">
+              <CardHeader
+                title="Langkah 1 · Pilih Jenis & Unduh Template"
+                subtitle="Template berisi header yang wajib sama persis. Contoh tabel di bawah adalah isi file yang benar."
+                action={
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" icon={<Download className="h-4 w-4" />} onClick={handleDownloadCsv}>
+                      CSV
+                    </Button>
+                    <Button size="sm" icon={<FileDown className="h-4 w-4" />} onClick={handleDownloadExcel}>
+                      Excel
+                    </Button>
+                  </div>
+                }
+              />
+            </div>
+          </div>
           <CardBody className="space-y-4">
-            <Select
-              label="Jenis Data"
-              value={kind}
-              onChange={(e) => {
-                setKind(e.target.value as ImportKind)
-                resetFile()
-              }}
-              options={(Object.keys(KIND_LABELS) as ImportKind[]).map((k) => ({ value: k, label: KIND_LABELS[k] }))}
-            />
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+              {(Object.keys(KIND_LABELS) as ImportKind[]).map((k) => {
+                const active = k === kind
+                return (
+                  <button
+                    key={k}
+                    onClick={() => { setKind(k); resetFile() }}
+                    className={`group relative flex flex-col items-center gap-2 rounded-2xl border-2 p-3 text-center transition-all hover:shadow-md ${active ? 'border-primary-600 bg-primary-50 shadow-md dark:border-primary-500 dark:bg-primary-500/10' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:hover:bg-white/[0.07]'}`}
+                  >
+                    <span className={`flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-sm ${active ? 'bg-primary-600' : `bg-gradient-to-br ${KIND_COLORS[k]} opacity-90 group-hover:opacity-100`}`}>{KIND_ICONS[k]}</span>
+                    <span className={`text-xs font-bold leading-tight ${active ? 'text-primary-700 dark:text-white' : 'text-slate-700 dark:text-slate-200'}`}>{KIND_LABELS[k]}</span>
+                    <span className="font-mono text-[10px] text-slate-400">{KIND_DESCS[k]}</span>
+                    {active && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary-600 animate-pulse" />}
+                  </button>
+                )
+              })}
+            </div>
 
             <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 dark:border-slate-700 dark:bg-slate-800/30">
               <div className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-200">
@@ -469,13 +542,16 @@ function ImportPanel() {
           </CardBody>
         </Card>
 
-        <Card>
+        <Card className="overflow-hidden">
+          <div className="h-1 w-full" style={{ background: 'var(--app-gradient, linear-gradient(90deg, #0D868F, #C67C3B))' }} />
           <CardHeader title="Langkah 2 · Unggah & Pratinjau" subtitle="Excel (.xlsx/.xls) atau CSV. Deteksi otomatis ; atau , . Maks 100 baris pratinjau." />
           <CardBody>
             <label className="group flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center transition-colors hover:border-primary-400 hover:bg-primary-50/40 dark:border-slate-700 dark:bg-slate-800/30 dark:hover:border-primary-500/50 dark:hover:bg-slate-800">
-              <Upload className="h-7 w-7 text-slate-400 group-hover:text-primary-500 dark:text-slate-500" />
-              <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">{fileName || 'Klik untuk pilih file .csv / .xlsx'}</span>
-              <span className="text-xs text-slate-400">Header wajib sama persis dengan template di atas</span>
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm group-hover:scale-105 transition-transform dark:bg-slate-700">
+                <Upload className="h-6 w-6 text-slate-400 group-hover:text-primary-500 dark:text-slate-500" />
+              </div>
+              <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{fileName || 'Klik untuk pilih file .csv / .xlsx'}</span>
+              <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-500 shadow-sm dark:bg-slate-700 dark:text-slate-400">Header wajib sama persis dengan template di atas</span>
               <input
                 type="file"
                 accept=".csv,.xlsx,.xls"
@@ -488,9 +564,9 @@ function ImportPanel() {
               />
             </label>
             {fileName && (
-              <div className="mt-3 flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800">
-                <span className="truncate text-xs font-medium text-slate-600 dark:text-slate-300">{fileName} · {rows.length} baris</span>
-                <button onClick={resetFile} className="text-xs font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-400">Hapus</button>
+              <div className="mt-3 flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
+                <span className="flex items-center gap-2 truncate text-xs font-bold text-slate-700 dark:text-slate-200"><FileSpreadsheet className="h-4 w-4 text-primary-500" />{fileName} · {rows.length} baris</span>
+                <button onClick={resetFile} className="rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-600 hover:bg-rose-100 dark:bg-rose-500/15 dark:text-rose-300">Hapus</button>
               </div>
             )}
 
@@ -500,6 +576,7 @@ function ImportPanel() {
                   <Badge tone="green"><CheckCircle2 className="mr-1 inline h-3 w-3" />{validated.filter((v) => v.valid).length} valid</Badge>
                   <Badge tone="red"><XCircle className="mr-1 inline h-3 w-3" />{validated.filter((v) => !v.valid).length} error</Badge>
                   <Badge tone="gray">{rows.length} total</Badge>
+                  <span className="ml-auto font-mono text-[11px] text-slate-400">Pratinjau 100 baris pertama</span>
                 </div>
                 <div className="max-h-[320px] overflow-auto rounded-xl border border-slate-200 scrollbar-thin dark:border-slate-700">
                   <table className="w-full text-xs">
@@ -529,42 +606,44 @@ function ImportPanel() {
                     </tbody>
                   </table>
                 </div>
-                {validated.length > 100 && <p className="mt-1 text-xs text-slate-400">Menampilkan 100 dari {validated.length} baris.</p>}
               </div>
             )}
           </CardBody>
         </Card>
 
-        <Card>
+        <Card className="overflow-hidden">
+          <div className="h-1 w-full" style={{ background: 'var(--app-gradient, linear-gradient(90deg, #0D868F, #C67C3B))' }} />
           <CardHeader title="Langkah 3 · Jalankan Import" subtitle={`Akan memproses ${validated?.filter((v) => v.valid).length ?? 0} baris valid untuk ${KIND_LABELS[kind]}.`} />
           <CardBody>
             {progress.running ? (
               <div className="space-y-3">
-                <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+                <div className="flex items-center gap-3 text-sm font-bold text-slate-700 dark:text-slate-200">
                   <Loader2 className="h-4 w-4 animate-spin text-primary-500" />
                   Mengimport... {progress.done}/{validated?.filter((v) => v.valid).length} {progress.fail > 0 && `(gagal: ${progress.fail})`}
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                  <div className="h-full rounded-full bg-primary-500 transition-all" style={{ width: `${Math.min(100, (progress.done / Math.max(1, validated!.filter((v) => v.valid).length)) * 100)}%` }} />
+                <div className="h-2.5 overflow-hidden rounded-full bg-slate-100 p-1 dark:bg-slate-800">
+                  <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, (progress.done / Math.max(1, validated!.filter((v) => v.valid).length)) * 100)}%`, background: 'var(--app-gradient, linear-gradient(90deg, #0D868F, #C67C3B))' }} />
                 </div>
               </div>
             ) : (
               <>
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="flex items-center gap-1.5 text-xs text-slate-400">
-                    <AlertCircle className="h-3.5 w-3.5" /> Pastikan pratinjau sudah benar. Duplikat username / kode akan ditolak.
+                  <p className="flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 dark:bg-amber-500/10 dark:text-amber-200">
+                    <AlertCircle className="h-3.5 w-3.5" /> Pastikan pratinjau sudah benar. Duplikat akan ditolak.
                   </p>
-                  <Button disabled={!validated || validated.filter((v) => v.valid).length === 0} onClick={runImport} icon={<Upload className="h-4 w-4" />}>
+                  <Button disabled={!validated || validated.filter((v) => v.valid).length === 0} onClick={runImport} icon={<Upload className="h-4 w-4" />} className="shadow-sm" style={{ background: validated && validated.filter((v) => v.valid).length > 0 ? 'var(--app-gradient, rgb(var(--c-primary-600)))' : undefined, color: validated && validated.filter((v) => v.valid).length > 0 ? 'white' : undefined, borderColor: 'transparent' }}>
                     Import {validated?.filter((v) => v.valid).length ?? 0} {KIND_LABELS[kind]}
                   </Button>
                 </div>
                 {resultDetails && (
-                  <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
-                      Hasil: <span className="text-emerald-600 dark:text-emerald-400">{resultDetails.success} berhasil</span> · <span className="text-rose-600 dark:text-rose-400">{resultDetails.failed} gagal</span>
+                  <div className="mt-4 rounded-xl border-2 p-4 dark:border-slate-700" style={{ borderColor: resultDetails.failed ? '#fecaca' : '#bbf7d0', background: resultDetails.failed ? '#fef2f2' : '#f0fdf4' }}>
+                    <p className="flex items-center gap-2 text-sm font-black">
+                      <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${resultDetails.failed ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white'}`}>{resultDetails.failed ? <XCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}</span>
+                      <span className={resultDetails.failed ? 'text-rose-700' : 'text-emerald-700'}>{resultDetails.failed ? 'Selesai dengan catatan' : 'Berhasil!'}</span>
+                      <span className="ml-auto text-xs font-bold text-slate-600">{resultDetails.success} berhasil · {resultDetails.failed} gagal</span>
                     </p>
                     {resultDetails.errors.length > 0 && (
-                      <ul className="mt-2 max-h-32 list-disc overflow-y-auto pl-4 text-xs text-rose-600 dark:text-rose-300 scrollbar-thin">
+                      <ul className="mt-3 max-h-32 list-disc overflow-y-auto pl-4 text-xs font-medium text-rose-600 dark:text-rose-300 scrollbar-thin">
                         {resultDetails.errors.slice(0, 20).map((e, i) => (
                           <li key={i}>Baris {e.row}: {e.msg}</li>
                         ))}
@@ -580,7 +659,8 @@ function ImportPanel() {
       </div>
 
       <aside className="space-y-4">
-        <Card className="border-primary-100 bg-primary-50/40 dark:border-primary-800/40 dark:bg-primary-500/5">
+        <Card className="overflow-hidden border-primary-100 bg-primary-50/40 dark:border-primary-800/40 dark:bg-primary-500/5">
+          <div className="h-1 w-full" style={{ background: 'var(--app-gradient, linear-gradient(90deg, #0D868F, #C67C3B))' }} />
           <CardBody>
             <h3 className="flex items-center gap-2 text-sm font-bold text-primary-800 dark:text-primary-200">
               <FileSpreadsheet className="h-4 w-4" /> Aturan Validasi — {KIND_LABELS[kind]}
@@ -631,21 +711,28 @@ function ImportPanel() {
                 </>
               )}
             </ul>
-            <div className="mt-4 rounded-lg bg-white px-3 py-2.5 text-xs dark:bg-slate-900">
-              <p className="font-semibold text-slate-700 dark:text-slate-200">Tips file</p>
+            <div className="mt-4 rounded-xl border border-white bg-white px-3 py-3 text-xs shadow-sm dark:border-white/10 dark:bg-slate-900">
+              <p className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-200"><Info className="h-3.5 w-3.5 text-primary-500" /> Tips file</p>
               <p className="mt-1 leading-relaxed text-slate-500 dark:text-slate-400">Header harus huruf kecil dengan underscore. Simpan sebagai <strong>CSV UTF-8</strong> atau <strong>XLSX</strong>. Baris kosong otomatis diabaikan.</p>
             </div>
           </CardBody>
         </Card>
 
-        <Card>
+        <Card className="overflow-hidden">
           <CardBody>
-            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Contoh cepat</h3>
-            <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">Unduh header saja — siap isi, background header ikut tema, huruf besar & rata tengah.</p>
-            <div className="mt-3 flex gap-2">
-              <Button size="sm" variant="outline" className="flex-1" onClick={() => downloadHeaderOnlyCsv(`header-${kind}`, meta.headers)}>CSV</Button>
-              <Button size="sm" className="flex-1" onClick={() => downloadHeaderOnlyExcel(`header-${kind}`, meta.headers)}>Excel</Button>
+            <h3 className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100"><Download className="h-4 w-4 text-primary-500" /> Contoh cepat</h3>
+            <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">Unduh header saja — siap isi, header ikut tema.</p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Button size="sm" variant="outline" className="w-full" onClick={() => downloadHeaderOnlyCsv(`header-${kind}`, meta.headers)}>CSV</Button>
+              <Button size="sm" className="w-full" onClick={() => downloadHeaderOnlyExcel(`header-${kind}`, meta.headers)}>Excel</Button>
             </div>
+          </CardBody>
+        </Card>
+
+        <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900/20 dark:bg-amber-500/5">
+          <CardBody>
+            <h3 className="flex items-center gap-2 text-sm font-bold text-amber-800 dark:text-amber-200"><Shield className="h-4 w-4" /> Aman & Terpercaya</h3>
+            <p className="mt-1 text-xs leading-relaxed text-amber-700/80 dark:text-amber-200/70">Validasi berlapis mencegah duplikat & data rusak. Riwayat import tersimpan di Audit Log.</p>
           </CardBody>
         </Card>
       </aside>
@@ -707,30 +794,35 @@ function ExportPanel() {
 
   return (
     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-      <ExportCard icon={<GraduationCap className="h-5 w-5" />} title={`Data Siswa (${students.length})`} onCsv={() => exportCsv('data-siswa', students, studentCols)} onExcel={async () => await exportExcel('data-siswa', 'Siswa', students, studentCols)} />
-      <ExportCard icon={<Users className="h-5 w-5" />} title={`Data Guru (${teachers.length})`} onCsv={() => exportCsv('data-guru', teachers, teacherCols)} onExcel={async () => await exportExcel('data-guru', 'Guru', teachers, teacherCols)} />
-      <ExportCard icon={<FileSpreadsheet className="h-5 w-5" />} title={`Bank Soal (${(banks as unknown[]).length})`} onCsv={() => exportCsv('bank-soal', banks as any, bankCols)} onExcel={async () => await exportExcel('bank-soal', 'Bank Soal', banks as any, bankCols)} />
-      <ExportCard icon={<FileSpreadsheet className="h-5 w-5" />} title={`Ujian (${(exams as unknown[]).length})`} onCsv={() => exportCsv('daftar-ujian', exams as any, examCols)} onExcel={async () => await exportExcel('daftar-ujian', 'Ujian', exams as any, examCols)} />
-      <ExportCard icon={<FileSpreadsheet className="h-5 w-5" />} title={`Hasil & Nilai (${(results as unknown[]).length})`} onCsv={() => exportCsv('hasil-ujian', results as any, resultCols)} onExcel={async () => await exportExcel('hasil-ujian', 'Nilai', results as any, resultCols)} />
-      <p className="col-span-full text-center text-xs text-slate-400 dark:text-slate-500 sm:text-left">
-        Semua data di atas tersedia CSV &amp; Excel. Laporan PDF lengkap juga ada di menu <strong>Laporan</strong>.
-      </p>
+      <ExportCard icon={<GraduationCap className="h-5 w-5" />} title={`Data Siswa (${students.length})`} sub="NIS, Kelas, Jurusan" count={students.length} onCsv={() => exportCsv('data-siswa', students, studentCols)} onExcel={async () => await exportExcel('data-siswa', 'Siswa', students, studentCols)} />
+      <ExportCard icon={<Users className="h-5 w-5" />} title={`Data Guru (${teachers.length})`} sub="NIP, Akun, Kontak" count={teachers.length} onCsv={() => exportCsv('data-guru', teachers, teacherCols)} onExcel={async () => await exportExcel('data-guru', 'Guru', teachers, teacherCols)} />
+      <ExportCard icon={<Database className="h-5 w-5" />} title={`Bank Soal (${(banks as unknown[]).length})`} sub="Judul & status" count={(banks as unknown[]).length} onCsv={() => exportCsv('bank-soal', banks as any, bankCols)} onExcel={async () => await exportExcel('bank-soal', 'Bank Soal', banks as any, bankCols)} />
+      <ExportCard icon={<Table2 className="h-5 w-5" />} title={`Ujian (${(exams as unknown[]).length})`} sub="Jadwal & status" count={(exams as unknown[]).length} onCsv={() => exportCsv('daftar-ujian', exams as any, examCols)} onExcel={async () => await exportExcel('daftar-ujian', 'Ujian', exams as any, examCols)} />
+      <ExportCard icon={<FileSpreadsheet className="h-5 w-5" />} title={`Hasil & Nilai (${(results as unknown[]).length})`} sub="Nilai & kelulusan" count={(results as unknown[]).length} onCsv={() => exportCsv('hasil-ujian', results as any, resultCols)} onExcel={async () => await exportExcel('hasil-ujian', 'Nilai', results as any, resultCols)} />
+      <div className="rounded-[20px] border-2 border-dashed border-slate-200 bg-slate-50 p-6 text-center dark:border-white/10 dark:bg-white/[0.03]">
+        <p className="text-sm font-bold text-slate-700 dark:text-white">Butuh Laporan PDF?</p>
+        <p className="mt-1 text-xs leading-relaxed text-slate-500">Laporan lengkap dengan grafik ada di menu <span className="font-bold text-primary-600">Laporan</span>.</p>
+        <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm dark:bg-white/10 dark:text-white"><FileDown className="h-3 w-3" /> Export di atas</div>
+      </div>
     </div>
   )
 }
 
-function ExportCard({ icon, title, onCsv, onExcel }: { icon: React.ReactNode; title: string; onCsv: () => void; onExcel: () => Promise<void> }) {
+function ExportCard({ icon, title, sub, count, onCsv, onExcel }: { icon: React.ReactNode; title: string; sub?: string; count?: number; onCsv: () => void; onExcel: () => Promise<void> }) {
   const toast = useToast()
   return (
-    <Card>
+    <Card className="group relative overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all">
+      <div className="absolute inset-x-0 top-0 h-1 opacity-60 group-hover:opacity-100 transition-opacity" style={{ background: 'var(--app-gradient, linear-gradient(90deg, #0D868F, #C67C3B))' }} />
       <CardBody>
-        <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-500/15 dark:text-primary-300">{icon}</span>
-          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">{title}</h3>
+        <div className="flex items-start justify-between gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl text-white shadow-sm" style={{ background: 'var(--app-gradient, linear-gradient(135deg, #0D868F, #C67C3B))' }}>{icon}</span>
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 font-mono text-[11px] font-bold text-slate-600 dark:bg-white/10 dark:text-white">{count ?? 0} data</span>
         </div>
-        <div className="mt-4 flex gap-2">
-          <Button size="sm" variant="outline" onClick={onCsv}>CSV</Button>
-          <Button size="sm" variant="outline" onClick={async () => { await onExcel(); toast.success('Excel diunduh.') }}>Excel</Button>
+        <h3 className="mt-3 text-sm font-black leading-tight text-slate-900 dark:text-white">{title}</h3>
+        {sub && <p className="mt-1 text-xs font-medium text-slate-500">{sub}</p>}
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <Button size="sm" variant="outline" onClick={onCsv} icon={<Download className="h-3.5 w-3.5" />}>CSV</Button>
+          <Button size="sm" onClick={async () => { await onExcel(); toast.success('Excel diunduh.') }} icon={<FileDown className="h-3.5 w-3.5" />}>Excel</Button>
         </div>
       </CardBody>
     </Card>

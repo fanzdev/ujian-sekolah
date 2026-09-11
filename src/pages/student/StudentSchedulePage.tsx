@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CalendarDays, BookOpen, User } from 'lucide-react'
+import { CalendarDays, User } from 'lucide-react'
 import { useAsync, useDocumentTitle } from '@/hooks/useAsync'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, CardBody } from '@/components/ui/Card'
@@ -125,11 +125,6 @@ function ScheduleCard({ schedule: s }: { schedule: Schedule }) {
             <p className="mt-1 text-xs text-slate-500">{s.description}</p>
           )}
           <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
-            {s.subjects?.name && (
-              <span className="flex items-center gap-1">
-                <BookOpen className="h-3 w-3" /> {s.subjects.name}
-              </span>
-            )}
             {s.teachers?.profiles?.full_name && (
               <span className="flex items-center gap-1">
                 <User className="h-3 w-3" /> {s.teachers.profiles.full_name}

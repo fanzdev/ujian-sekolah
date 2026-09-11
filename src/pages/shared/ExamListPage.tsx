@@ -181,7 +181,6 @@ export default function ExamListPage() {
                       )}
                     </div>
                     <p className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-400">
-                      <span>{exam.subjects?.name ?? 'Tanpa mapel'}</span>
                       <span>{formatDateTime(exam.starts_at)}</span>
                       <span>→ {formatDateTime(exam.ends_at)}</span>
                       <span>{exam.duration_minutes} menit</span>

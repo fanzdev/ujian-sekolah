@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
-import { MonitorCheck, RefreshCw, ArrowLeft, UserMinus, UserPlus, Search, Clock, AlertTriangle } from 'lucide-react'
+import { MonitorCheck, RefreshCw, ArrowLeft, UserMinus, UserPlus, Search, Clock, AlertTriangle, Shield, Eye } from 'lucide-react'
 import { useAsync, useDocumentTitle } from '@/hooks/useAsync'
 import { useToast } from '@/hooks/useToast'
 import { useConfirm } from '@/hooks/useConfirm'
@@ -18,6 +18,7 @@ import { supabase } from '@/services/client'
 import { ATTEMPT_STATUS_LABELS } from '@/lib/constants'
 import { formatTime } from '@/lib/datetime'
 import { LiveCameraWall } from '@/components/exam/LiveCameraWall'
+import { listSecurityEvents, calculateRiskScore, type SecurityEvent } from '@/services/security.service'
 
 interface ParticipantRow {
   student_id: string
@@ -33,6 +34,9 @@ interface ParticipantRow {
     started_at: string
     submitted_at: string | null
     violation_count: number
+    ip_address?: string | null
+    user_agent?: string | null
+    device_info?: Record<string, unknown> | null
     result?: { final_score: number | null } | null
   }
 }
@@ -60,7 +64,7 @@ export default function MonitoringPage() {
       const participants = await getParticipants(examId)
       const { data: attempts } = await supabase
         .from('exam_attempts')
-        .select('id, status, started_at, submitted_at, violation_count, student_id, results:exam_results(final_score)')
+        .select('id, status, started_at, submitted_at, violation_count, student_id, ip_address, user_agent, device_info, results:exam_results(final_score)')
         .eq('exam_id', examId)
       const attemptsByStudent: Record<string, ParticipantRow['attempt']> = {}
       for (const a of (attempts ?? []) as unknown as Array<Record<string, unknown>>) {
@@ -73,6 +77,9 @@ export default function MonitoringPage() {
             started_at: String(a.started_at),
             submitted_at: (a.submitted_at as string) ?? null,
             violation_count: Number(a.violation_count ?? 0),
+            ip_address: a.ip_address as string | null,
+            user_agent: a.user_agent as string | null,
+            device_info: a.device_info as Record<string, unknown> | null,
             result: (a.results as { final_score: number | null }[] | null)?.[0] ?? null,
           }
         } else if (existing && a.status !== 'in_progress' && new Date(String(a.started_at)) > new Date(existing.started_at)) {
@@ -82,6 +89,9 @@ export default function MonitoringPage() {
             started_at: String(a.started_at),
             submitted_at: (a.submitted_at as string) ?? null,
             violation_count: Number(a.violation_count ?? 0),
+            ip_address: a.ip_address as string | null,
+            user_agent: a.user_agent as string | null,
+            device_info: a.device_info as Record<string, unknown> | null,
             result: (a.results as { final_score: number | null }[] | null)?.[0] ?? null,
           }
         }
@@ -90,6 +100,15 @@ export default function MonitoringPage() {
     },
     [examId, tick],
   )
+
+  const securityQuery = useAsync(async (): Promise<SecurityEvent[]> => {
+    if (!examId) return []
+    try {
+      return await listSecurityEvents({ examId, limit: 200 })
+    } catch {
+      return []
+    }
+  }, [examId, tick])
 
   useEffect(() => {
     if (!autoRefresh) return
@@ -103,6 +122,7 @@ export default function MonitoringPage() {
       .channel(`monitoring-${examId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'exam_attempts', filter: `exam_id=eq.${examId}` }, () => setTick((t) => t + 1))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'exam_results', filter: `exam_id=eq.${examId}` }, () => setTick((t) => t + 1))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'security_events', filter: `exam_id=eq.${examId}` }, () => setTick((t) => t + 1))
       .subscribe()
     return () => { void supabase.removeChannel(ch) }
   }, [examId])
@@ -122,6 +142,23 @@ export default function MonitoringPage() {
   const activeCount = rows.filter((r) => r.attempt?.status === 'in_progress').length
   const submittedCount = rows.filter((r) => r.attempt && r.attempt.status !== 'in_progress').length
   const totalViolations = rows.reduce((sum, r) => sum + (r.attempt?.violation_count ?? 0), 0)
+  const securityEvents = securityQuery.data ?? []
+  const riskByAttempt: Record<string, { score: number; level: string }> = {}
+  for (const r of rows) {
+    if (!r.attempt?.id) continue
+    const evts = securityEvents.filter((e) => e.attempt_id === r.attempt!.id)
+    const { score } = calculateRiskScore(evts)
+    const extra = r.attempt.violation_count > 0 ? r.attempt.violation_count : 0
+    riskByAttempt[r.attempt.id] = { score: score + extra, level: score + extra >= 10 ? 'HIGH' : score + extra >= 6 ? 'MEDIUM' : score + extra >= 3 ? 'LOW' : evts.length ? 'LOW' : 'NORMAL' }
+  }
+  const riskCounts = { NORMAL: 0, LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0 }
+  for (const v of Object.values(riskByAttempt)) {
+    const lvl = v.level as keyof typeof riskCounts
+    if (lvl in riskCounts) riskCounts[lvl]++
+    else riskCounts.NORMAL++
+  }
+  const notStarted = rows.filter((r) => !r.attempt).length
+  riskCounts.NORMAL += notStarted
 
   const allowOutside = (examQuery.data as unknown as { allow_outside_schedule?: boolean } | null)?.allow_outside_schedule ?? false
 
@@ -232,11 +269,21 @@ export default function MonitoringPage() {
 
       {examId && (
         <>
-          <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
+          <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-5">
             <StatBox label="Total Peserta" value={rows.filter((r) => !r.is_removed).length} />
             <StatBox label="Sedang Ujian" value={activeCount} tone="green" pulse={activeCount > 0} />
             <StatBox label="Selesai" value={submittedCount} tone="blue" />
             <StatBox label="Pelanggaran" value={totalViolations} tone={totalViolations > 0 ? 'red' : 'slate'} />
+            <div className="col-span-2 lg:col-span-1 card p-3">
+              <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-slate-400"><Shield className="h-3 w-3" /> Risk</p>
+              <div className="mt-1 flex flex-wrap gap-1.5 text-[11px] font-bold">
+                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700">🟢 {riskCounts.NORMAL}</span>
+                <span className="rounded-full bg-amber-50 px-2 py-0.5 text-amber-700">🟡 {riskCounts.LOW}</span>
+                <span className="rounded-full bg-orange-50 px-2 py-0.5 text-orange-700">🟠 {riskCounts.MEDIUM}</span>
+                <span className="rounded-full bg-rose-50 px-2 py-0.5 text-rose-700">🔴 {riskCounts.HIGH + riskCounts.CRITICAL}</span>
+              </div>
+              <p className="mt-1 text-[10px] text-slate-400">{securityEvents.length} security events</p>
+            </div>
           </div>
 
           <Tabs
@@ -244,6 +291,7 @@ export default function MonitoringPage() {
             onChange={setActiveTab}
             tabs={[
               { id: 'participants', label: 'Status Peserta', badge: rows.length },
+              { id: 'security', label: 'Keamanan', badge: securityEvents.length },
               { id: 'camera', label: 'Kamera Live' },
               { id: 'manage', label: 'Kelola Peserta' },
             ]}
@@ -276,7 +324,7 @@ export default function MonitoringPage() {
           </div>
 
           {listQuery.loading && rows.length === 0 ? (
-            <TableSkeleton cols={6} />
+            <TableSkeleton cols={7} />
           ) : filteredRows.length === 0 ? (
             <EmptyState
               icon={<UserPlus className="h-6 w-6" />}
@@ -286,7 +334,7 @@ export default function MonitoringPage() {
             />
           ) : (
             <div className="overflow-x-auto scrollbar-thin">
-              <table className="w-full min-w-[820px]">
+              <table className="w-full min-w-[960px]">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50/80 dark:border-slate-700 dark:bg-slate-800/50">
                     <th className="table-th">Peserta</th>
@@ -295,11 +343,14 @@ export default function MonitoringPage() {
                     <th className="table-th">Mulai / Kumpul</th>
                     <th className="table-th text-center">Nilai</th>
                     <th className="table-th text-center">Pelanggaran</th>
+                    <th className="table-th text-center">Risk</th>
                     <th className="table-th text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {filteredRows.map((row) => (
+                  {filteredRows.map((row) => {
+                    const risk = row.attempt ? riskByAttempt[row.attempt.id] : null
+                    return (
                     <tr key={row.student_id} className={`transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/30 ${row.is_removed ? 'opacity-40' : ''}`}>
                       <td className="table-td">
                         <div className="flex items-center gap-3">
@@ -344,6 +395,14 @@ export default function MonitoringPage() {
                         )}
                       </td>
                       <td className="table-td text-center">
+                        {risk ? (
+                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold ${risk.level === 'HIGH' || risk.level === 'CRITICAL' ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300' : risk.level === 'MEDIUM' ? 'bg-orange-50 text-orange-700 dark:bg-orange-500/20' : risk.level === 'LOW' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>
+                            {risk.level === 'HIGH' ? '🔴' : risk.level === 'MEDIUM' ? '🟠' : risk.level === 'LOW' ? '🟡' : '🟢'} {risk.score}
+                          </span>
+                        ) : <span className="text-xs text-slate-300">-</span>}
+                      </td>
+                      <td className="table-td text-center">
+                        <div className="flex items-center justify-center gap-1">
                         {row.attempt?.status === 'in_progress' && !row.is_removed ? (
                           <Button
                             size="xs"
@@ -353,23 +412,88 @@ export default function MonitoringPage() {
                           >
                             Selesai
                           </Button>
-                        ) : (
-                          <span className="text-xs text-slate-300">-</span>
-                        )}
+                        ) : null}
+                        {row.attempt && <SecurityTimelineButton attemptId={row.attempt.id} />}
+                        </div>
                       </td>
                     </tr>
-                  ))}
+                  )})}
                 </tbody>
               </table>
             </div>
           )}
         </Card>
+      ) : activeTab === 'security' ? (
+        <SecurityTab examId={examId!} />
       ) : activeTab === 'camera' ? (
         <LiveCameraWall examId={examId!} />
       ) : (
         <ManageParticipants examId={examId!} onChanged={() => setTick((t) => t + 1)} />
       )}
     </>
+  )
+}
+
+function SecurityTimelineButton({ attemptId }: { attemptId: string }) {
+  const [open, setOpen] = useState(false)
+  const q = useAsync(() => listSecurityEvents({ attemptId, limit: 100 }), [attemptId, open])
+  return (
+    <>
+      <Button size="xs" variant="ghost" onClick={() => setOpen(true)} icon={<Eye className="h-3 w-3" />}>Log</Button>
+      {open && (
+        <Modal open onClose={() => setOpen(false)} title="Timeline Keamanan" size="lg">
+          <div className="max-h-[60vh] overflow-y-auto p-4">
+            {q.loading ? <div className="flex justify-center py-8"><Spinner /></div> : (q.data ?? []).length === 0 ? <p className="py-8 text-center text-sm text-slate-400">Belum ada event keamanan.</p> : (
+              <div className="space-y-2">
+                {(q.data ?? []).map((e) => (
+                  <div key={e.id} className="flex gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 dark:border-white/5 dark:bg-white/[0.03]">
+                    <span className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${e.severity === 'CRITICAL' || e.severity === 'HIGH' ? 'bg-rose-500' : e.severity === 'MEDIUM' ? 'bg-orange-500' : e.severity === 'LOW' ? 'bg-amber-500' : 'bg-slate-300'}`} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-slate-800 dark:text-white">{e.event_type} <span className="ml-1 rounded-full bg-slate-200 px-1.5 py-0.5 font-mono text-[10px] text-slate-600 dark:bg-white/10">{e.severity}</span></p>
+                      <p className="truncate font-mono text-[11px] text-slate-400">{new Date(e.created_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} · {e.ip_address ?? '-'} · {e.device_id?.slice(0,12) ?? '-'}</p>
+                      {Object.keys(e.metadata ?? {}).length > 0 && <p className="mt-1 break-words font-mono text-[11px] text-slate-500">{JSON.stringify(e.metadata).slice(0,200)}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
+    </>
+  )
+}
+
+function SecurityTab({ examId }: { examId: string }) {
+  const q = useAsync(() => listSecurityEvents({ examId, limit: 200 }), [examId])
+  const events = q.data ?? []
+  const byType: Record<string, number> = {}
+  for (const e of events) byType[e.event_type] = (byType[e.event_type] ?? 0) + 1
+  return (
+    <Card className="mt-5">
+      <div className="border-b border-slate-100 p-4 dark:border-white/5">
+        <h3 className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-white"><Shield className="h-4 w-4 text-primary-600" /> Ringkasan Keamanan</h3>
+        <p className="mt-1 text-xs text-slate-500">{events.length} event tercatat — gunakan log per peserta untuk detail timeline.</p>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {Object.entries(byType).sort((a,b)=>b[1]-a[1]).slice(0,12).map(([k,v]) => (
+            <span key={k} className="rounded-full bg-slate-100 px-2.5 py-1 font-mono text-[11px] font-bold text-slate-600 dark:bg-white/10 dark:text-slate-300">{k}: {v}</span>
+          ))}
+          {Object.keys(byType).length===0 && <span className="text-xs text-slate-400">Belum ada event.</span>}
+        </div>
+      </div>
+      <div className="max-h-[60vh] overflow-y-auto divide-y divide-slate-50 dark:divide-white/5">
+        {q.loading ? <div className="flex justify-center py-10"><Spinner /></div> : events.length===0 ? <p className="py-10 text-center text-sm text-slate-400">Belum ada aktivitas keamanan.</p> : events.slice(0,100).map((e) => (
+          <div key={e.id} className="flex gap-3 px-4 py-3">
+            <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${e.severity==='HIGH'||e.severity==='CRITICAL'?'bg-rose-500':e.severity==='MEDIUM'?'bg-orange-500':'bg-amber-500'}`} />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-slate-800 dark:text-white">{e.event_type} <span className="font-normal text-slate-400">· {e.attempt_id?.slice(0,8) ?? '-'}</span></p>
+              <p className="font-mono text-[11px] text-slate-400">{new Date(e.created_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} · {e.ip_address ?? '-'}</p>
+            </div>
+            <Badge tone={e.severity==='HIGH'||e.severity==='CRITICAL'?'red':e.severity==='MEDIUM'?'amber':'gray'}>{e.severity}</Badge>
+          </div>
+        ))}
+      </div>
+    </Card>
   )
 }
 
@@ -382,7 +506,7 @@ function ExamPickerForMonitoring({ onPick }: { onPick: (id: string) => void }) {
       {exams.map((e) => (
         <button key={e.id} onClick={() => onPick(e.id)} className="card p-4 text-left transition-all hover:shadow-card-hover hover:border-primary-200">
           <p className="line-clamp-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{e.title}</p>
-          <p className="mt-1 text-xs text-slate-400">{e.subjects?.name ?? '-'} · {new Date(e.starts_at).toLocaleDateString('id-ID')}</p>
+          <p className="mt-1 text-xs text-slate-400">{new Date(e.starts_at).toLocaleDateString('id-ID')}</p>
         </button>
       ))}
       {exams.length === 0 && <p className="col-span-full py-10 text-center text-sm text-slate-400">Belum ada ujian.</p>}

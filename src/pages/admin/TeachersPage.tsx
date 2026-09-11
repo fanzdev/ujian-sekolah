@@ -15,8 +15,6 @@ import { DataTable, Pagination } from '@/components/ui/DataTable'
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/ui/Feedback'
 import {
   listTeachers,
-  setTeacherSubjects,
-  listSubjects,
 } from '@/services/academics.service'
 import {
   pingManageUser,
@@ -38,7 +36,6 @@ interface TeacherRowData {
   address: string | null
   is_active: boolean
   profiles?: Partial<{ id: string; username: string; full_name: string }> | null
-  subjects?: (Partial<{ id: string; code: string; name: string }> | null)[]
 }
 
 export default function TeachersPage() {
@@ -97,21 +94,6 @@ export default function TeachersPage() {
                       </div>
                     </div>
                   ),
-                },
-                {
-                  key: 'subjects',
-                  header: 'Mata Pelajaran',
-                  render: (t) =>
-                    (t.subjects ?? []).length === 0 ? (
-                      <span className="text-slate-300">-</span>
-                    ) : (
-                      <div className="flex max-w-xs flex-wrap gap-1">
-                        {t.subjects!.filter(Boolean).slice(0, 3).map((s) => (
-                          <Badge key={s!.id} tone="sky">{s!.code}</Badge>
-                        ))}
-                        {t.subjects!.length > 3 && <Badge tone="gray">+{t.subjects!.length - 3}</Badge>}
-                      </div>
-                    ),
                 },
                 { key: 'phone', header: 'Kontak', render: (t) => t.phone ?? '-', className: 'whitespace-nowrap' },
                 {
@@ -197,12 +179,11 @@ function CreateTeacherModal({
   const toast = useToast()
   const [saving, setSaving] = useState(false)
   const [edgeAvailable, setEdgeAvailable] = useState<boolean | null>(null)
-  const [form, setForm] = useState({ fullName: '', username: '', password: randomCode(8), nip: '', phone: '', email: '', address: '', subjectIds: [] as string[] })
-  const subjectsQuery = useAsync(() => listSubjects(), [])
+  const [form, setForm] = useState({ fullName: '', username: '', password: randomCode(8), nip: '', phone: '', email: '', address: '' })
 
   useEffect(() => {
     if (!open) return
-    setForm({ fullName: '', username: '', password: randomCode(8), nip: '', phone: '', email: '', address: '', subjectIds: [] })
+    setForm({ fullName: '', username: '', password: randomCode(8), nip: '', phone: '', email: '', address: '' })
     pingManageUser().then(() => setEdgeAvailable(true)).catch(() => setEdgeAvailable(false))
   }, [open])
 
@@ -223,7 +204,6 @@ function CreateTeacherModal({
           phone: form.phone || undefined,
           email: form.email || undefined,
           address: form.address || undefined,
-          subject_ids: form.subjectIds.length > 0 ? form.subjectIds : undefined,
         },
       })
       toast.success(`Guru "${form.fullName}" berhasil dibuat.`)
@@ -250,34 +230,6 @@ function CreateTeacherModal({
           <Input label="No. Telepon" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
           <Input label="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
         </div>
-        <fieldset>
-          <legend className="label-base">Mata Pelajaran yang Diampu</legend>
-          {(subjectsQuery.data ?? []).length === 0 ? (
-            <p className="text-xs text-slate-400">Belum ada mata pelajaran.</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {(subjectsQuery.data ?? []).map((s) => {
-                const active = form.subjectIds.includes(s.id)
-                return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() =>
-                      setForm((f) => ({
-                        ...f,
-                        subjectIds: active ? f.subjectIds.filter((x) => x !== s.id) : [...f.subjectIds, s.id],
-                      }))
-                    }
-                     className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${active ? 'border-primary-500 bg-primary-600 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-primary-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-primary-500'}`}
-                  >
-                    {s.name}
-                  </button>
-                )
-              })}
-            </div>
-          )}
-        </fieldset>
       </div>
        <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:border-slate-700 dark:bg-slate-800/60">
         <Button variant="ghost" onClick={onClose}>Batal</Button>
@@ -298,13 +250,7 @@ function EditTeacherModal({
 }) {
   const toast = useToast()
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({ fullName: '', nip: '', phone: '', email: '', address: '', subjectIds: [] as string[] })
-  const subjectsQuery = useAsync(() => listSubjects(), [])
-  const currentSubjectIds = useAsync(async () => {
-    if (!teacher) return []
-    const { data } = await supabase.from('teacher_subjects').select('subject_id').eq('teacher_id', teacher.id)
-    return ((data ?? []) as { subject_id: string }[]).map((r) => r.subject_id)
-  }, [teacher])
+  const [form, setForm] = useState({ fullName: '', nip: '', phone: '', email: '', address: '' })
 
   useEffect(() => {
     if (!teacher) return
@@ -314,16 +260,8 @@ function EditTeacherModal({
       phone: teacher.phone ?? '',
       email: teacher.email ?? '',
       address: teacher.address ?? '',
-      subjectIds: [],
     })
   }, [teacher])
-
-  useEffect(() => {
-    if (teacher && currentSubjectIds.data && form.subjectIds.length === 0 && currentSubjectIds.data.length > 0) {
-      setForm((f) => ({ ...f, subjectIds: currentSubjectIds.data! }))
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentSubjectIds.data])
 
   const submit = async () => {
     if (!teacher) return
@@ -338,7 +276,6 @@ function EditTeacherModal({
       if (form.fullName.trim()) {
         await supabase.from('profiles').update({ full_name: form.fullName.trim() }).eq('id', teacher.profile_id)
       }
-      await setTeacherSubjects(teacher.id, form.subjectIds)
       toast.success('Data guru diperbarui.')
       onSaved()
     } catch (err) {
@@ -355,27 +292,6 @@ function EditTeacherModal({
         <Input label="NIP / NUPTK" value={form.nip} onChange={(e) => setForm({ ...form, nip: e.target.value })} />
         <Input label="No. Telepon" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
         <Input label="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-        <div className="sm:col-span-2">
-          <fieldset>
-            <legend className="label-base">Mata Pelajaran yang Diampu</legend>
-            <div className="flex flex-wrap gap-2">
-              {(subjectsQuery.data ?? []).map((s) => {
-                const active = form.subjectIds.includes(s.id)
-                return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => setForm((f) => ({ ...f, subjectIds: active ? f.subjectIds.filter((x) => x !== s.id) : [...f.subjectIds, s.id] }))}
-                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${active ? 'border-primary-500 bg-primary-600 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-primary-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-primary-500'}`}
-                  >
-                    {s.name}
-                  </button>
-                )
-              })}
-            </div>
-          </fieldset>
-        </div>
       </div>
       <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:border-slate-700 dark:bg-slate-800/60">
         <Button variant="ghost" onClick={onClose}>Batal</Button>

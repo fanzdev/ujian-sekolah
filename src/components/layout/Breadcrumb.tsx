@@ -11,7 +11,6 @@ const SEGMENT_LABELS: Record<string, string> = {
   teachers: 'Data Guru',
   classes: 'Kelas',
   departments: 'Jurusan',
-  subjects: 'Mata Pelajaran',
   'question-banks': 'Bank Soal',
   questions: 'Soal',
   exams: 'Ujian',

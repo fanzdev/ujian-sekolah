@@ -13,7 +13,7 @@ import { Modal } from '@/components/ui/Modal'
 import { EmptyState, ErrorState, Spinner } from '@/components/ui/Feedback'
 import { getExam, createExam, updateExam, getExamQuestions, setExamQuestions, setExamTargets, getExamTargets } from '@/services/exams.service'
 import { listBanks, listQuestions } from '@/services/questions.service'
-import { listClasses, listDepartments, listSubjects } from '@/services/academics.service'
+import { listClasses, listDepartments } from '@/services/academics.service'
 import { fetchSystemSettings } from '@/services/settings.service'
 import { QUESTION_TYPE_LABELS, DIFFICULTY_LABELS } from '@/lib/constants'
 import { toInputValue, fromWibInput, formatDateTime } from '@/lib/datetime'
@@ -47,7 +47,6 @@ export default function ExamEditorPage() {
   const metaQuery = useAsync(
     () =>
       Promise.all([
-        listSubjects(),
         listClasses(),
         listDepartments(),
         import('@/services/academics.service').then((m) => m.listTeachers({ pageSize: 200 })),
@@ -92,7 +91,7 @@ export default function ExamEditorPage() {
             <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
               {isEdit ? 'Ubah Ujian' : 'Buat Ujian Baru'}
             </h1>
-            <p className="mt-0.5 text-sm text-slate-400">Satu ujian untuk satu mata pelajaran</p>
+            <p className="mt-0.5 text-sm text-slate-400">Atur informasi dasar ujian</p>
           </div>
         </div>
       </div>
@@ -103,8 +102,7 @@ export default function ExamEditorPage() {
         <div className="lg:col-span-2">
           {step === 0 && (
             <InfoStep
-              subjects={metaQuery.data?.[0] ?? []}
-              teachers={(metaQuery.data?.[3]?.rows ?? []).map((t) => ({
+              teachers={(metaQuery.data?.[2]?.rows ?? []).map((t) => ({
                 id: t.id,
                 name: t.profiles?.full_name ?? t.id,
               }))}
@@ -121,8 +119,8 @@ export default function ExamEditorPage() {
             <TargetStep
               examId={currentExamId}
               initialTargets={targetsQuery.data ?? []}
-              classes={metaQuery.data?.[1] ?? []}
-              departments={metaQuery.data?.[2] ?? []}
+              classes={metaQuery.data?.[0] ?? []}
+              departments={metaQuery.data?.[1] ?? []}
               onBack={() => setStep(0)}
               onNext={() => setStep(2)}
               onSaved={() => toast.success('Peserta ujian tersimpan.')}
@@ -223,7 +221,6 @@ function StepIndicator({ step, onStep }: { step: number; onStep: (n: number) => 
   )
 }
 
-type MetaSubjects = Awaited<ReturnType<typeof listSubjects>>
 type TeacherOption = { id: string; name: string }
 
 function getWibTodayYmd(): string {
@@ -249,19 +246,16 @@ function getYmdFromIsoWib(iso: string | null | undefined): string {
 }
 
 function InfoStep({
-  subjects: _subjects,
   teachers,
   examId,
   onNext,
   onEnsureCreated,
 }: {
-  subjects: MetaSubjects
   teachers: TeacherOption[]
   examId: string | null
   onNext: () => void
   onEnsureCreated: (form: Record<string, unknown>) => Promise<string>
 }) {
-  void _subjects
   const toast = useToast()
   const examQuery = useAsync(() => (examId ? getExam(examId) : Promise.resolve(null)), [examId])
   const exam = examQuery.data
@@ -269,7 +263,6 @@ function InfoStep({
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [instructions, setInstructions] = useState('')
-  const [subjectId, setSubjectId] = useState('')
   const [teacherId, setTeacherId] = useState('')
   const [startsAtTime, setStartsAtTime] = useState('')
   const [endsAtTime, setEndsAtTime] = useState('')
@@ -280,7 +273,6 @@ function InfoStep({
     setTitle(exam.title)
     setDescription(exam.description ?? '')
     setInstructions(exam.instructions ?? '')
-    setSubjectId(exam.subject_id ?? '')
     setTeacherId(exam.teacher_id ?? '')
     setStartsAtTime(extractTimeWib(exam.starts_at))
     setEndsAtTime(extractTimeWib(exam.ends_at))
@@ -304,7 +296,7 @@ function InfoStep({
         title: title.trim(),
         description: description || null,
         instructions: instructions || null,
-        subject_id: subjectId || null,
+        subject_id: null,
         teacher_id: teacherId || null,
         starts_at: startIso,
         ends_at: endIso,
@@ -523,27 +515,16 @@ function QuestionsStep({
   const toast = useToast()
   const confirmDialog = useConfirm()
 
-  const examInfo = useAsync(() => (examId ? getExam(examId) : Promise.resolve(null)), [examId])
-  const banksForSubject = useAsync(async () => {
-    const subjectId = examInfo.data?.subject_id
-    const all = await listBanks({ pageSize: 100 })
-    if (!subjectId) return all
-    const filtered = all.rows.filter((b) => b.subject_id === subjectId)
-    return { rows: filtered.length > 0 ? filtered : all.rows, total: filtered.length > 0 ? filtered.length : all.total }
-  }, [examInfo.data?.subject_id])
-
   const availableCountQuery = useAsync(async () => {
-    const subjectId = examInfo.data?.subject_id
     const banks = await listBanks({ pageSize: 100 })
-    const relevant = subjectId ? banks.rows.filter((b) => b.subject_id === subjectId) : banks.rows
-    if (relevant.length === 0) return 0
+    if (banks.rows.length === 0) return 0
     let total = 0
-    for (const b of relevant) {
+    for (const b of banks.rows) {
       const qs = await listQuestions({ bankId: b.id, pageSize: 1 })
       total += qs.total
     }
     return total
-  }, [examInfo.data?.subject_id])
+  }, [])
 
   useEffect(() => {
     if (!examId) {
@@ -582,12 +563,11 @@ function QuestionsStep({
   }
 
   const handleAutoFill = async () => {
-    const subjectId = examInfo.data?.subject_id
     try {
       const banks = await listBanks({ pageSize: 100 })
-      const relevant = subjectId ? banks.rows.filter((b) => b.subject_id === subjectId) : banks.rows
+      const relevant = banks.rows
       if (relevant.length === 0) {
-        toast.error('Tidak ada bank soal untuk mapel ini. Buat bank dulu.')
+        toast.error('Tidak ada bank soal. Buat bank dulu.')
         return
       }
       const allQs: typeof items = []
@@ -603,7 +583,7 @@ function QuestionsStep({
         }
       }
       if (allQs.length === 0) {
-        toast.error('Bank untuk mapel ini masih kosong. Isi bank dulu.')
+        toast.error('Bank masih kosong. Isi bank dulu.')
         return
       }
       addQuestions(allQs)
@@ -683,15 +663,15 @@ function QuestionsStep({
           <>
             {items.length === 0 && (availableCountQuery.data ?? 0) > 0 && (
               <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 dark:border-sky-800/50 dark:bg-sky-500/10">
-                <p className="text-sm font-semibold text-sky-800 dark:text-sky-200">Bank untuk mapel ini punya {availableCountQuery.data} soal, tapi ujian ini masih 0 soal.</p>
-                <p className="mt-1 text-xs text-sky-700 dark:text-sky-300">Klik tombol di bawah untuk isi otomatis semua soal dari bank mapel ini, atau pilih manual.</p>
-                <Button size="sm" className="mt-3" icon={<Plus className="h-4 w-4" />} onClick={handleAutoFill}>Isi Otomatis {availableCountQuery.data} Soal dari Bank Mapel</Button>
+                <p className="text-sm font-semibold text-sky-800 dark:text-sky-200">Bank memiliki {availableCountQuery.data} soal, tapi ujian ini masih 0 soal.</p>
+                <p className="mt-1 text-xs text-sky-700 dark:text-sky-300">Klik tombol di bawah untuk isi otomatis semua soal dari bank, atau pilih manual.</p>
+                <Button size="sm" className="mt-3" icon={<Plus className="h-4 w-4" />} onClick={handleAutoFill}>Isi Otomatis {availableCountQuery.data} Soal dari Bank</Button>
               </div>
             )}
-            {items.length === 0 && (availableCountQuery.data ?? 0) === 0 && examInfo.data?.subject_id && (
+            {items.length === 0 && (availableCountQuery.data ?? 0) === 0 && (
               <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800/50 dark:bg-amber-500/10">
-                <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">Bank untuk mapel ini belum ada soal.</p>
-                <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">Buka menu <strong>Bank Soal</strong> → buat soal atau import Excel (1 baris = 1 soal). Mapel bank harus sama dengan mapel ujian ({examInfo.data?.subject_id ? banksForSubject.data?.rows[0]?.subjects?.name ?? '—' : '—'}).</p>
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">Belum ada soal di bank.</p>
+                <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">Buka menu <strong>Bank Soal</strong> → buat soal atau import Excel (1 baris = 1 soal).</p>
               </div>
             )}
             {hasUnsaved && (
