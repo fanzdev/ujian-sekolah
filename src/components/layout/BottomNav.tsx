@@ -72,7 +72,7 @@ export function BottomNav({
       className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[560px] lg:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <div className="mx-3 mb-3 flex items-center justify-around rounded-[24px] border border-[#0B1E24]/8 bg-white px-1.5 pb-2 pt-2 shadow-[0_12px_40px_-12px_rgba(11,30,36,0.22)] backdrop-blur-xl dark:border-white/10 dark:bg-[#0B1E24] dark:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.6)]">
+      <div className="mx-3 mb-3 flex items-center justify-around rounded-[24px] border border-black/5 bg-white px-1.5 pb-2 pt-2 shadow-[0_12px_40px_-12px_rgba(11,30,36,0.22)] backdrop-blur-xl dark:border-white/10 dark:bg-[var(--c-sidebar-bg)] dark:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.6)]">
         {items.map((item) => {
           const active = isActivePath(location.pathname, item.path)
           const Icon = item.icon
@@ -84,16 +84,16 @@ export function BottomNav({
               className={cn(
                 'relative flex flex-1 flex-col items-center justify-center gap-1.5 px-1 py-1.5 text-[10px] font-bold leading-none transition-all active:scale-95',
                 active
-                  ? 'text-[#0B1E24] dark:text-white'
-                  : 'text-[#8A9AA0] dark:text-white/50',
+                  ? 'text-primary-900 dark:text-white'
+                  : 'text-slate-400 dark:text-white/50',
               )}
             >
               <span className={cn(
                 'flex h-11 w-11 items-center justify-center rounded-[14px] transition-all',
                 active
-                  ? 'bg-[#0B1E24] text-white shadow-md dark:bg-white dark:text-[#0B1E24]'
-                  : 'bg-[#FDF9F3] text-[#8A9AA0] dark:bg-white/10 dark:text-white/60',
-              )}>
+                  ? 'text-white shadow-md dark:bg-white dark:text-primary-900'
+                  : 'bg-slate-100 text-slate-400 dark:bg-white/10 dark:text-white/60',
+              )} style={active ? { background: 'var(--app-gradient, rgb(var(--c-primary-600)))' } : undefined}>
                 <Icon className="h-[22px] w-[22px]" />
               </span>
               <span className="tracking-wide">{item.label}</span>

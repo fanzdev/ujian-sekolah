@@ -12,18 +12,19 @@ export function SplashScreen({ visible }: { visible: boolean }) {
     img.onerror = () => setLogoReady(true)
     img.src = fallbackLogo
   }, [fallbackLogo])
-  const [branding, setBranding] = useState<{ app_name: string; school_name: string; logo_url: string | null; primary_color: string; secondary_color: string } | null>(() => {
+  const [branding, setBranding] = useState<{ app_name: string; school_name: string; logo_url: string | null; primary_color: string; secondary_color: string; splash_bg_color?: string } | null>(() => {
     try {
       if (typeof window === 'undefined') return null
       const raw = localStorage.getItem('cbt-branding')
-      const c = raw ? (JSON.parse(raw) as { app_name?: string; school_name?: string; logo_url?: string; primary_color?: string; secondary_color?: string }) : null
+      const c = raw ? (JSON.parse(raw) as { app_name?: string; school_name?: string; logo_url?: string; primary_color?: string; secondary_color?: string; splash_bg_color?: string }) : null
       if (!c?.app_name) return null
       const sanitized = sanitizeLogoUrl(c.logo_url)
+      const splash = c.splash_bg_color && /^#[0-9a-fA-F]{6}$/.test(c.splash_bg_color) ? c.splash_bg_color : '#0B1E24'
       if (!sanitized && c.logo_url) {
         try { const copy = { ...c, logo_url: undefined }; localStorage.setItem('cbt-branding', JSON.stringify(copy)) } catch { void 0 }
-        return { app_name: c.app_name, school_name: c.school_name ?? 'SMK AL-FATA', logo_url: null, primary_color: c.primary_color || '#0D868F', secondary_color: c.secondary_color || '#0CBCC9' }
+        return { app_name: c.app_name, school_name: c.school_name ?? 'SMK AL-FATA', logo_url: null, primary_color: c.primary_color || '#0D868F', secondary_color: c.secondary_color || '#0CBCC9', splash_bg_color: splash }
       }
-      return { app_name: c.app_name, school_name: c.school_name ?? 'SMK AL-FATA', logo_url: c.logo_url ? resolveLogoUrl(c.logo_url) : null, primary_color: c.primary_color || '#0D868F', secondary_color: c.secondary_color || '#0CBCC9' }
+      return { app_name: c.app_name, school_name: c.school_name ?? 'SMK AL-FATA', logo_url: c.logo_url ? resolveLogoUrl(c.logo_url) : null, primary_color: c.primary_color || '#0D868F', secondary_color: c.secondary_color || '#0CBCC9', splash_bg_color: splash }
     } catch { return null }
   })
 
@@ -32,7 +33,7 @@ export function SplashScreen({ visible }: { visible: boolean }) {
     const cached = (() => {
       try {
         const raw = localStorage.getItem('cbt-branding')
-        const c = raw ? (JSON.parse(raw) as { app_name?: string; school_name?: string; logo_url?: string; primary_color?: string; secondary_color?: string }) : null
+        const c = raw ? (JSON.parse(raw) as { app_name?: string; school_name?: string; logo_url?: string; primary_color?: string; secondary_color?: string; splash_bg_color?: string }) : null
         const sanitized = sanitizeLogoUrl(c?.logo_url)
         if (c && !sanitized) {
           c.logo_url = undefined
@@ -43,14 +44,15 @@ export function SplashScreen({ visible }: { visible: boolean }) {
         return c
       } catch (e: unknown) { void e; return null }
     })()
-    if (cached?.app_name) setBranding({ app_name: cached.app_name, school_name: cached.school_name ?? 'SMK AL-FATA', logo_url: cached.logo_url ? resolveLogoUrl(cached.logo_url) : null, primary_color: cached.primary_color || '#0D868F', secondary_color: cached.secondary_color || '#0CBCC9' })
+    if (cached?.app_name) setBranding({ app_name: cached.app_name, school_name: cached.school_name ?? 'SMK AL-FATA', logo_url: cached.logo_url ? resolveLogoUrl(cached.logo_url) : null, primary_color: cached.primary_color || '#0D868F', secondary_color: cached.secondary_color || '#0CBCC9', splash_bg_color: cached.splash_bg_color && /^#[0-9a-fA-F]{6}$/.test(cached.splash_bg_color) ? cached.splash_bg_color : '#0B1E24' })
     import('@/services/settings.service').then(({ fetchSchoolSettings }) =>
       fetchSchoolSettings()
         .then((s) => {
           if (cancelled) return
           const cleanLogo = sanitizeLogoUrl(s.logo_url) ? resolveLogoUrl(s.logo_url) : null
-          setBranding({ app_name: s.app_name, school_name: s.school_name, logo_url: cleanLogo, primary_color: s.primary_color || '#0D868F', secondary_color: s.secondary_color || '#0CBCC9' })
-          try { localStorage.setItem('cbt-branding', JSON.stringify({ app_name: s.app_name, school_name: s.school_name, logo_url: cleanLogo ?? fallbackLogo, primary_color: s.primary_color, secondary_color: s.secondary_color })) } catch (e: unknown) { void e }
+          const splash = (s as unknown as { splash_bg_color?: string }).splash_bg_color && /^#[0-9a-fA-F]{6}$/.test((s as unknown as { splash_bg_color: string }).splash_bg_color) ? (s as unknown as { splash_bg_color: string }).splash_bg_color : '#0B1E24'
+          setBranding({ app_name: s.app_name, school_name: s.school_name, logo_url: cleanLogo, primary_color: s.primary_color || '#0D868F', secondary_color: s.secondary_color || '#0CBCC9', splash_bg_color: splash })
+          try { localStorage.setItem('cbt-branding', JSON.stringify({ app_name: s.app_name, school_name: s.school_name, logo_url: cleanLogo ?? fallbackLogo, primary_color: s.primary_color, secondary_color: s.secondary_color, splash_bg_color: splash })) } catch (e: unknown) { void e }
         })
         .catch(() => undefined),
     )
@@ -82,18 +84,19 @@ export function SplashScreen({ visible }: { visible: boolean }) {
 
   const pc = branding?.primary_color || '#0D868F'
   const sc = branding?.secondary_color || '#0CBCC9'
+  const splashBg = (branding as unknown as { splash_bg_color?: string } | null)?.splash_bg_color && /^#[0-9a-fA-F]{6}$/.test((branding as unknown as { splash_bg_color: string }).splash_bg_color) ? (branding as unknown as { splash_bg_color: string }).splash_bg_color : 'var(--c-splash-bg, #0B1E24)'
 
   return (
     <div
       aria-hidden={!visible}
       className={cn(
-        'fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden bg-[#0B1E24] font-sans',
+        'fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden font-sans splash-panel',
         'will-change-[opacity] [transform:translateZ(0)]',
         visible ? 'opacity-100' : 'pointer-events-none opacity-0',
       )}
-      style={{ transition: 'opacity 680ms cubic-bezier(0.22,1,0.36,1)', WebkitFontSmoothing: 'antialiased', overflow: 'hidden' }}
+      style={{ background: `var(--c-splash-gradient, ${splashBg})`, transition: 'opacity 680ms cubic-bezier(0.22,1,0.36,1)', WebkitFontSmoothing: 'antialiased', overflow: 'hidden' } as React.CSSProperties}
     >
-      <div className="absolute inset-0" style={{ background: `radial-gradient(900px 600px at 50% -10%, ${pc}2e, transparent 60%), linear-gradient(180deg, #0F2A2E 0%, #0B1E24 55%, #081419 100%)` }} />
+      <div className="absolute inset-0" style={{ background: `radial-gradient(900px 600px at 50% -10%, ${pc}2e, transparent 60%), linear-gradient(180deg, color-mix(in srgb, ${splashBg} 92%, white) 0%, ${splashBg} 55%, color-mix(in srgb, ${splashBg} 88%, black) 100%)` }} />
       <div className="pointer-events-none absolute inset-0 opacity-[0.06]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1.2px, transparent 0)', backgroundSize: '24px 24px' }} />
       <div aria-hidden className="pointer-events-none absolute left-1/2 top-[46%] -translate-x-1/2 -translate-y-1/2 select-none font-black tracking-[-0.06em] text-transparent" style={{ fontSize: 'clamp(110px, 26vw, 220px)', WebkitTextStroke: '1.2px rgba(255,255,255,0.07)' }}>VEYRA</div>
       <div className="pointer-events-none absolute -top-28 -right-28 h-[620px] w-[620px] rounded-full blur-[40px] will-change-transform" style={{ background: `${pc}24`, transform: 'translateZ(0)', animation: 'ssFloat 8s ease-in-out infinite' }} />

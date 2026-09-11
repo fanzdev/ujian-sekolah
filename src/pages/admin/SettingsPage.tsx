@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Settings, Palette, ShieldCheck, Save, Camera, Server, Trash2, AlertTriangle, Skull } from 'lucide-react'
+import { Settings, Palette, ShieldCheck, Save, Camera, Server, Trash2, AlertTriangle, Skull, Plus, X } from 'lucide-react'
 import { useConfirm } from '@/hooks/useConfirm'
 import { useAsync, useDocumentTitle } from '@/hooks/useAsync'
 import { useToast } from '@/hooks/useToast'
@@ -57,21 +57,64 @@ function BrandingPanel() {
   const [form, setForm] = useState<SchoolSettings | null>(null)
   const [saving, setSaving] = useState(false)
   const [logoUploading, setLogoUploading] = useState(false)
-  const [showCustom, setShowCustom] = useState(false)
+  const [showCustom, setShowCustom] = useState(true)
 
   useEffect(() => {
     if (query.data) {
+      const sanitizeGrad = (raw: unknown): Record<string, string[]> => {
+        if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+        const out: Record<string, string[]> = {}
+        for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+          if (Array.isArray(v)) out[k] = (v as unknown[]).filter((c): c is string => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c)).slice(0, 8)
+        }
+        return out
+      }
       const normalized = {
         ...query.data,
-        extra_colors: Array.isArray(query.data.extra_colors) ? query.data.extra_colors : [],
+        extra_colors: Array.isArray(query.data.extra_colors) ? (query.data.extra_colors as string[]).filter((c) => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c)).slice(0, 12) : [],
         primary_color: query.data.primary_color || '#0D868F',
+        secondary_color: query.data.secondary_color || '#0CBCC9',
         theme_preset: (query.data as unknown as { theme_preset?: string | null }).theme_preset ?? 'bengkel-presisi',
-      } as SchoolSettings
+        login_color: (query.data as unknown as { login_color?: string | null }).login_color || '#0B1E24',
+        sidebar_color: (query.data as unknown as { sidebar_color?: string | null }).sidebar_color || '#0B1E24',
+        app_bg_color: (query.data as unknown as { app_bg_color?: string | null }).app_bg_color || '#FDF9F3',
+        splash_bg_color: (query.data as unknown as { splash_bg_color?: string | null }).splash_bg_color || '#0B1E24',
+        card_gradients: sanitizeGrad((query.data as unknown as { card_gradients?: unknown }).card_gradients),
+      } as unknown as SchoolSettings
       setForm(normalized)
-      const preset = THEME_PRESETS.find((p) => p.id === normalized.theme_preset)
-      setShowCustom(!preset || normalized.theme_preset === 'custom')
+      setShowCustom(true)
     }
   }, [query.data])
+
+  useEffect(() => {
+    if (!form) return
+    const curPreset = THEME_PRESETS.find((p) => p.id === (form as unknown as { theme_preset?: string | null }).theme_preset) ?? null
+    const effPrimary = curPreset ? curPreset.primary : form.primary_color || '#0D868F'
+    const effSecondary = curPreset ? curPreset.secondary : form.secondary_color || '#0CBCC9'
+    const effLogin = /^#[0-9a-fA-F]{6}$/.test((form as unknown as { login_color?: string }).login_color ?? '') ? (form as unknown as { login_color: string }).login_color : '#0B1E24'
+    const effSidebar = /^#[0-9a-fA-F]{6}$/.test((form as unknown as { sidebar_color?: string }).sidebar_color ?? '') ? (form as unknown as { sidebar_color: string }).sidebar_color : '#0B1E24'
+    const effAppBg = /^#[0-9a-fA-F]{6}$/.test((form as unknown as { app_bg_color?: string }).app_bg_color ?? '') ? (form as unknown as { app_bg_color: string }).app_bg_color : '#FDF9F3'
+    const effSplash = /^#[0-9a-fA-F]{6}$/.test((form as unknown as { splash_bg_color?: string }).splash_bg_color ?? '') ? (form as unknown as { splash_bg_color: string }).splash_bg_color : '#0B1E24'
+    const effExtras = Array.isArray(form.extra_colors) ? (form.extra_colors as string[]).filter((c) => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c)).slice(0, 12) : []
+    const effGrads = ((form as unknown as { card_gradients?: Record<string, string[]> }).card_gradients ?? {}) as Record<string, string[]>
+    const id = window.setTimeout(() => {
+      try {
+        applyBranding({
+          ...form,
+          primary_color: effPrimary,
+          secondary_color: effSecondary,
+          login_color: effLogin,
+          sidebar_color: effSidebar,
+          app_bg_color: effAppBg,
+          splash_bg_color: effSplash,
+          extra_colors: effExtras,
+          card_gradients: effGrads,
+          theme_preset: (form as unknown as { theme_preset?: string | null }).theme_preset ?? 'bengkel-presisi',
+        } as unknown as SchoolSettings)
+      } catch { void 0 }
+    }, 70)
+    return () => window.clearTimeout(id)
+  }, [form])
 
   if (query.error) return <ErrorState message={query.error} onRetry={query.reload} />
   if (!form) return <div className="flex justify-center py-14"><Spinner /></div>
@@ -79,11 +122,44 @@ function BrandingPanel() {
   const currentPreset = THEME_PRESETS.find((p) => p.id === (form as unknown as { theme_preset?: string | null }).theme_preset) ?? null
   const effectivePrimary = currentPreset ? currentPreset.primary : form.primary_color || '#0D868F'
   const effectiveSecondary = currentPreset ? currentPreset.secondary : form.secondary_color || '#0CBCC9'
+  const effectiveLogin = /^#[0-9a-fA-F]{6}$/.test((form as unknown as { login_color?: string }).login_color ?? '') ? (form as unknown as { login_color: string }).login_color : '#0B1E24'
+  const effectiveSidebar = /^#[0-9a-fA-F]{6}$/.test((form as unknown as { sidebar_color?: string }).sidebar_color ?? '') ? (form as unknown as { sidebar_color: string }).sidebar_color : '#0B1E24'
+  const effectiveAppBg = /^#[0-9a-fA-F]{6}$/.test((form as unknown as { app_bg_color?: string }).app_bg_color ?? '') ? (form as unknown as { app_bg_color: string }).app_bg_color : '#FDF9F3'
+  const effectiveSplash = /^#[0-9a-fA-F]{6}$/.test((form as unknown as { splash_bg_color?: string }).splash_bg_color ?? '') ? (form as unknown as { splash_bg_color: string }).splash_bg_color : '#0B1E24'
+  const effectiveExtras = Array.isArray(form.extra_colors) ? (form.extra_colors as string[]).filter((c) => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c)).slice(0, 12) : []
+  const effectivePalette = [effectivePrimary, effectiveSecondary, ...effectiveExtras].filter((c): c is string => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c))
+  const cardGrads = ((form as unknown as { card_gradients?: Record<string, string[]> }).card_gradients ?? {}) as Record<string, string[]>
+  const getGrad = (key: string): string[] => Array.isArray(cardGrads[key]) ? cardGrads[key].filter((c) => /^#[0-9a-fA-F]{6}$/.test(c)).slice(0, 8) : []
+  const buildPreview = (base: string, key: string): string => {
+    const arr = getGrad(key)
+    const stops = [base, ...arr].filter((c) => /^#[0-9a-fA-F]{6}$/.test(c))
+    return stops.length > 1 ? `linear-gradient(135deg, ${stops.join(', ')})` : base
+  }
+  const addGrad = (key: string, color = '#0D868F') => {
+    const cur = getGrad(key)
+    if (cur.length >= 8) return
+    const next = { ...cardGrads, [key]: [...cur, color] }
+    setForm({ ...form, card_gradients: next } as unknown as SchoolSettings)
+  }
+  const updateGrad = (key: string, idx: number, color: string) => {
+    const cur = getGrad(key)
+    const nextArr = [...cur]
+    nextArr[idx] = color
+    const next = { ...cardGrads, [key]: nextArr }
+    setForm({ ...form, card_gradients: next } as unknown as SchoolSettings)
+  }
+  const removeGrad = (key: string, idx: number) => {
+    const cur = getGrad(key)
+    const nextArr = cur.filter((_, i) => i !== idx)
+    const next = { ...cardGrads, [key]: nextArr }
+    if (nextArr.length === 0) delete (next as Record<string, string[]>)[key]
+    setForm({ ...form, card_gradients: next } as unknown as SchoolSettings)
+  }
   const contrastOk = isContrastOk('#ffffff', effectivePrimary, 4.5)
 
   const selectPreset = (preset: ThemePreset) => {
     setForm((f) => ({ ...f!, primary_color: preset.primary, secondary_color: preset.secondary, theme_preset: preset.id } as SchoolSettings))
-    setShowCustom(false)
+    setShowCustom(true)
   }
 
   const selectCustom = () => {
@@ -96,6 +172,12 @@ function BrandingPanel() {
       toast.error('Nama Aplikasi dan Nama Sekolah wajib diisi.')
       return
     }
+    const gradVals = Object.values(cardGrads).flat()
+    const allHex = [effectivePrimary, effectiveSecondary, effectiveLogin, effectiveSidebar, effectiveAppBg, effectiveSplash, ...effectiveExtras, ...gradVals]
+    if (allHex.some((c) => !/^#[0-9a-fA-F]{6}$/.test(c))) {
+      toast.error('Format warna tidak valid. Gunakan hex 6 digit, contoh #0D868F.')
+      return
+    }
     setSaving(true)
     try {
       const payload: Record<string, unknown> = {
@@ -103,8 +185,13 @@ function BrandingPanel() {
         school_name: form.school_name.trim(),
         primary_color: effectivePrimary,
         secondary_color: effectiveSecondary,
-        extra_colors: form.extra_colors ?? [],
+        extra_colors: effectiveExtras,
         theme_preset: (form as unknown as { theme_preset?: string | null }).theme_preset ?? 'bengkel-presisi',
+        login_color: effectiveLogin,
+        sidebar_color: effectiveSidebar,
+        app_bg_color: effectiveAppBg,
+        splash_bg_color: effectiveSplash,
+        card_gradients: cardGrads,
         logo_url: form.logo_url,
         favicon_url: form.favicon_url,
         address: form.address,
@@ -114,8 +201,8 @@ function BrandingPanel() {
         semester: form.semester,
       }
       await updateSchoolSettings(payload as Partial<SchoolSettings>)
-      applyBranding({ ...form, primary_color: effectivePrimary, secondary_color: effectiveSecondary, theme_preset: payload.theme_preset as string } as SchoolSettings)
-      toast.success('Branding tersimpan & diterapkan.')
+      applyBranding({ ...form, primary_color: effectivePrimary, secondary_color: effectiveSecondary, login_color: effectiveLogin, sidebar_color: effectiveSidebar, app_bg_color: effectiveAppBg, splash_bg_color: effectiveSplash, extra_colors: effectiveExtras, card_gradients: cardGrads, theme_preset: payload.theme_preset as string } as unknown as SchoolSettings)
+      toast.success('Branding tersimpan & diterapkan ke semua permukaan.')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Gagal menyimpan.')
     } finally {
@@ -158,14 +245,14 @@ function BrandingPanel() {
           </div>
           <Input label="Alamat" value={form.address ?? ''} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Alamat lengkap sekolah" />
 
-          <div className="rounded-[20px] border border-[#0B1E24]/8 bg-[#FDF9F3]/60 p-5 dark:border-white/10 dark:bg-white/[0.03]">
+          <div className="rounded-[20px] border border-black/5 p-5 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.03]" style={{ backgroundColor: 'color-mix(in srgb, var(--c-app-bg, #FFFFFF) 42%, white)' }}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-mono text-[10px] tracking-[0.16em] text-[#C67C3B]">TEMA — PRESET TERKURASI</p>
-                <p className="mt-1 text-sm font-bold tracking-tight text-[#0B1E24] dark:text-white">Pilih nuansa yang paling Veyra</p>
+                <p className="font-mono text-[10px] tracking-[0.16em] text-accent">TEMA — PRESET TERKURASI</p>
+                <p className="mt-1 text-sm font-bold tracking-tight text-primary-900 dark:text-white">Pilih nuansa yang paling Veyra</p>
                 <p className="text-xs text-[#6B7A7F] dark:text-white/60">Preset sudah diuji kontras & harmoni — aman untuk elegansi.</p>
               </div>
-              <span className="hidden rounded-full bg-[#0B1E24] px-2.5 py-1 font-mono text-[10px] font-bold tracking-wide text-white dark:bg-white dark:text-[#0B1E24] sm:inline">4 PRESET</span>
+              <span className="hidden rounded-full bg-primary-900 px-2.5 py-1 font-mono text-[10px] font-bold tracking-wide text-white dark:bg-white dark:text-primary-900 sm:inline">4 PRESET</span>
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {THEME_PRESETS.map((preset) => {
@@ -175,62 +262,337 @@ function BrandingPanel() {
                     key={preset.id}
                     type="button"
                     onClick={() => selectPreset(preset)}
-                    className={`group relative overflow-hidden rounded-2xl border-2 p-3 text-left transition-all ${active ? 'border-[#0B1E24] bg-white shadow-md dark:border-white dark:bg-white/[0.08]' : 'border-[#0B1E24]/8 bg-white hover:border-[#0B1E24]/15 hover:shadow-sm dark:border-white/10 dark:bg-white/[0.04]'}`}
+                    className={`group relative overflow-hidden rounded-2xl border-2 p-3 text-left transition-all ${active ? 'border-primary-900 bg-white shadow-md dark:border-white dark:bg-white/[0.08]' : 'border-primary-900/8 bg-white hover:border-primary-900/15 hover:shadow-sm dark:border-white/10 dark:bg-white/[0.04]'}`}
                   >
                     <div className="h-14 w-full rounded-xl border border-black/5" style={{ background: `linear-gradient(135deg, ${preset.primary}, ${preset.secondary})` }} aria-hidden />
-                    <p className="mt-2.5 text-sm font-bold tracking-tight text-[#0B1E24] dark:text-white">{preset.label}</p>
+                    <p className="mt-2.5 text-sm font-bold tracking-tight text-primary-900 dark:text-white">{preset.label}</p>
                     <p className="text-[11px] leading-snug text-[#6B7A7F] dark:text-white/60">{preset.description}</p>
                     <div className="mt-2 flex items-center gap-1.5">
                       <span className="h-3 w-3 rounded-full border border-black/10" style={{ background: preset.primary }} />
                       <span className="h-3 w-3 rounded-full border border-black/10" style={{ background: preset.secondary }} />
                       <span className="ml-auto font-mono text-[10px] text-[#8A9AA0]">{preset.primary} • {preset.secondary}</span>
                     </div>
-                    {active && <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[#0B1E24] text-white dark:bg-white dark:text-[#0B1E24]">✓</span>}
+                    {active && <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-primary-900 text-white dark:bg-white dark:text-primary-900">✓</span>}
                   </button>
                 )
               })}
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-2">
-              <button type="button" onClick={selectCustom} className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition ${showCustom ? 'bg-[#0B1E24] text-white dark:bg-white dark:text-[#0B1E24]' : 'border border-[#0B1E24]/10 bg-white text-[#0B1E24] hover:bg-[#FDF9F3] dark:border-white/10 dark:bg-white/10 dark:text-white'}`}>Kustom</button>
-              <span className="font-mono text-[11px] text-[#8A9AA0]">Atur manual 2 warna — untuk advance</span>
+              <button type="button" onClick={selectCustom} className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition ${showCustom ? 'bg-primary-900 text-white dark:bg-white dark:text-primary-900' : 'border border-black/5 bg-white text-primary-900 hover:bg-slate-50 dark:border-white/10 dark:bg-white/10 dark:text-white'}`}>Kustom</button>
+              <span className="font-mono text-[11px] text-[#8A9AA0]">Bebas — 6 warna + palet gradasi tak terbatas</span>
               {!contrastOk && <span className="rounded-full bg-rose-50 px-2.5 py-1 font-mono text-[11px] font-bold text-rose-600 dark:bg-rose-500/15 dark:text-rose-300">Kontras rendah</span>}
             </div>
             {showCustom && (
-              <div className="mt-4 grid gap-3 rounded-2xl border border-[#0B1E24]/8 bg-white p-4 dark:border-white/10 dark:bg-[#0B1E24]/20 sm:grid-cols-2">
-                <div className="flex items-center gap-2 rounded-xl border border-[#0B1E24]/10 bg-[#FDF9F3] px-3 py-2.5 dark:border-white/10 dark:bg-white/5">
-                  <input type="color" aria-label="Warna Utama" value={/^#[0-9a-fA-F]{6}$/.test(form.primary_color || '') ? form.primary_color! : '#0D868F'} onChange={(e) => setForm({ ...form, primary_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="h-8 w-10 cursor-pointer rounded-md border-0 bg-transparent p-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-mono text-[10px] tracking-wide text-[#8A9AA0]">Warna Utama</p>
-                    <input type="text" value={form.primary_color || '#0D868F'} onChange={(e) => setForm({ ...form, primary_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="w-full bg-transparent font-mono text-xs font-bold text-[#0B1E24] outline-none dark:text-white" maxLength={7} placeholder="#0D868F" />
+              <div className="mt-4 space-y-4 rounded-2xl border border-primary-900/8 bg-white p-4 dark:border-white/10 dark:bg-primary-900/20">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-mono text-[10px] tracking-[0.12em] text-[#8A9AA0]">KUSTOM — 6 WARNA SEMANTIK</p>
+                    <p className="mt-1 text-[11px] leading-snug text-[#6B7A7F] dark:text-white/60">Setiap warna mengendalikan satu permukaan. Semua bagian aplikasi mengikuti pengaturan ini secara langsung — tidak ada warna hardcoded.</p>
+                  </div>
+                  <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" /> Realtime</span>
+                </div>
+                <p className="rounded-lg bg-primary-50 px-3 py-2 text-[11px] leading-relaxed text-primary-700 dark:bg-primary-500/10 dark:text-primary-300">Warna berubah <strong>realtime</strong> di seluruh aplikasi (sidebar, login, splash, background, header, tombol) saat Anda menggeser picker. Klik <strong>Simpan Branding</strong> untuk menyimpan permanen ke database — jika tidak disimpan, refresh akan kembali ke warna tersimpan.</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl border border-primary-900/10 bg-white p-3 dark:border-white/10 dark:bg-white/5">
+                    <div className="flex items-center gap-2">
+                      <input type="color" aria-label="Warna Utama" value={/^#[0-9a-fA-F]{6}$/.test(form.primary_color || '') ? form.primary_color! : '#0D868F'} onChange={(e) => setForm({ ...form, primary_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="h-8 w-10 cursor-pointer rounded-md border-0 bg-transparent p-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-mono text-[10px] tracking-wide text-[#8A9AA0]">Warna Utama</p>
+                        <input type="text" value={form.primary_color || '#0D868F'} onChange={(e) => setForm({ ...form, primary_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="w-full bg-transparent font-mono text-xs font-bold text-primary-900 outline-none dark:text-white" maxLength={7} placeholder="#0D868F" />
+                      </div>
+                    </div>
+                    <p className="mt-2 text-[11px] leading-snug text-[#6B7A7F] dark:text-white/65">Tombol utama, link, progress, `primary-50…900`, awal gradasi. Wajib kontras ≥4.5:1.</p>
+                    <div className="mt-2 rounded-lg border border-dashed border-primary-900/10 bg-white/60 p-2 dark:border-white/10 dark:bg-white/[0.03]">
+                      <div className="flex items-center justify-between">
+                        <p className="font-mono text-[10px] tracking-wide text-[#8A9AA0]">Gradasi Utama — {getGrad('primary').length} tambahan</p>
+                        <button type="button" onClick={() => addGrad('primary', suggestSecondary(effectivePrimary))} disabled={getGrad('primary').length >= 8} className="inline-flex items-center gap-1 rounded-full bg-primary-900 px-2 py-1 text-[10px] font-bold text-white disabled:opacity-40 dark:bg-white dark:text-primary-900"><Plus className="h-3 w-3" /> Tambah</button>
+                      </div>
+                      {getGrad('primary').length > 0 && (
+                        <div className="mt-2 space-y-1.5">
+                          {getGrad('primary').map((c, i) => (
+                            <div key={`p-${i}`} className="flex items-center gap-1.5 rounded-lg border border-black/5 bg-white px-2 py-1 dark:border-white/10 dark:bg-primary-900">
+                              <input type="color" value={c} onChange={(e) => updateGrad('primary', i, e.target.value)} className="h-6 w-7 cursor-pointer rounded border-0 bg-transparent p-0" />
+                              <input type="text" value={c} onChange={(e) => updateGrad('primary', i, e.target.value)} className="min-w-0 flex-1 bg-transparent font-mono text-[11px] font-bold text-primary-900 outline-none dark:text-white" maxLength={7} />
+                              <button type="button" onClick={() => removeGrad('primary', i)} className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-600 dark:bg-white/10"><X className="h-3 w-3" /></button>
+                            </div>
+                          ))}
+                          <div className="h-6 w-full rounded-full border border-black/5" style={{ background: buildPreview(effectivePrimary, 'primary') }} />
+                        </div>
+                      )}
+                      {getGrad('primary').length === 0 && <p className="mt-1.5 font-mono text-[10px] text-[#8A9AA0]">Kosong = solid. Tambah warna untuk gradient `primary → ...`</p>}
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-primary-900/10 bg-white p-3 dark:border-white/10 dark:bg-white/5">
+                    <div className="flex items-center gap-2">
+                      <input type="color" aria-label="Warna Sekunder" value={/^#[0-9a-fA-F]{6}$/.test(form.secondary_color || '') ? form.secondary_color! : '#C67C3B'} onChange={(e) => setForm({ ...form, secondary_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="h-8 w-10 cursor-pointer rounded-md border-0 bg-transparent p-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-mono text-[10px] tracking-wide text-[#8A9AA0]">Warna Sekunder</p>
+                        <input type="text" value={form.secondary_color || '#C67C3B'} onChange={(e) => setForm({ ...form, secondary_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="w-full bg-transparent font-mono text-xs font-bold text-primary-900 outline-none dark:text-white" maxLength={7} placeholder="#C67C3B" />
+                      </div>
+                    </div>
+                    <p className="mt-2 text-[11px] leading-snug text-[#6B7A7F] dark:text-white/65">Aksen gradasi, badge. Bersama utama → `--app-gradient` header &amp; tombol.</p>
+                    <div className="mt-2 rounded-lg border border-dashed border-primary-900/10 bg-white/60 p-2 dark:border-white/10 dark:bg-white/[0.03]">
+                      <div className="flex items-center justify-between">
+                        <p className="font-mono text-[10px] tracking-wide text-[#8A9AA0]">Gradasi Sekunder — {getGrad('secondary').length} tambahan</p>
+                        <button type="button" onClick={() => addGrad('secondary')} disabled={getGrad('secondary').length >= 8} className="inline-flex items-center gap-1 rounded-full bg-primary-900 px-2 py-1 text-[10px] font-bold text-white disabled:opacity-40 dark:bg-white dark:text-primary-900"><Plus className="h-3 w-3" /> Tambah</button>
+                      </div>
+                      {getGrad('secondary').length > 0 && (
+                        <div className="mt-2 space-y-1.5">
+                          {getGrad('secondary').map((c, i) => (
+                            <div key={`s-${i}`} className="flex items-center gap-1.5 rounded-lg border border-black/5 bg-white px-2 py-1 dark:border-white/10 dark:bg-primary-900">
+                              <input type="color" value={c} onChange={(e) => updateGrad('secondary', i, e.target.value)} className="h-6 w-7 cursor-pointer rounded border-0 bg-transparent p-0" />
+                              <input type="text" value={c} onChange={(e) => updateGrad('secondary', i, e.target.value)} className="min-w-0 flex-1 bg-transparent font-mono text-[11px] font-bold text-primary-900 outline-none dark:text-white" maxLength={7} />
+                              <button type="button" onClick={() => removeGrad('secondary', i)} className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-600 dark:bg-white/10"><X className="h-3 w-3" /></button>
+                            </div>
+                          ))}
+                          <div className="h-6 w-full rounded-full border border-black/5" style={{ background: buildPreview(effectiveSecondary, 'secondary') }} />
+                        </div>
+                      )}
+                      {getGrad('secondary').length === 0 && <p className="mt-1.5 font-mono text-[10px] text-[#8A9AA0]">Kosong = solid.</p>}
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-primary-900/10 bg-white p-3 dark:border-white/10 dark:bg-white/5">
+                    <div className="flex items-center gap-2">
+                      <input type="color" aria-label="Warna Login" value={/^#[0-9a-fA-F]{6}$/.test((form as unknown as { login_color?: string }).login_color ?? '') ? (form as unknown as { login_color: string }).login_color : '#0B1E24'} onChange={(e) => setForm({ ...form, login_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="h-8 w-10 cursor-pointer rounded-md border-0 bg-transparent p-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-mono text-[10px] tracking-wide text-[#8A9AA0]">Warna Login — Panel Kiri</p>
+                        <input type="text" value={(form as unknown as { login_color?: string }).login_color || '#0B1E24'} onChange={(e) => setForm({ ...form, login_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="w-full bg-transparent font-mono text-xs font-bold text-primary-900 outline-none dark:text-white" maxLength={7} placeholder="#0B1E24" />
+                      </div>
+                    </div>
+                    <p className="mt-2 text-[11px] leading-snug text-[#6B7A7F] dark:text-white/65">Latar panel kiri login &amp; header mobile. `--c-login-bg`.</p>
+                    <div className="mt-2 rounded-lg border border-dashed border-primary-900/10 bg-white/60 p-2 dark:border-white/10 dark:bg-white/[0.03]">
+                      <div className="flex items-center justify-between">
+                        <p className="font-mono text-[10px] tracking-wide text-[#8A9AA0]">Gradasi Login — {getGrad('login').length} tambahan</p>
+                        <button type="button" onClick={() => addGrad('login')} disabled={getGrad('login').length >= 8} className="inline-flex items-center gap-1 rounded-full bg-primary-900 px-2 py-1 text-[10px] font-bold text-white disabled:opacity-40 dark:bg-white dark:text-primary-900"><Plus className="h-3 w-3" /> Tambah</button>
+                      </div>
+                      {getGrad('login').length > 0 && (
+                        <div className="mt-2 space-y-1.5">
+                          {getGrad('login').map((c, i) => (
+                            <div key={`l-${i}`} className="flex items-center gap-1.5 rounded-lg border border-black/5 bg-white px-2 py-1 dark:border-white/10 dark:bg-primary-900">
+                              <input type="color" value={c} onChange={(e) => updateGrad('login', i, e.target.value)} className="h-6 w-7 cursor-pointer rounded border-0 bg-transparent p-0" />
+                              <input type="text" value={c} onChange={(e) => updateGrad('login', i, e.target.value)} className="min-w-0 flex-1 bg-transparent font-mono text-[11px] font-bold text-primary-900 outline-none dark:text-white" maxLength={7} />
+                              <button type="button" onClick={() => removeGrad('login', i)} className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-600 dark:bg-white/10"><X className="h-3 w-3" /></button>
+                            </div>
+                          ))}
+                          <div className="h-6 w-full rounded-full border border-black/5" style={{ background: buildPreview(effectiveLogin, 'login') }} />
+                        </div>
+                      )}
+                      {getGrad('login').length === 0 && <p className="mt-1.5 font-mono text-[10px] text-[#8A9AA0]">Tambah warna untuk gradient login.</p>}
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-primary-900/10 bg-white p-3 dark:border-white/10 dark:bg-white/5">
+                    <div className="flex items-center gap-2">
+                      <input type="color" aria-label="Warna Sidebar" value={/^#[0-9a-fA-F]{6}$/.test((form as unknown as { sidebar_color?: string }).sidebar_color ?? '') ? (form as unknown as { sidebar_color: string }).sidebar_color : '#0B1E24'} onChange={(e) => setForm({ ...form, sidebar_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="h-8 w-10 cursor-pointer rounded-md border-0 bg-transparent p-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-mono text-[10px] tracking-wide text-[#8A9AA0]">Warna Sidebar</p>
+                        <input type="text" value={(form as unknown as { sidebar_color?: string }).sidebar_color || '#0B1E24'} onChange={(e) => setForm({ ...form, sidebar_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="w-full bg-transparent font-mono text-xs font-bold text-primary-900 outline-none dark:text-white" maxLength={7} placeholder="#0B1E24" />
+                      </div>
+                    </div>
+                    <p className="mt-2 text-[11px] leading-snug text-[#6B7A7F] dark:text-white/65">Sidebar `--c-sidebar-bg`. Teks putih di atasnya.</p>
+                    <div className="mt-2 rounded-lg border border-dashed border-primary-900/10 bg-white/60 p-2 dark:border-white/10 dark:bg-white/[0.03]">
+                      <div className="flex items-center justify-between">
+                        <p className="font-mono text-[10px] tracking-wide text-[#8A9AA0]">Gradasi Sidebar — {getGrad('sidebar').length} tambahan</p>
+                        <button type="button" onClick={() => addGrad('sidebar')} disabled={getGrad('sidebar').length >= 8} className="inline-flex items-center gap-1 rounded-full bg-primary-900 px-2 py-1 text-[10px] font-bold text-white disabled:opacity-40 dark:bg-white dark:text-primary-900"><Plus className="h-3 w-3" /> Tambah</button>
+                      </div>
+                      {getGrad('sidebar').length > 0 && (
+                        <div className="mt-2 space-y-1.5">
+                          {getGrad('sidebar').map((c, i) => (
+                            <div key={`sb-${i}`} className="flex items-center gap-1.5 rounded-lg border border-black/5 bg-white px-2 py-1 dark:border-white/10 dark:bg-primary-900">
+                              <input type="color" value={c} onChange={(e) => updateGrad('sidebar', i, e.target.value)} className="h-6 w-7 cursor-pointer rounded border-0 bg-transparent p-0" />
+                              <input type="text" value={c} onChange={(e) => updateGrad('sidebar', i, e.target.value)} className="min-w-0 flex-1 bg-transparent font-mono text-[11px] font-bold text-primary-900 outline-none dark:text-white" maxLength={7} />
+                              <button type="button" onClick={() => removeGrad('sidebar', i)} className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-600 dark:bg-white/10"><X className="h-3 w-3" /></button>
+                            </div>
+                          ))}
+                          <div className="h-6 w-full rounded-full border border-black/5" style={{ background: buildPreview(effectiveSidebar, 'sidebar') }} />
+                        </div>
+                      )}
+                      {getGrad('sidebar').length === 0 && <p className="mt-1.5 font-mono text-[10px] text-[#8A9AA0]">Tambah untuk gradient sidebar.</p>}
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-primary-900/10 bg-white p-3 dark:border-white/10 dark:bg-white/5">
+                    <div className="flex items-center gap-2">
+                      <input type="color" aria-label="Warna Latar Aplikasi" value={/^#[0-9a-fA-F]{6}$/.test((form as unknown as { app_bg_color?: string }).app_bg_color ?? '') ? (form as unknown as { app_bg_color: string }).app_bg_color : '#FDF9F3'} onChange={(e) => setForm({ ...form, app_bg_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="h-8 w-10 cursor-pointer rounded-md border-0 bg-transparent p-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-mono text-[10px] tracking-wide text-[#8A9AA0]">Warna Latar Aplikasi</p>
+                        <input type="text" value={(form as unknown as { app_bg_color?: string }).app_bg_color || '#FDF9F3'} onChange={(e) => setForm({ ...form, app_bg_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="w-full bg-transparent font-mono text-xs font-bold text-primary-900 outline-none dark:text-white" maxLength={7} placeholder="#FDF9F3" />
+                      </div>
+                    </div>
+                    <p className="mt-2 text-[11px] leading-snug text-[#6B7A7F] dark:text-white/65">Body &amp; dashboard `--c-app-bg`.</p>
+                    <div className="mt-2 rounded-lg border border-dashed border-primary-900/10 bg-white/60 p-2 dark:border-white/10 dark:bg-white/[0.03]">
+                      <div className="flex items-center justify-between">
+                        <p className="font-mono text-[10px] tracking-wide text-[#8A9AA0]">Gradasi Latar — {getGrad('app_bg').length} tambahan</p>
+                        <button type="button" onClick={() => addGrad('app_bg')} disabled={getGrad('app_bg').length >= 8} className="inline-flex items-center gap-1 rounded-full bg-primary-900 px-2 py-1 text-[10px] font-bold text-white disabled:opacity-40 dark:bg-white dark:text-primary-900"><Plus className="h-3 w-3" /> Tambah</button>
+                      </div>
+                      {getGrad('app_bg').length > 0 && (
+                        <div className="mt-2 space-y-1.5">
+                          {getGrad('app_bg').map((c, i) => (
+                            <div key={`ab-${i}`} className="flex items-center gap-1.5 rounded-lg border border-black/5 bg-white px-2 py-1 dark:border-white/10 dark:bg-primary-900">
+                              <input type="color" value={c} onChange={(e) => updateGrad('app_bg', i, e.target.value)} className="h-6 w-7 cursor-pointer rounded border-0 bg-transparent p-0" />
+                              <input type="text" value={c} onChange={(e) => updateGrad('app_bg', i, e.target.value)} className="min-w-0 flex-1 bg-transparent font-mono text-[11px] font-bold text-primary-900 outline-none dark:text-white" maxLength={7} />
+                              <button type="button" onClick={() => removeGrad('app_bg', i)} className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-600 dark:bg-white/10"><X className="h-3 w-3" /></button>
+                            </div>
+                          ))}
+                          <div className="h-6 w-full rounded-full border border-black/5" style={{ background: buildPreview(effectiveAppBg, 'app_bg') }} />
+                        </div>
+                      )}
+                      {getGrad('app_bg').length === 0 && <p className="mt-1.5 font-mono text-[10px] text-[#8A9AA0]">Tambah untuk gradient latar.</p>}
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-primary-900/10 bg-white p-3 dark:border-white/10 dark:bg-white/5">
+                    <div className="flex items-center gap-2">
+                      <input type="color" aria-label="Warna Splash" value={/^#[0-9a-fA-F]{6}$/.test((form as unknown as { splash_bg_color?: string }).splash_bg_color ?? '') ? (form as unknown as { splash_bg_color: string }).splash_bg_color : '#0B1E24'} onChange={(e) => setForm({ ...form, splash_bg_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="h-8 w-10 cursor-pointer rounded-md border-0 bg-transparent p-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-mono text-[10px] tracking-wide text-[#8A9AA0]">Warna Splash Screen</p>
+                        <input type="text" value={(form as unknown as { splash_bg_color?: string }).splash_bg_color || '#0B1E24'} onChange={(e) => setForm({ ...form, splash_bg_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="w-full bg-transparent font-mono text-xs font-bold text-primary-900 outline-none dark:text-white" maxLength={7} placeholder="#0B1E24" />
+                      </div>
+                    </div>
+                    <p className="mt-2 text-[11px] leading-snug text-[#6B7A7F] dark:text-white/65">Splash `--c-splash-bg`.</p>
+                    <div className="mt-2 rounded-lg border border-dashed border-primary-900/10 bg-white/60 p-2 dark:border-white/10 dark:bg-white/[0.03]">
+                      <div className="flex items-center justify-between">
+                        <p className="font-mono text-[10px] tracking-wide text-[#8A9AA0]">Gradasi Splash — {getGrad('splash').length} tambahan</p>
+                        <button type="button" onClick={() => addGrad('splash')} disabled={getGrad('splash').length >= 8} className="inline-flex items-center gap-1 rounded-full bg-primary-900 px-2 py-1 text-[10px] font-bold text-white disabled:opacity-40 dark:bg-white dark:text-primary-900"><Plus className="h-3 w-3" /> Tambah</button>
+                      </div>
+                      {getGrad('splash').length > 0 && (
+                        <div className="mt-2 space-y-1.5">
+                          {getGrad('splash').map((c, i) => (
+                            <div key={`sp-${i}`} className="flex items-center gap-1.5 rounded-lg border border-black/5 bg-white px-2 py-1 dark:border-white/10 dark:bg-primary-900">
+                              <input type="color" value={c} onChange={(e) => updateGrad('splash', i, e.target.value)} className="h-6 w-7 cursor-pointer rounded border-0 bg-transparent p-0" />
+                              <input type="text" value={c} onChange={(e) => updateGrad('splash', i, e.target.value)} className="min-w-0 flex-1 bg-transparent font-mono text-[11px] font-bold text-primary-900 outline-none dark:text-white" maxLength={7} />
+                              <button type="button" onClick={() => removeGrad('splash', i)} className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-600 dark:bg-white/10"><X className="h-3 w-3" /></button>
+                            </div>
+                          ))}
+                          <div className="h-6 w-full rounded-full border border-black/5" style={{ background: buildPreview(effectiveSplash, 'splash') }} />
+                        </div>
+                      )}
+                      {getGrad('splash').length === 0 && <p className="mt-1.5 font-mono text-[10px] text-[#8A9AA0]">Tambah untuk gradient splash.</p>}
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 rounded-xl border border-[#0B1E24]/10 bg-[#FDF9F3] px-3 py-2.5 dark:border-white/10 dark:bg-white/5">
-                  <input type="color" aria-label="Warna Sekunder" value={/^#[0-9a-fA-F]{6}$/.test(form.secondary_color || '') ? form.secondary_color! : '#C67C3B'} onChange={(e) => setForm({ ...form, secondary_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="h-8 w-10 cursor-pointer rounded-md border-0 bg-transparent p-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-mono text-[10px] tracking-wide text-[#8A9AA0]">Warna Sekunder</p>
-                    <input type="text" value={form.secondary_color || '#C67C3B'} onChange={(e) => setForm({ ...form, secondary_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="w-full bg-transparent font-mono text-xs font-bold text-[#0B1E24] outline-none dark:text-white" maxLength={7} placeholder="#C67C3B" />
+                <p className="font-mono text-[10px] tracking-wide text-[#8A9AA0]">Saran harmoni: {suggestSecondary(effectivePrimary)} dengan {effectivePrimary}. Tiap card bisa ditambah warna gradasi — preview di bawah &amp; permukaan langsung berubah.</p>
+                <div className="rounded-xl border border-dashed border-black/10 bg-slate-50 p-3 dark:border-white/15 dark:bg-white/[0.02]">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="font-mono text-[10px] tracking-[0.12em] text-[#8A9AA0]">PALET GRADASI BEBAS — {effectiveExtras.length} WARNA TAMBAHAN</p>
+                      <p className="mt-1 text-[11px] leading-snug text-[#6B7A7F] dark:text-white/60">Tambahkan warna sebanyak-banyaknya. Semua warna di sini bergabung dengan Warna Utama &amp; Sekunder membentuk gradient tema (`--app-gradient`) yang dipakai di tombol &amp; header. Seret tidak perlu — urutan sesuai daftar.</p>
+                    </div>
+                    <button type="button" onClick={() => { if (effectiveExtras.length >= 12) return; const v = '#0D868F'; setForm({ ...form, extra_colors: [...effectiveExtras, v], theme_preset: 'custom' } as unknown as SchoolSettings) }} disabled={effectiveExtras.length >= 12} className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary-900 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-primary-900/90 disabled:opacity-40 dark:bg-white dark:text-primary-900"><Plus className="h-3.5 w-3.5" /> Tambah</button>
                   </div>
+                  {effectiveExtras.length === 0 ? (
+                    <p className="mt-3 rounded-lg bg-white px-3 py-2 font-mono text-[11px] text-[#8A9AA0] dark:bg-white/5">Belum ada warna tambahan — gradient hanya pakai Utama → Sekunder. Klik Tambah untuk memperkaya gradasi.</p>
+                  ) : (
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      {effectiveExtras.map((c, idx) => (
+                        <div key={`${c}-${idx}`} className="flex items-center gap-2 rounded-xl border border-primary-900/10 bg-white px-2.5 py-2 dark:border-white/10 dark:bg-primary-900">
+                          <input type="color" aria-label={`Warna gradasi ${idx + 1}`} value={/^#[0-9a-fA-F]{6}$/.test(c) ? c : '#0D868F'} onChange={(e) => { const next = [...effectiveExtras]; next[idx] = e.target.value; setForm({ ...form, extra_colors: next, theme_preset: 'custom' } as unknown as SchoolSettings) }} className="h-8 w-9 cursor-pointer rounded-md border-0 bg-transparent p-0" />
+                          <input type="text" value={c} onChange={(e) => { const next = [...effectiveExtras]; next[idx] = e.target.value; setForm({ ...form, extra_colors: next, theme_preset: 'custom' } as unknown as SchoolSettings) }} className="min-w-0 flex-1 bg-transparent font-mono text-xs font-bold text-primary-900 outline-none dark:text-white" maxLength={7} placeholder="#0D868F" />
+                          <button type="button" aria-label="Hapus warna" onClick={() => { const next = effectiveExtras.filter((_, i) => i !== idx); setForm({ ...form, extra_colors: next, theme_preset: 'custom' } as unknown as SchoolSettings) }} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-rose-50 hover:text-rose-600 dark:bg-white/10 dark:text-white/60"><X className="h-3.5 w-3.5" /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {effectivePalette.length > 2 && (
+                    <div className="mt-3">
+                      <p className="font-mono text-[10px] tracking-wide text-[#8A9AA0]">PRATINJAU GRADASI PALET ({effectivePalette.length} WARNA)</p>
+                      <div className="mt-1.5 h-8 w-full rounded-xl border border-black/5" style={{ background: `linear-gradient(90deg, ${effectivePalette.join(', ')})` }} />
+                      <p className="mt-1 font-mono text-[10px] text-[#8A9AA0]">{effectivePalette.join(' → ')}</p>
+                    </div>
+                  )}
                 </div>
-                <p className="sm:col-span-2 font-mono text-[10px] tracking-wide text-[#8A9AA0]">Saran: {suggestSecondary(effectivePrimary)} untuk harmoni. Gradasi dipakai di header & tombol.</p>
               </div>
             )}
-            <div className="mt-4 grid gap-3 lg:grid-cols-[1.1fr_0.9fr]">
-              <div className="rounded-xl border border-[#0B1E24]/8 bg-white p-3 dark:border-white/10 dark:bg-[#0B1E24]">
+            <div className="mt-4 grid gap-3 lg:grid-cols-2">
+              <div className="rounded-xl border border-primary-900/8 bg-white p-3 dark:border-white/10 dark:bg-primary-900">
                 <p className="font-mono text-[10px] tracking-[0.12em] text-[#8A9AA0]">PRATINJAU — HEADER & TOMBOL</p>
-                <div className="mt-2 flex items-center gap-2 rounded-xl px-3 py-2.5 text-white" style={{ background: `linear-gradient(135deg, ${effectivePrimary}, ${effectiveSecondary})` }}>
+                <div className="mt-2 flex items-center gap-2 rounded-xl px-3 py-2.5 text-white" style={{ background: effectivePalette.length > 1 ? `linear-gradient(135deg, ${effectivePalette.join(', ')})` : effectivePrimary }}>
                   <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/20 text-xs font-black">CBT</span>
                   <span className="text-sm font-bold">Veyra CBT</span>
                   <span className="ml-auto rounded-full bg-white px-2.5 py-1 text-xs font-bold" style={{ color: effectivePrimary }}>Masuk</span>
                 </div>
-                <div className="mt-2 h-2 w-full rounded-full bg-[#FDF9F3] dark:bg-white/10">
-                  <div className="h-2 rounded-full" style={{ width: '62%', background: `linear-gradient(90deg, ${effectivePrimary}, ${effectiveSecondary})` }} />
+                <div className="mt-2 h-2 w-full rounded-full" style={{ background: effectiveAppBg }}>
+                  <div className="h-2 rounded-full" style={{ width: '62%', background: `linear-gradient(90deg, ${effectivePalette.join(', ')})` }} />
                 </div>
                 <p className="mt-2 font-mono text-[10px] text-[#8A9AA0]">{contrastOk ? 'Kontras aman ✓' : 'Kontras rendah — teks putih sulit dibaca'}</p>
+                {effectivePalette.length > 2 && <p className="mt-1 font-mono text-[10px] text-[#8A9AA0]">Palet: {effectivePalette.join(' → ')}</p>}
               </div>
-              <div className="rounded-xl border border-[#0B1E24]/8 bg-white p-3 dark:border-white/10 dark:bg-[#0B1E24]">
-                <p className="font-mono text-[10px] tracking-[0.12em] text-[#8A9AA0]">GRADASI</p>
-                <div className="mt-2 h-10 w-full rounded-xl border border-black/5" style={{ background: `linear-gradient(135deg, ${effectivePrimary}, ${effectiveSecondary})` }} />
-                <p className="mt-2 font-mono text-[11px] text-[#6B7A7F] dark:text-white/60">{effectivePrimary} → {effectiveSecondary}</p>
+              <div className="rounded-xl border border-primary-900/8 bg-white p-3 dark:border-white/10 dark:bg-primary-900">
+                <p className="font-mono text-[10px] tracking-[0.12em] text-[#8A9AA0]">GRADASI PALET LENGKAP</p>
+                <div className="mt-2 h-10 w-full rounded-xl border border-black/5" style={{ background: effectivePalette.length > 1 ? `linear-gradient(135deg, ${effectivePalette.join(', ')})` : effectivePrimary }} />
+                <p className="mt-2 font-mono text-[11px] text-[#6B7A7F] dark:text-white/60">{effectivePalette.join(' → ')}</p>
+                <p className="mt-1 text-[11px] leading-snug text-[#6B7A7F] dark:text-white/50">Dipakai di tombol gradient, header halus, dan aksen. Tambah warna di palet bebas untuk memperkaya.</p>
+              </div>
+              <div className="rounded-xl border border-primary-900/8 bg-white p-3 dark:border-white/10 dark:bg-primary-900">
+                <p className="font-mono text-[10px] tracking-[0.12em] text-[#8A9AA0]">PRATINJAU — LATAR APLIKASI</p>
+                <div className="mt-2 overflow-hidden rounded-xl border border-black/5 p-3" style={{ background: buildPreview(effectiveAppBg, 'app_bg') }}>
+                  <div className="flex gap-2">
+                    <div className="h-12 w-12 rounded-lg border border-black/5 bg-white shadow-sm" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-2 w-3/4 rounded bg-slate-200" />
+                      <div className="h-2 w-full rounded bg-slate-100" />
+                      <div className="h-2 w-2/3 rounded bg-slate-100" />
+                    </div>
+                  </div>
+                  <div className="mt-2 flex gap-1.5">
+                    <span className="h-6 flex-1 rounded-full text-center font-mono text-[9px] leading-6 text-white" style={{ background: buildPreview(effectivePrimary, 'primary') }}>Primary</span>
+                    <span className="h-6 flex-1 rounded-full border border-black/10 bg-white text-center font-mono text-[9px] leading-6 text-slate-600">Card</span>
+                  </div>
+                </div>
+                <p className="mt-2 font-mono text-[11px] text-[#6B7A7F] dark:text-white/60">{buildPreview(effectiveAppBg, 'app_bg')}</p>
+                <p className="mt-1 text-[11px] leading-snug text-[#6B7A7F] dark:text-white/50">Body &amp; dashboard `--c-app-bg` / `--c-app-gradient`. Tambah gradasi di card Latar untuk gradient.</p>
+              </div>
+              <div className="rounded-xl border border-primary-900/8 bg-white p-3 dark:border-white/10 dark:bg-primary-900">
+                <p className="font-mono text-[10px] tracking-[0.12em] text-[#8A9AA0]">PRATINJAU — SPLASH SCREEN</p>
+                <div className="mt-2 overflow-hidden rounded-xl border border-white/10 p-3" style={{ background: buildPreview(effectiveSplash, 'splash') }}>
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full" style={{ background: effectivePrimary }} />
+                    <span className="h-2 w-2 rounded-full" style={{ background: effectiveSecondary }} />
+                    <span className="h-2 w-2 rounded-full" style={{ background: effectivePrimary }} />
+                  </div>
+                  <div className="mt-2 flex justify-center">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[10px] font-black" style={{ color: effectiveSplash }}>CBT</span>
+                  </div>
+                  <p className="mt-2 text-center text-xs font-bold text-white">Veyra CBT</p>
+                  <div className="mx-auto mt-1.5 h-1.5 w-24 rounded-full bg-white/15 p-0.5">
+                    <div className="h-full w-2/5 rounded-full" style={{ background: `linear-gradient(90deg, ${effectivePrimary}, ${effectiveSecondary})` }} />
+                  </div>
+                </div>
+                <p className="mt-2 font-mono text-[11px] text-[#6B7A7F] dark:text-white/60">{buildPreview(effectiveSplash, 'splash')}</p>
+                <p className="mt-1 text-[11px] leading-snug text-[#6B7A7F] dark:text-white/50">`--c-splash-bg` / `--c-splash-gradient`. Tambah di card Splash untuk gradient.</p>
+              </div>
+              <div className="rounded-xl border border-primary-900/8 bg-white p-3 dark:border-white/10 dark:bg-primary-900">
+                <p className="font-mono text-[10px] tracking-[0.12em] text-[#8A9AA0]">PRATINJAU — LOGIN (PANEL KIRI)</p>
+                <div className="mt-2 overflow-hidden rounded-xl border border-white/10" style={{ background: buildPreview(effectiveLogin, 'login') }}>
+                  <div className="flex items-center gap-2 px-3 py-3">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white p-1"><span className="h-3 w-3 rounded bg-slate-200" /></span>
+                    <span className="text-xs font-bold text-white">Veyra CBT • RUANG UJIAN</span>
+                  </div>
+                  <div className="px-3 pb-3">
+                    <p className="text-sm font-black leading-tight text-white">Ujian yang<br /><span className="text-white/60">terukur.</span></p>
+                    <div className="mt-2 rounded-lg bg-white/10 px-2 py-1.5 backdrop-blur">
+                      <p className="font-mono text-[9px] tracking-wide text-white/50">LEMBAR SOAL — PRATINJAU</p>
+                      <p className="mt-1 text-[11px] text-white/75">Pilihan ganda — 4 opsi, 1 jawaban</p>
+                    </div>
+                  </div>
+                </div>
+                <p className="mt-2 font-mono text-[11px] text-[#6B7A7F] dark:text-white/60">{buildPreview(effectiveLogin, 'login')}</p>
+                <p className="mt-1 text-[11px] leading-snug text-[#6B7A7F] dark:text-white/50">`--c-login-bg` / `--c-login-gradient`. Tambah gradasi di card Login.</p>
+              </div>
+              <div className="rounded-xl border border-primary-900/8 bg-white p-3 dark:border-white/10 dark:bg-primary-900">
+                <p className="font-mono text-[10px] tracking-[0.12em] text-[#8A9AA0]">PRATINJAU — SIDEBAR</p>
+                <div className="mt-2 flex gap-2 overflow-hidden rounded-xl border border-white/10 p-2" style={{ background: buildPreview(effectiveSidebar, 'sidebar') }}>
+                  <div className="flex w-16 flex-col gap-1.5 rounded-lg bg-white/10 p-2">
+                    <span className="h-1.5 w-full rounded bg-white/40" />
+                    <span className="h-1.5 w-3/4 rounded bg-white" />
+                    <span className="h-1.5 w-full rounded bg-white/20" />
+                    <span className="h-1.5 w-5/6 rounded bg-white/20" />
+                  </div>
+                  <div className="flex flex-1 flex-col gap-1.5 py-1">
+                    <span className="h-1.5 w-full rounded bg-white/15" />
+                    <span className="h-1.5 w-2/3 rounded bg-white/10" />
+                    <span className="mt-1 h-6 w-20 rounded-full bg-white text-center font-mono text-[9px] leading-6" style={{ color: effectiveSidebar }}>Aktif</span>
+                  </div>
+                </div>
+                <p className="mt-2 font-mono text-[11px] text-[#6B7A7F] dark:text-white/60">{buildPreview(effectiveSidebar, 'sidebar')}</p>
+                <p className="mt-1 text-[11px] leading-snug text-[#6B7A7F] dark:text-white/50">`--c-sidebar-bg` / `--c-sidebar-gradient`. Tambah di card Sidebar.</p>
               </div>
             </div>
           </div>

@@ -25,7 +25,11 @@ export function DashboardLayout() {
   useEffect(() => {
     let active = true
     fetchSchoolSettings()
-      .then((s) => active && setBranding(s))
+      .then((s) => {
+        if (!active) return
+        setBranding(s)
+        import('@/services/settings.service').then(({ applyBranding }) => applyBranding(s)).catch(() => undefined)
+      })
       .catch(() => undefined)
     return () => {
       active = false
@@ -55,6 +59,10 @@ export function DashboardLayout() {
 
   if (!profile) return null
   const items = getNav(profile.role)
+  const sidebarBg = ((branding as unknown as { sidebar_color?: string } | null)?.sidebar_color && /^#[0-9a-fA-F]{6}$/.test((branding as unknown as { sidebar_color: string }).sidebar_color) ? (branding as unknown as { sidebar_color: string }).sidebar_color : '#0B1E24') as string
+  const appBg = ((branding as unknown as { app_bg_color?: string } | null)?.app_bg_color && /^#[0-9a-fA-F]{6}$/.test((branding as unknown as { app_bg_color: string }).app_bg_color) ? (branding as unknown as { app_bg_color: string }).app_bg_color : '#FDF9F3') as string
+  const primary = ((branding as unknown as { primary_color?: string } | null)?.primary_color && /^#[0-9a-fA-F]{6}$/.test((branding as unknown as { primary_color: string }).primary_color) ? (branding as unknown as { primary_color: string }).primary_color : '#0D868F') as string
+  const secondary = ((branding as unknown as { secondary_color?: string } | null)?.secondary_color && /^#[0-9a-fA-F]{6}$/.test((branding as unknown as { secondary_color: string }).secondary_color) ? (branding as unknown as { secondary_color: string }).secondary_color : '#C67C3B') as string
 
   const handleSignOut = async () => {
     await signOut()
@@ -63,15 +71,15 @@ export function DashboardLayout() {
   }
 
   return (
-    <div className="min-h-dvh bg-[#FDF9F3] dark:bg-[#070D14] overflow-visible selection:bg-[#0D868F]/10">
+    <div className="min-h-dvh overflow-visible selection:bg-primary-500/10 app-bg" style={{ background: `var(--c-app-gradient, ${appBg})` }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Fragment+Mono&display=swap');`}</style>
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute inset-0 opacity-[0.035] dark:opacity-[0.05]" style={{ backgroundImage: `radial-gradient(circle at 1px 1px, #0B1E24 1px, transparent 0)`, backgroundSize: '22px 22px' }} />
-        <div className="absolute -top-24 right-[-80px] h-[420px] w-[420px] rounded-full bg-gradient-to-br from-[#0D868F]/10 via-[#C67C3B]/8 to-transparent blur-3xl lg:h-[520px] lg:w-[520px]" />
-        <div className="absolute -bottom-32 left-[280px] h-[380px] w-[380px] rounded-full bg-gradient-to-tr from-[#0B1E24]/5 via-[#0D868F]/6 to-transparent blur-3xl lg:h-[480px] lg:w-[480px]" />
+        <div className="absolute -top-24 right-[-80px] h-[420px] w-[420px] rounded-full blur-3xl lg:h-[520px] lg:w-[520px]" style={{ background: `linear-gradient(135deg, ${primary}14, ${secondary}14, transparent)` }} />
+        <div className="absolute -bottom-32 left-[280px] h-[380px] w-[380px] rounded-full blur-3xl lg:h-[480px] lg:w-[480px]" style={{ background: `linear-gradient(135deg, ${primary}0f, ${secondary}0f, transparent)` }} />
       </div>
       <FullscreenPrompt role={profile.role} />
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col overflow-hidden border-r border-[#0B1E24]/8 bg-[#0B1E24] dark:border-white/8 dark:bg-[#0B1E24] lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col overflow-hidden border-r border-white/10 dark:border-white/8 lg:flex sidebar-panel" style={{ background: `var(--c-sidebar-gradient, ${sidebarBg})` }}>
         <div className="relative flex h-full flex-col">
           <div className="pointer-events-none absolute inset-0 opacity-[0.06]" style={{ backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`, backgroundSize: '20px 20px' }} />
           <div className="relative flex h-16 items-center border-b border-white/10 px-4">
@@ -93,8 +101,8 @@ export function DashboardLayout() {
 
       {drawerOpen && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
-          <button aria-label="Tutup menu" onClick={() => setDrawerOpen(false)} className="absolute inset-0 bg-[#0B1E24]/60 backdrop-blur-sm animate-fade-in" />
-          <div className={cn('absolute inset-y-0 left-0 flex w-[82%] max-w-[300px] flex-col overflow-hidden rounded-r-[24px] bg-[#0B1E24] shadow-2xl animate-slide-in-right')}>
+          <button aria-label="Tutup menu" onClick={() => setDrawerOpen(false)} className="absolute inset-0 backdrop-blur-sm animate-fade-in" style={{ backgroundColor: `${sidebarBg}99` }} />
+          <div className={cn('absolute inset-y-0 left-0 flex w-[82%] max-w-[300px] flex-col overflow-hidden rounded-r-[24px] shadow-2xl animate-slide-in-right sidebar-panel')} style={{ background: `var(--c-sidebar-gradient, ${sidebarBg})` }}>
             <div className="pointer-events-none absolute inset-0 opacity-[0.06]" style={{ backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`, backgroundSize: '20px 20px' }} />
             <button
               onClick={() => setDrawerOpen(false)}
@@ -137,7 +145,7 @@ export function DashboardLayout() {
       <div className="flex min-h-dvh flex-col lg:pl-64 overflow-visible">
         <Topbar profile={profile} extra={extra} onMenuClick={() => setDrawerOpen(true)} onSignOut={handleSignOut} />
         <div className="flex-1 overflow-visible pt-16 lg:pt-[64px]">
-          <main id="main-content" className="relative w-full flex-1 bg-[#FDF9F3] px-4 py-4 dark:bg-[#070D14] sm:px-5 lg:px-8 lg:py-7 safe-bottom overflow-visible">
+          <main id="main-content" className="relative w-full flex-1 px-4 py-4 dark:bg-[#070D14] sm:px-5 lg:px-8 lg:py-7 safe-bottom overflow-visible app-bg" style={{ background: `var(--c-app-gradient, ${appBg})` }}>
             <div className="pointer-events-none absolute inset-0 opacity-[0.03] dark:opacity-[0.04]" style={{ backgroundImage: `radial-gradient(circle at 1px 1px, #0B1E24 1px, transparent 0)`, backgroundSize: '22px 22px' }} />
             <div className="relative w-full overflow-visible pb-24 lg:pb-0">
               <Outlet />

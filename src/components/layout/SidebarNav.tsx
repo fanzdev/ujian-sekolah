@@ -32,13 +32,13 @@ export function SidebarNav({
             className={cn(
               'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
               active
-                ? 'bg-white text-[#0B1E24] shadow-sm'
+                ? 'bg-white text-primary-900 shadow-sm'
                 : 'text-white/65 hover:bg-white/10 hover:text-white'
             )}
           >
-            <Icon className={cn('h-[18px] w-[18px] shrink-0 transition-colors', active ? 'text-[#0D868F]' : 'text-white/45 group-hover:text-white')} />
+            <Icon className={cn('h-[18px] w-[18px] shrink-0 transition-colors', active ? 'text-primary-600' : 'text-white/45 group-hover:text-white')} />
             <span className="truncate tracking-tight">{item.label}</span>
-            {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#C67C3B]" aria-hidden />}
+            {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-accent" aria-hidden />}
           </Link>
         )
       })}

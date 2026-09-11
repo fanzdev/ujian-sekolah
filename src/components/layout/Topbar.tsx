@@ -220,19 +220,20 @@ export function Topbar({
   const chatButtonRef = useRef<HTMLButtonElement>(null)
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-30 flex h-14 items-center gap-1.5 border-b border-[#0B1E24]/8 bg-white/90 px-2 backdrop-blur-xl dark:border-white/10 dark:bg-[#0B1E24]/90 sm:gap-2 sm:px-4 lg:left-64 lg:h-16 lg:px-6">
+    <header className="fixed top-0 left-0 right-0 z-30 flex h-14 items-center gap-1.5 border-b border-black/5 bg-white/90 px-2 backdrop-blur-xl dark:border-white/10 dark:bg-[var(--c-sidebar-bg)]/90 sm:gap-2 sm:px-4 lg:left-64 lg:h-16 lg:px-6">
       <button
         onClick={onMenuClick}
         aria-label="Buka menu"
         type="button"
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#0B1E24] text-white shadow-sm transition-colors active:scale-95 dark:bg-white dark:text-[#0B1E24] lg:hidden"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white shadow-sm transition-colors active:scale-95 dark:bg-white dark:text-primary-900 lg:hidden"
+        style={{ background: 'var(--c-sidebar-gradient, var(--c-sidebar-bg, rgb(var(--c-primary-900))))' }}
       >
         <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
           <path strokeLinecap="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
         </svg>
       </button>
       <div className="hidden items-center gap-2 lg:flex shrink-0">
-        <span className="hidden h-6 w-px bg-[#0B1E24]/10 dark:bg-white/10 sm:block" aria-hidden />
+        <span className="hidden h-6 w-px bg-black/5 dark:bg-white/10 sm:block" aria-hidden />
         <NetworkPing />
       </div>
       <div className="flex items-center gap-2 lg:hidden shrink-0">

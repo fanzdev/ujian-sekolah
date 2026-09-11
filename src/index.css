@@ -15,6 +15,11 @@
   --c-primary-900: 30 58 138;
   --c-accent-600: 14 165 233;
   --c-accent-50: 240 249 255;
+  --c-app-bg: 253 249 243;
+  --c-app-bg-hex: #FDF9F3;
+  --c-login-bg: #0B1E24;
+  --c-sidebar-bg: #0B1E24;
+  --c-splash-bg: #0B1E24;
 }
 
 @layer base {
@@ -30,7 +35,8 @@
     max-width: 100%;
   }
   body {
-    @apply bg-[#FDF9F3] text-slate-800 antialiased font-sans;
+    @apply text-slate-800 antialiased font-sans;
+    background-color: var(--c-app-bg-hex, #FDF9F3);
     font-feature-settings: 'cv11', 'ss01';
     overflow-y: auto;
     overflow-x: clip;

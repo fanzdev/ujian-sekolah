@@ -286,6 +286,11 @@ export interface SchoolSettings {
   secondary_color: string
   extra_colors: string[] | null
   theme_preset: string | null
+  login_color: string | null
+  sidebar_color: string | null
+  app_bg_color: string | null
+  splash_bg_color: string | null
+  card_gradients: Record<string, string[]> | null
   address: string | null
   city: string | null
   headmaster: string | null
