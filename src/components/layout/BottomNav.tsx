@@ -21,7 +21,7 @@ interface BottomItem {
 
 const STUDENT_BOTTOM: BottomItem[] = [
   { path: '/student', label: 'Beranda', icon: LayoutDashboard },
-  { path: '/student/exams', label: 'Ujian', icon: CalendarDays },
+  { path: '/student/exams', label: 'Mapel', icon: CalendarDays },
   { path: '/student/history', label: 'Riwayat', icon: ClipboardCheck },
   { path: '/student/schedule', label: 'Jadwal', icon: CalendarClock },
   { path: '/student/profile', label: 'Profil', icon: UserCircle },
@@ -30,7 +30,7 @@ const STUDENT_BOTTOM: BottomItem[] = [
 const TEACHER_BOTTOM: BottomItem[] = [
   { path: '/teacher', label: 'Beranda', icon: LayoutDashboard },
   { path: '/teacher/question-banks', label: 'Bank', icon: Database },
-  { path: '/teacher/exams', label: 'Ujian', icon: FileText },
+  { path: '/teacher/exams', label: 'Mapel', icon: FileText },
   { path: '/teacher/grading', label: 'Nilai', icon: PencilRuler },
   { path: '/teacher/profile', label: 'Profil', icon: UserCircle },
 ]
@@ -38,7 +38,7 @@ const TEACHER_BOTTOM: BottomItem[] = [
 const ADMIN_BOTTOM: BottomItem[] = [
   { path: '/admin', label: 'Beranda', icon: LayoutDashboard },
   { path: '/admin/students', label: 'Siswa', icon: GraduationCap },
-  { path: '/admin/exams', label: 'Ujian', icon: FileText },
+  { path: '/admin/exams', label: 'Mapel', icon: FileText },
   { path: '/admin/results', label: 'Hasil', icon: ClipboardCheck },
   { path: '/admin/profile', label: 'Profil', icon: UserCircle },
 ]

@@ -170,7 +170,6 @@ export default function BankQuestionsPage({ mode = 'bank' }: { mode?: Mode }) {
                         <Badge tone={q.difficulty === 'easy' ? 'green' : q.difficulty === 'hard' ? 'red' : 'amber'}>
                           {DIFFICULTY_LABELS[q.difficulty]}
                         </Badge>
-                        <Badge tone="gray">{q.points} poin</Badge>
                       </div>
                     </div>
                   ),
@@ -374,7 +373,6 @@ function QuestionEditorModal({
   const validate = (): string | null => {
     if (!form.bank_id) return 'Pilih bank soal terlebih dahulu.'
     if (stripHtml(form.text).length < 5) return 'Teks pertanyaan minimal 5 karakter.'
-    if (form.points <= 0) return 'Poin harus lebih besar dari 0.'
     if (needsOptions) {
       if (form.options.filter((o) => o.option_text.trim()).length < 2) return 'Minimal 2 pilihan jawaban.'
       const correctCount = form.options.filter((o) => o.is_correct && o.option_text.trim()).length
@@ -549,10 +547,8 @@ function QuestionEditorModal({
           <RichTextEditor value={form.text} onChange={(html) => setForm((p) => ({ ...p, text: html }))} placeholder="Tulis pertanyaan di sini... Anda bisa memakai teks tebal, daftar, dan tautan." minHeight={110} />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Input label="Bobot / Poin" type="number" min={0.5} step={0.5} value={form.points} onChange={(e) => setForm((p) => ({ ...p, points: Number(e.target.value) }))} required />
-
-          <div className="sm:col-span-2">
+        <div className="grid gap-4 sm:grid-cols-1">
+          <div>
             <label className="label-base">Media Pendukung (opsional)</label>
             {form.media_url ? (
               <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 dark:bg-slate-800 dark:text-slate-200">

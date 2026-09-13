@@ -22,6 +22,7 @@ import {
   examRowSchema,
   gradeRowSchema,
   importKindMeta,
+  normalizeHeader,
   type ImportRowResult,
 } from '@/services/import.service'
 import { listClasses } from '@/services/academics.service'
@@ -97,6 +98,7 @@ function ImportPanel() {
   const handleFile = async (file: File) => {
     setFileName(file.name)
     setResultDetails(null)
+    setProgress({ done: 0, fail: 0, running: false })
     try {
       const parsed = await parseAnyFile(file)
       if (parsed.rows.length === 0) {
@@ -127,6 +129,8 @@ function ImportPanel() {
       else toast.success(`${parsed.rows.length} baris siap diimport.`)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Gagal membaca file.')
+      setValidated(null)
+      setRows([])
     }
   }
 
@@ -144,6 +148,23 @@ function ImportPanel() {
 
   const runImport = async () => {
     if (!validated) return
+    if (progress.running) return
+    if (resultDetails && resultDetails.failed === 0 && resultDetails.success > 0) {
+      toast.info('File ini sudah berhasil diimport. Pilih file baru untuk import lagi.')
+      return
+    }
+    if (kind === 'students' && classesQuery.loading) {
+      toast.error('Data kelas masih memuat. Tunggu sebentar lalu coba lagi.')
+      return
+    }
+    if (kind === 'question_banks' && banksQuery.loading) {
+      toast.error('Data bank soal masih memuat. Tunggu sebentar lalu coba lagi.')
+      return
+    }
+    if (kind === 'students' && !classesQuery.data?.length) {
+      toast.error('Belum ada kelas di sistem. Buat kelas terlebih dahulu sebelum import siswa.')
+      return
+    }
     const validRows = validated.filter((v) => v.valid)
     if (validRows.length === 0) {
       toast.error('Tidak ada baris valid untuk diimport.')
@@ -299,7 +320,8 @@ function ImportPanel() {
           const nis = String(data.nis).trim()
           const score = Number(data.score)
           if (!examTitle || !nis) throw new Error('exam_title dan nis wajib')
-          const { data: examRow, error: examErr } = await supabase.from('exams').select('id, title').ilike('title', examTitle).limit(1).maybeSingle()
+          if (!Number.isFinite(score) || score < 0 || score > 100) throw new Error('Nilai harus 0-100')
+          const { data: examRow, error: examErr } = await supabase.from('exams').select('id, title, passing_grade').ilike('title', examTitle).limit(1).maybeSingle()
           if (examErr) throw examErr
           if (!examRow) throw new Error(`Ujian "${examTitle}" tidak ditemukan`)
           const { data: stuRow, error: stuErr } = await supabase.from('students').select('id').eq('nis', nis).maybeSingle()
@@ -314,33 +336,35 @@ function ImportPanel() {
             .limit(1)
             .maybeSingle()
           if (attErr) throw attErr
-          if (!attemptRow) throw new Error(`Belum ada attempt untuk ujian "${examTitle}" dan NIS "${nis}"`)
+          if (!attemptRow) throw new Error(`Belum ada attempt untuk ujian "${examTitle}" dan NIS "${nis}" — siswa harus sudah mengumpulkan ujian`)
           const attemptId = (attemptRow as { id: string }).id
-          const { error: upErr } = await supabase
-            .from('exam_results')
-            .upsert(
-              {
-                attempt_id: attemptId,
-                exam_id: (examRow as { id: string }).id,
-                student_id: (stuRow as { id: string }).id,
-                final_score: score,
-                essay_score: null,
-                passed: score >= 0,
-              },
-              { onConflict: 'attempt_id' },
-            )
-          if (upErr) {
-            const { error: altErr } = await supabase.from('essay_grades').upsert(
-              {
-                attempt_id: attemptId,
-                question_id: (examRow as { id: string }).id,
-                final_score: score,
-                final_feedback: String(data.feedback ?? ''),
-                status: 'graded',
-              },
-              { onConflict: 'attempt_id,question_id' },
-            )
-            if (altErr) throw upErr
+          const passing = Number((examRow as { passing_grade?: number }).passing_grade ?? 0)
+          const passed = passing > 0 ? score >= passing : null
+          try {
+            const { error: upErr } = await supabase
+              .from('exam_results')
+              .upsert(
+                {
+                  attempt_id: attemptId,
+                  exam_id: (examRow as { id: string }).id,
+                  student_id: (stuRow as { id: string }).id,
+                  final_score: score,
+                  passed,
+                },
+                { onConflict: 'attempt_id' },
+              )
+            if (upErr) throw upErr
+            try {
+              await supabase.rpc('recalc_result', { p_attempt_id: attemptId })
+            } catch {
+              // trigger already handles recalc; ignore
+            }
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e)
+            if (msg.toLowerCase().includes('row level security') || msg.toLowerCase().includes('permission') || msg.includes('42501')) {
+              throw new Error('Gagal update nilai: RLS menolak. Pastikan migrasi 00034 sudah dijalankan (admin perlu akses update exam_results) atau gunakan menu Penilaian Essay.')
+            }
+            throw e
           }
         }
         done++
@@ -517,9 +541,14 @@ function ImportPanel() {
                       {validated.slice(0, 100).map((v) => (
                         <tr key={v.index} className={v.valid ? 'bg-white dark:bg-slate-900' : 'bg-rose-50/60 dark:bg-rose-500/10'}>
                           <td className="table-td text-slate-400">{v.index + 1}</td>
-                          {meta.headers.slice(0, 5).map((h) => (
-                            <td key={h} className="table-td max-w-[140px] truncate font-mono text-[11px]">{String((v.data as Record<string, unknown>)?.[h] ?? rows[v.index]?.[h] ?? '-')}</td>
-                          ))}
+                          {meta.headers.slice(0, 5).map((h) => {
+                            const key = normalizeHeader(h)
+                            const raw = rows[v.index] ?? {}
+                            const val = (v.data as Record<string, unknown>)?.[key] ?? (v.data as Record<string, unknown>)?.[h] ?? raw[key] ?? raw[h] ?? ''
+                            return (
+                              <td key={h} className="table-td max-w-[140px] truncate font-mono text-[11px]">{String(val || '-')}</td>
+                            )
+                          })}
                           {meta.headers.length > 5 && <td className="table-td text-slate-400">+{meta.headers.length - 5}</td>}
                           <td className="table-td">
                             {v.valid ? <Badge tone="green">OK</Badge> : <span className="line-clamp-2 max-w-[200px] text-[11px] font-medium text-rose-600 dark:text-rose-300">{v.errors.join(', ')}</span>}
@@ -554,9 +583,18 @@ function ImportPanel() {
                   <p className="flex items-center gap-1.5 text-xs text-slate-400">
                     <AlertCircle className="h-3.5 w-3.5" /> Pastikan pratinjau sudah benar. Duplikat username / kode akan ditolak.
                   </p>
-                  <Button disabled={!validated || validated.filter((v) => v.valid).length === 0} onClick={runImport} icon={<Upload className="h-4 w-4" />}>
-                    Import {validated?.filter((v) => v.valid).length ?? 0} {KIND_LABELS[kind]}
-                  </Button>
+                  <div className="flex gap-2">
+                    {resultDetails && resultDetails.failed === 0 && resultDetails.success > 0 ? (
+                      <Button variant="outline" size="sm" onClick={resetFile}>Import File Lain</Button>
+                    ) : null}
+                    <Button
+                      disabled={!validated || validated.filter((v) => v.valid).length === 0 || progress.running || (resultDetails !== null && resultDetails.failed === 0 && resultDetails.success > 0)}
+                      onClick={runImport}
+                      icon={<Upload className="h-4 w-4" />}
+                    >
+                      {resultDetails && resultDetails.failed === 0 && resultDetails.success > 0 ? 'Sudah Diimport' : `Import ${validated?.filter((v) => v.valid).length ?? 0} ${KIND_LABELS[kind]}`}
+                    </Button>
+                  </div>
                 </div>
                 {resultDetails && (
                   <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
@@ -570,6 +608,11 @@ function ImportPanel() {
                         ))}
                         {resultDetails.errors.length > 20 && <li>+{resultDetails.errors.length - 20} error lain...</li>}
                       </ul>
+                    )}
+                    {resultDetails.failed === 0 && resultDetails.success > 0 && (
+                      <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+                        <CheckCircle2 className="h-4 w-4" /> File berhasil diproses sepenuhnya. Pilih file baru jika ingin import lagi.
+                      </div>
                     )}
                   </div>
                 )}
@@ -654,13 +697,83 @@ function ImportPanel() {
 }
 
 function ExportPanel() {
-  const query = useAsync(() => Promise.all([
-    listStudents({ pageSize: 2000 }),
-    listTeachers({ pageSize: 500 }),
-    import('@/services/questions.service').then((m) => m.listBanks({ pageSize: 100 }).then((r) => r.rows).catch(() => [])),
-    import('@/services/exams.service').then((m) => m.listExams({ pageSize: 100 }).then((r) => r.rows).catch(() => [])),
-    import('@/services/grading.service').then((m) => m.listResults({ pageSize: 100 }).then((r) => r.rows).catch(() => [])),
-  ]), [])
+  const query = useAsync(async () => {
+    const fetchAllStudents = async () => {
+      const all: Awaited<ReturnType<typeof listStudents>>['rows'] = []
+      let page = 1
+      const pageSize = 1000
+      for (;;) {
+        const res = await listStudents({ page, pageSize })
+        all.push(...res.rows)
+        if (res.rows.length < pageSize || all.length >= (res.total ?? all.length)) break
+        page++
+        if (page > 20) break
+      }
+      return { rows: all, total: all.length }
+    }
+    const fetchAllTeachers = async () => {
+      const all: Awaited<ReturnType<typeof listTeachers>>['rows'] = []
+      let page = 1
+      const pageSize = 500
+      for (;;) {
+        const res = await listTeachers({ page, pageSize })
+        all.push(...res.rows)
+        if (res.rows.length < pageSize || all.length >= (res.total ?? all.length)) break
+        page++
+        if (page > 20) break
+      }
+      return { rows: all, total: all.length }
+    }
+    const fetchAllBanks = async () => {
+      const m = await import('@/services/questions.service')
+      const all: Awaited<ReturnType<typeof m.listBanks>>['rows'] = []
+      let page = 1
+      const pageSize = 100
+      for (;;) {
+        const res = await m.listBanks({ page, pageSize })
+        all.push(...res.rows)
+        if (res.rows.length < pageSize) break
+        page++
+        if (page > 50) break
+      }
+      return all
+    }
+    const fetchAllExams = async () => {
+      const m = await import('@/services/exams.service')
+      const all: Awaited<ReturnType<typeof m.listExams>>['rows'] = []
+      let page = 1
+      const pageSize = 100
+      for (;;) {
+        const res = await m.listExams({ page, pageSize })
+        all.push(...res.rows)
+        if (res.rows.length < pageSize) break
+        page++
+        if (page > 50) break
+      }
+      return all
+    }
+    const fetchAllResults = async () => {
+      const m = await import('@/services/grading.service')
+      const all: Awaited<ReturnType<typeof m.listResults>>['rows'] = []
+      let page = 1
+      const pageSize = 200
+      for (;;) {
+        const res = await m.listResults({ page, pageSize })
+        all.push(...res.rows)
+        if (res.rows.length < pageSize) break
+        page++
+        if (page > 50) break
+      }
+      return all
+    }
+    return Promise.all([
+      fetchAllStudents(),
+      fetchAllTeachers(),
+      fetchAllBanks(),
+      fetchAllExams(),
+      fetchAllResults(),
+    ])
+  }, [])
   if (query.error) return <ErrorState message={query.error} onRetry={query.reload} />
 
   const students = query.data?.[0].rows ?? []

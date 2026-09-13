@@ -48,7 +48,7 @@ export default function AttemptReview({ payload }: { payload: AttemptPayload; on
           <article key={qid} className="rounded-xl border border-slate-200 p-4">
             <header className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
-                Soal {i + 1} · {q.points} poin
+                Soal {i + 1}
               </p>
               {correctness === true && <Badge tone="green">Benar</Badge>}
               {correctness === false && <Badge tone="red">Salah / Kurang</Badge>}

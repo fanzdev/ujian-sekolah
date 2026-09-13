@@ -12,7 +12,7 @@ import { formatNumber } from '@/lib/utils'
 import { AVAILABLE_EXAM_STATUS_LABELS } from '@/lib/constants'
 
 export default function AvailableExamsPage() {
-  useDocumentTitle('Ujian Tersedia')
+  useDocumentTitle('Mata Pelajaran Tersedia')
   const query = useAsync(() => listAvailableExams(), [])
   const meQuery = useAsync(async () => {
     const { supabase } = await import('@/services/client')
@@ -40,18 +40,18 @@ export default function AvailableExamsPage() {
 
   return (
     <>
-      <PageHeader title="Ujian Tersedia" subtitle="Seluruh ujian yang ditugaskan kepada Anda" icon={<CalendarDays className="h-5 w-5" />} />
+      <PageHeader title="Mata Pelajaran Tersedia" subtitle="Seluruh mata pelajaran yang ditugaskan kepada Anda" icon={<CalendarDays className="h-5 w-5" />} />
 
       {query.loading ? (
         <TableSkeleton rows={4} cols={3} />
       ) : exams.length === 0 ? (
         <EmptyState
           icon={<CalendarDays className="h-6 w-6" />}
-          title={meQuery.data && !meQuery.data.class_id ? 'Kelas Belum Ditentukan' : 'Belum ada ujian'}
+          title={meQuery.data && !meQuery.data.class_id ? 'Kelas Belum Ditentukan' : 'Belum ada mata pelajaran'}
           description={
             meQuery.data && !meQuery.data.class_id
-              ? 'Akun Anda belum terhubung ke kelas. Hubungi admin untuk menetapkan kelas agar ujian dapat muncul.'
-              : 'Ujian akan muncul di sini sesuai kelas dan jurusan Anda.'
+              ? 'Akun Anda belum terhubung ke kelas. Hubungi admin untuk menetapkan kelas agar mata pelajaran dapat muncul.'
+              : 'Mata pelajaran akan muncul di sini sesuai kelas dan jurusan Anda.'
           }
           action={<Button size="sm" variant="outline" onClick={query.reload}>Muat Ulang</Button>}
         />
@@ -145,7 +145,7 @@ function ExamGroup({
                 {(exam.status_for_me === 'can_start' || exam.status_for_me === 'resume') ? (
                   <Link to={`/student/exams/${exam.id}`} className="block">
                     <Button className="w-full" variant={exam.status_for_me === 'resume' ? 'danger' : 'primary'} icon={exam.status_for_me === 'resume' ? <AlertCircle className="h-4 w-4" /> : <PlayCircle className="h-4 w-4" />}>
-                      {exam.status_for_me === 'resume' ? 'Lanjutkan Ujian' : 'Mulai Ujian'}
+                      {exam.status_for_me === 'resume' ? 'Lanjutkan' : 'Mulai'}
                     </Button>
                   </Link>
                 ) : (

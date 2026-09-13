@@ -6,7 +6,7 @@ export interface ParsedCsv {
   errors: string[]
 }
 
-const HEADER_ALIASES: Record<string, string> = {
+export const HEADER_ALIASES: Record<string, string> = {
   'nama_lengkap': 'full_name',
   'jenis_kelamin': 'gender',
   'nama_kelas': 'class_name',
@@ -35,7 +35,7 @@ const HEADER_ALIASES: Record<string, string> = {
   'nilai': 'score',
   'umpan_balik': 'feedback',
 }
-function normalizeHeader(h: string): string {
+export function normalizeHeader(h: string): string {
   const key = h.trim().toLowerCase().replace(/\s+/g, '_')
   return HEADER_ALIASES[key] ?? key
 }
@@ -213,7 +213,11 @@ export const soalRowSchema = z.object({
   question_text: z.string().min(5, 'teks soal minimal 5 karakter'),
   type: z.string().transform((v) => normType(v)).refine((v) => ['multiple_choice', 'multiple_response', 'true_false', 'short_answer', 'essay', 'matching'].includes(v), 'jenis harus: Pilihan Ganda / Pilihan Ganda Kompleks / Benar/Salah / Isian Singkat / Esai / Menjodohkan'),
   difficulty: z.string().optional().default('medium').transform((v) => normDiff(String(v))).refine((v) => ['easy', 'medium', 'hard'].includes(v), 'tingkat kesulitan harus: Mudah / Sedang / Sulit'),
-  points: z.union([z.string(), z.number()]).optional().default(10).transform((v) => Number(v)).refine((n) => Number.isFinite(n) && n > 0 && n <= 100, 'poin 1-100'),
+  points: z.union([z.string(), z.number()]).optional().default(10).transform((v) => {
+    if (v === '' || v === undefined || v === null) return 10
+    const n = Number(v)
+    return Number.isFinite(n) ? n : 10
+  }).refine((n) => Number.isFinite(n) && n > 0 && n <= 100, 'poin 1-100'),
   option_a: z.string().optional().default(''),
   option_b: z.string().optional().default(''),
   option_c: z.string().optional().default(''),
@@ -228,15 +232,27 @@ export const examRowSchema = z.object({
   subject_code: z.string().optional().default(''),
   starts_at: z.string().min(1, 'waktu mulai wajib').refine((v) => !Number.isNaN(Date.parse(v)), 'format tanggal tidak valid (cth: 2026-08-27T08:00)'),
   ends_at: z.string().min(1, 'waktu selesai wajib').refine((v) => !Number.isNaN(Date.parse(v)), 'format tanggal tidak valid'),
-  duration_minutes: z.union([z.string(), z.number()]).transform((v) => Number(v)).refine((n) => Number.isFinite(n) && n >= 1 && n <= 1440, 'durasi 1-1440 menit'),
-  passing_grade: z.union([z.string(), z.number()]).optional().default(0).transform((v) => Number(v)).refine((n) => Number.isFinite(n) && n >= 0 && n <= 100, 'KKM 0-100'),
+  duration_minutes: z.union([z.string(), z.number()]).transform((v) => {
+    if (v === '' || v === undefined || v === null) return 60
+    const n = Number(v)
+    return Number.isFinite(n) ? n : 60
+  }).refine((n) => Number.isFinite(n) && n >= 1 && n <= 1440, 'durasi 1-1440 menit'),
+  passing_grade: z.union([z.string(), z.number()]).optional().default(0).transform((v) => {
+    if (v === '' || v === undefined || v === null) return 0
+    const n = Number(v)
+    return Number.isFinite(n) ? n : 0
+  }).refine((n) => Number.isFinite(n) && n >= 0 && n <= 100, 'KKM 0-100'),
   description: z.string().optional().default(''),
 })
 
 export const gradeRowSchema = z.object({
   exam_title: z.string().min(1, 'judul ujian wajib'),
   nis: z.string().min(1, 'NIS wajib'),
-  score: z.union([z.string(), z.number()]).transform((v) => Number(v)).refine((n) => Number.isFinite(n) && n >= 0 && n <= 100, 'nilai 0-100'),
+  score: z.union([z.string(), z.number()]).transform((v) => {
+    if (v === '' || v === undefined || v === null) return 0
+    const n = Number(v)
+    return Number.isFinite(n) ? n : 0
+  }).refine((n) => Number.isFinite(n) && n >= 0 && n <= 100, 'nilai 0-100'),
   feedback: z.string().optional().default(''),
 })
 

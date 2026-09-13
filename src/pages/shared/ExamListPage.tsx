@@ -34,7 +34,7 @@ export default function ExamListPage() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const debounced = useDebounce(search)
-  useDocumentTitle('Ujian')
+  useDocumentTitle('Mata Pelajaran')
 
   const query = useAsync(
     () => listExams({ search: debounced || undefined, status: statusFilter || undefined, pageSize: 100 }),
@@ -61,13 +61,13 @@ export default function ExamListPage() {
         const participants = pRes.count ?? 0
         const targets = tRes.count ?? 0
         if (!hasQuestions) {
-          toast.error('Ujian belum memiliki soal. Tambahkan soal terlebih dahulu sebelum diaktifkan.')
+          toast.error('Mata pelajaran belum memiliki soal. Tambahkan soal terlebih dahulu sebelum diaktifkan.')
           return
         }
         if (participants === 0 && targets === 0) {
           const proceed = await confirmDialog.confirm({
-            title: 'Ujian Belum Ada Peserta',
-            message: 'Ujian ini belum memiliki target kelas/jurusan atau peserta. Jika diaktifkan, tidak ada siswa yang bisa melihatnya. Tetap aktifkan?',
+            title: 'Mata Pelajaran Belum Ada Peserta',
+            message: 'Mata pelajaran ini belum memiliki target kelas/jurusan atau peserta. Jika diaktifkan, tidak ada siswa yang bisa melihatnya. Tetap aktifkan?',
             confirmText: 'Tetap Aktifkan',
           })
           if (!proceed) return
@@ -77,10 +77,10 @@ export default function ExamListPage() {
       }
     }
     const ok = await confirmDialog.confirm({
-      title: publishing ? 'Aktifkan Ujian?' : 'Nonaktifkan Ujian?',
+      title: publishing ? 'Aktifkan Mapel?' : 'Nonaktifkan Mapel?',
       message: publishing
-        ? 'Siswa yang terdaftar akan dapat melihat dan mengerjakan ujian ini sesuai jadwal.'
-        : 'Siswa tidak akan bisa memulai ujian ini. Attempt yang sedang berlangsung tidak terpengaruh.',
+        ? 'Siswa yang terdaftar akan dapat melihat dan mengerjakan mata pelajaran ini sesuai jadwal.'
+        : 'Siswa tidak akan bisa memulai mata pelajaran ini. Attempt yang sedang berlangsung tidak terpengaruh.',
       confirmText: publishing ? 'Aktifkan' : 'Nonaktifkan',
     })
     if (!ok) return
@@ -94,7 +94,7 @@ export default function ExamListPage() {
           /* fallback: trigger otomatis di DB akan sync jika migrasi sudah terpasang */
         }
       }
-      toast.success(publishing ? 'Ujian diaktifkan & peserta disinkronkan.' : 'Ujian dinonaktifkan.')
+      toast.success(publishing ? 'Mata pelajaran diaktifkan & peserta disinkronkan.' : 'Mata pelajaran dinonaktifkan.')
       query.reload()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Gagal memperbarui status.')
@@ -104,13 +104,13 @@ export default function ExamListPage() {
   const handleComplete = async (exam: Exam) => {
     const ok = await confirmDialog.confirm({
       title: 'Tandai Selesai?',
-      message: 'Ujian ditandai selesai dan tidak dapat dikerjakan lagi.',
+      message: 'Mata pelajaran ditandai selesai dan tidak dapat dikerjakan lagi.',
       confirmText: 'Tandai Selesai',
     })
     if (!ok) return
     try {
       await updateExam(exam.id, { status: 'completed' })
-      toast.success('Ujian ditandai selesai.')
+      toast.success('Mata pelajaran ditandai selesai.')
       query.reload()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Gagal.')
@@ -120,19 +120,19 @@ export default function ExamListPage() {
   return (
     <>
       <PageHeader
-        title="Daftar Ujian"
-        subtitle="Buat, atur peserta, dan pantau pelaksanaan ujian"
+        title="Daftar Mata Pelajaran"
+        subtitle="Buat, atur peserta, dan pantau pelaksanaan mata pelajaran"
         icon={<FileText className="h-5 w-5" />}
         actions={
           <Link to="./new">
-            <Button icon={<Plus className="h-4 w-4" />}>Buat Ujian</Button>
+            <Button icon={<Plus className="h-4 w-4" />}>Buat Mata Pelajaran</Button>
           </Link>
         }
       />
 
       <Card>
         <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-          <SearchInput placeholder="Cari nama ujian..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <SearchInput placeholder="Cari nama mata pelajaran..." value={search} onChange={(e) => setSearch(e.target.value)} />
           <Select
             className="w-full sm:w-44"
             placeholder="Semua Status"
@@ -147,11 +147,11 @@ export default function ExamListPage() {
         ) : exams.length === 0 ? (
           <EmptyState
             icon={<FileText className="h-6 w-6" />}
-            title="Belum ada ujian"
-            description="Buat ujian pertama Anda, pilih soal dari bank, tentukan jadwal & peserta."
+            title="Belum ada mata pelajaran"
+            description="Buat mata pelajaran pertama Anda, pilih soal dari bank, tentukan jadwal & peserta."
             action={
               <Link to="./new">
-                <Button size="sm" icon={<Plus className="h-4 w-4" />}>Buat Ujian</Button>
+                <Button size="sm" icon={<Plus className="h-4 w-4" />}>Buat Mata Pelajaran</Button>
               </Link>
             }
           />
@@ -184,10 +184,9 @@ export default function ExamListPage() {
                       <span>{formatDateTime(exam.starts_at)}</span>
                       <span>→ {formatDateTime(exam.ends_at)}</span>
                       <span>{exam.duration_minutes} menit</span>
-                      <span>{exam.total_points} poin</span>
                     </p>
                     {exam.status === 'published' && Number(exam.total_points) === 0 && (
-                      <p className="mt-1 text-xs font-medium text-rose-600">Ujian aktif tanpa soal — siswa tidak akan melihatnya. Tambahkan soal.</p>
+                      <p className="mt-1 text-xs font-medium text-rose-600">Mapel aktif tanpa soal — siswa tidak akan melihatnya. Tambahkan soal.</p>
                     )}
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center gap-1.5">
@@ -211,7 +210,7 @@ export default function ExamListPage() {
                     <button
                       onClick={async () => {
                         const ok = await confirmDialog.confirm({
-                          title: 'Hapus Ujian?',
+                          title: 'Hapus Mapel?',
                           message: `"${exam.title}" beserta seluruh attempt & hasilnya akan terhapus permanen.`,
                           danger: true,
                           confirmText: 'Hapus',
@@ -219,7 +218,7 @@ export default function ExamListPage() {
                         if (!ok) return
                         try {
                           await deleteExam(exam.id)
-                          toast.success('Ujian dihapus.')
+                          toast.success('Mata pelajaran dihapus.')
                           query.reload()
                         } catch (err) {
                           toast.error(err instanceof Error ? err.message : 'Gagal menghapus ujian.')

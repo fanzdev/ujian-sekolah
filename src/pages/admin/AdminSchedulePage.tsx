@@ -209,7 +209,6 @@ function ScheduleFormModal({
 }) {
   const toast = useToast()
   const [saving, setSaving] = useState(false)
-  const [title, setTitle] = useState(initial?.title ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [examId, setExamId] = useState('')
   const [teacherId, setTeacherId] = useState(initial?.teacher_id ?? '')
@@ -221,7 +220,6 @@ function ScheduleFormModal({
 
   useEffect(() => {
     if (open) {
-      setTitle(initial?.title ?? '')
       setDescription(initial?.description ?? '')
       const inferred = initial ? examsList.find((e) => e.title === initial.title)?.id ?? '' : ''
       setExamId(inferred)
@@ -235,14 +233,16 @@ function ScheduleFormModal({
   }, [open, initial, examsList])
 
   const handleSave = async () => {
-    if (!title.trim()) {
-      toast.error('Judul wajib diisi.')
+    const selected = examsList.find((e) => e.id === examId)
+    const derivedTitle = selected?.title?.trim() ?? initial?.title?.trim() ?? ''
+    if (!examId || !derivedTitle) {
+      toast.error('Pilih Mata Pelajaran terlebih dahulu.')
       return
     }
     setSaving(true)
     try {
       const payload = {
-        title: title.trim(),
+        title: derivedTitle,
         description: description.trim() || undefined,
         teacher_id: teacherId || undefined,
         class_id: classId || undefined,
@@ -269,16 +269,10 @@ function ScheduleFormModal({
   return (
     <Modal open={open} onClose={onClose} title={initial ? 'Ubah Jadwal' : 'Tambah Jadwal'} size="md">
       <div className="space-y-4 px-6 py-5">
-        <Input label="Judul Jadwal" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Contoh: Ujian Matematika Kelas X" required />
+        <Select label="Mata Pelajaran" value={examId} onChange={(e) => setExamId(e.target.value)} options={[{ value: '', label: '— Pilih Mata Pelajaran —' }, ...examsList.map((ex) => ({ value: ex.id, label: ex.title }))]} required />
         <Input label="Deskripsi (opsional)" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Catatan tambahan" />
 
-        <div className="grid grid-cols-2 gap-4">
-          <Select label="Ujian" value={examId} onChange={(e) => {
-            const val = e.target.value
-            setExamId(val)
-            const ex = examsList.find((x) => x.id === val)
-            if (ex && !title.trim()) setTitle(ex.title)
-          }} options={[{ value: '', label: '— Pilih Ujian —' }, ...examsList.map((ex) => ({ value: ex.id, label: ex.title }))]} />
+        <div className="grid grid-cols-1 gap-4">
           <Select label="Guru" value={teacherId} onChange={(e) => setTeacherId(e.target.value)} options={[{ value: '', label: '— Pilih —' }, ...teachers.map((t) => ({ value: t.id, label: t.name }))]} />
         </div>
 

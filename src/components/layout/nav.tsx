@@ -34,7 +34,7 @@ const ADMIN_NAV: NavItem[] = [
   { path: '/admin/classes', label: 'Kelas', icon: School },
   { path: '/admin/departments', label: 'Jurusan', icon: Building2 },
   { path: '/admin/question-banks', label: 'Bank Soal', icon: Database },
-  { path: '/admin/exams', label: 'Ujian', icon: FileText },
+  { path: '/admin/exams', label: 'Mata Pelajaran', icon: FileText },
   { path: '/admin/schedule', label: 'Jadwal', icon: CalendarClock },
   { path: '/admin/results', label: 'Hasil Ujian', icon: ClipboardCheck },
   { path: '/admin/reports', label: 'Laporan', icon: BarChart3 },
@@ -49,7 +49,7 @@ const TEACHER_NAV: NavItem[] = [
   { path: '/teacher', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/teacher/question-banks', label: 'Bank Soal', icon: Database },
   { path: '/teacher/questions', label: 'Soal Saya', icon: PencilRuler },
-  { path: '/teacher/exams', label: 'Ujian Saya', icon: FileText },
+  { path: '/teacher/exams', label: 'Mata Pelajaran', icon: FileText },
   { path: '/teacher/schedule', label: 'Jadwal', icon: CalendarClock },
   { path: '/teacher/results', label: 'Hasil Ujian', icon: ClipboardCheck },
   { path: '/teacher/grading', label: 'Penilaian Essay', icon: CheckSquareIcon },
@@ -62,7 +62,7 @@ function CheckSquareIcon({ className }: { className?: string }) {
 
 const STUDENT_NAV: NavItem[] = [
   { path: '/student', label: 'Beranda', icon: LayoutDashboard },
-  { path: '/student/exams', label: 'Ujian Tersedia', icon: CalendarDays },
+  { path: '/student/exams', label: 'Mata Pelajaran', icon: CalendarDays },
   { path: '/student/schedule', label: 'Jadwal', icon: CalendarClock },
   { path: '/student/history', label: 'Riwayat & Nilai', icon: ClipboardCheck },
   { path: '/student/card', label: 'Kartu Ujian', icon: IdCard },

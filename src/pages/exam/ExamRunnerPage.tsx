@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   ChevronLeft, ChevronRight, Flag, Send, WifiOff, AlertCircle,
-  Maximize2, ShieldAlert,
+  Maximize2,
 } from 'lucide-react'
 import { useParams, Link } from 'react-router-dom'
 import { useExamEngine } from '@/features/exam/useExamEngine'
@@ -46,7 +46,7 @@ export default function ExamRunnerPage() {
   }, [])
 
   const [fsLoading, setFsLoading] = useState(false)
-  const [forceBypass, setForceBypass] = useState(false)
+  const [fsBannerDismissed, setFsBannerDismissed] = useState(false)
 
   const requestFs = useCallback(async () => {
     if (fsLoading) return
@@ -75,13 +75,6 @@ export default function ExamRunnerPage() {
       setFsLoading(false)
     }
   }, [isFsSupported, fsLoading])
-
-  useEffect(() => {
-    if (!isFsSupported || forceBypass) return
-    if (engine.phase === 'running' && !isFullscreen && engine.payload?.exam.fullscreen_required) {
-      requestFs()
-    }
-  }, [engine.phase, isFullscreen, isFsSupported, requestFs, engine.payload?.exam.fullscreen_required, forceBypass])
 
   if (engine.phase === 'loading') {
     return (
@@ -155,45 +148,26 @@ export default function ExamRunnerPage() {
         <ViolationFlash count={engine.violationFlash.count} limit={engine.violationLimit} />
       )}
 
-      {isFsSupported && !isFullscreen && !forceBypass && engine.payload?.exam.fullscreen_required && engine.phase === 'running' && (
-        <button
-          type="button"
-          onClick={requestFs}
-          className="flex w-full cursor-pointer items-center justify-center gap-1.5 bg-amber-50 py-2 text-xs font-bold text-amber-800 ring-1 ring-amber-200 dark:bg-amber-500/15 dark:text-amber-200 dark:ring-amber-500/30"
-        >
-          <Maximize2 className="h-3.5 w-3.5" /> Wajib Layar Penuh — klik untuk masuk fullscreen
-        </button>
-      )}
-
-      {!isFsSupported && engine.payload?.exam.fullscreen_required && engine.phase === 'running' && !forceBypass && (
-        <p className="flex w-full items-center justify-center gap-1.5 bg-amber-50 py-2 text-xs font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-200">Perangkat tidak mendukung fullscreen — tetap fokus, pelanggaran tetap tercatat.</p>
-      )}
-
-      {isFsSupported && !isFullscreen && !forceBypass && engine.payload?.exam.fullscreen_required && engine.phase === 'running' && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/85 p-6 backdrop-blur-sm">
-          <div className="card pointer-events-auto max-w-sm p-8 text-center animate-scale-in">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-300">
-              <ShieldAlert className="h-7 w-7" />
-            </div>
-            <h2 className="mt-4 text-lg font-extrabold text-slate-900 dark:text-white">Wajib Layar Penuh</h2>
-            <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-              Ujian harus dikerjakan dalam mode layar penuh. Keluar dari fullscreen tercatat sebagai pelanggaran dan dapat otomatis mengumpulkan jawaban.
-            </p>
-            <p className="mt-2 text-xs font-semibold text-slate-400">
-              Pelanggaran: {engine.violationCount}/{engine.violationLimit}
-            </p>
-            <Button type="button" size="lg" className="mt-6 w-full cursor-pointer" icon={<Maximize2 className="h-4 w-4" />} onClick={requestFs} loading={fsLoading}>
-              Masuk Layar Penuh Sekarang
-            </Button>
-            <button
-              type="button"
-              onClick={() => setForceBypass(true)}
-              className="mt-3 w-full text-center text-xs font-medium text-slate-500 underline hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
-            >
-              Tetap lanjutkan tanpa fullscreen & kumpulkan nanti (pelanggaran tercatat)
-            </button>
-            <p className="mt-3 text-[11px] text-slate-400">Tekan Esc tidak akan keluar — sistem akan mencatat pelanggaran dan meminta masuk kembali.</p>
-          </div>
+      {isFsSupported && !isFullscreen && !fsBannerDismissed && engine.payload?.exam.fullscreen_required && engine.phase === 'running' && (
+        <div className="flex w-full items-center justify-center gap-2 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 ring-1 ring-amber-200 dark:bg-amber-500/15 dark:text-amber-200 dark:ring-amber-500/30">
+          <Maximize2 className="h-3.5 w-3.5 shrink-0" />
+          <span className="flex-1 text-center">Disarankan layar penuh untuk fokus maksimal.</span>
+          <button
+            type="button"
+            onClick={requestFs}
+            disabled={fsLoading}
+            className="shrink-0 rounded-lg bg-amber-600 px-3 py-1 text-xs font-bold text-white hover:bg-amber-700 disabled:opacity-50"
+          >
+            {fsLoading ? 'Memuat...' : 'Masuk Fullscreen'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setFsBannerDismissed(true)}
+            className="shrink-0 rounded-lg px-2 py-1 text-amber-700 hover:bg-amber-100 dark:text-amber-200"
+            aria-label="Tutup"
+          >
+            ✕
+          </button>
         </div>
       )}
 
@@ -341,7 +315,6 @@ function QuestionCard({
           </span>
           <div className="text-xs leading-tight min-w-0">
             <p className="font-semibold text-slate-500">Soal {index + 1} dari {total}</p>
-            <p className="text-slate-400">{question.points} poin</p>
           </div>
         </div>
         <button

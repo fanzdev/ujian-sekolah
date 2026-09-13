@@ -145,6 +145,32 @@ export async function recordViolation(
   return (data ?? {}) as ViolationResponse
 }
 
+export interface ClassRankingRow {
+  rank: number
+  student_id: string
+  student_name: string
+  nis: string | null
+  class_name: string | null
+  is_me: boolean
+  final_score: number | null
+  objective_score: number
+  essay_score: number | null
+  correct_count: number
+  wrong_count: number
+  unanswered_count: number
+  total_questions: number
+  duration_seconds: number | null
+  violation_count: number
+  passed: boolean | null
+}
+
+export async function getExamClassRanking(examId: string): Promise<ClassRankingRow[]> {
+  const { data, error } = await supabase.rpc('get_exam_class_ranking', { p_exam_id: examId })
+  if (error) throw error
+  const raw = typeof data === 'string' ? JSON.parse(data) : data
+  return (Array.isArray(raw) ? raw : []) as ClassRankingRow[]
+}
+
 export async function getMyAttempts(): Promise<
   {
     id: string

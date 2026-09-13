@@ -38,7 +38,7 @@ export default function ExamEditorPage() {
   const toast = useToast()
   const isEdit = Boolean(examId)
 
-  useDocumentTitle(isEdit ? 'Ubah Ujian' : 'Buat Ujian')
+  useDocumentTitle(isEdit ? 'Ubah Mata Pelajaran' : 'Buat Mata Pelajaran')
 
   const [step, setStep] = useState(0)
   const [currentExamId, setCurrentExamId] = useState<string | null>(examId ?? null)
@@ -89,9 +89,9 @@ export default function ExamEditorPage() {
           </button>
           <div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
-              {isEdit ? 'Ubah Ujian' : 'Buat Ujian Baru'}
+              {isEdit ? 'Ubah Mata Pelajaran' : 'Buat Mata Pelajaran Baru'}
             </h1>
-            <p className="mt-0.5 text-sm text-slate-400">Atur informasi dasar ujian</p>
+            <p className="mt-0.5 text-sm text-slate-400">Atur informasi dasar mata pelajaran</p>
           </div>
         </div>
       </div>
@@ -148,7 +148,7 @@ export default function ExamEditorPage() {
               examId={currentExamId}
               onBack={() => setStep(3)}
               onDone={() => {
-                toast.success('Ujian disimpan.')
+                toast.success('Mata pelajaran disimpan.')
                 navigate(`/${role}/exams`)
               }}
             />
@@ -161,13 +161,13 @@ export default function ExamEditorPage() {
             <QuickSummary examId={currentExamId} />
           </Card>
           <Card className="p-5 bg-primary-50/50 border-primary-100">
-            <h3 className="text-sm font-bold text-primary-800">Alur Membuat Ujian</h3>
+            <h3 className="text-sm font-bold text-primary-800">Alur Membuat Mapel</h3>
             <ol className="mt-3 space-y-2 text-xs leading-relaxed text-primary-900/70">
-              <li><strong>1.</strong> Isi informasi & jadwal — klik Lanjut (ujian otomatis dibuat sebagai Draf).</li>
+              <li><strong>1.</strong> Isi informasi & jadwal — klik Lanjut (mapel otomatis dibuat sebagai Draf).</li>
               <li><strong>2.</strong> Pilih target kelas/jurusan; peserta terisi otomatis.</li>
-              <li><strong>3.</strong> Pilih soal dari bank soal & atur bobot.</li>
+              <li><strong>3.</strong> Pilih soal dari bank soal.</li>
               <li><strong>4.</strong> Atur randomisasi, PIN, anti-curang.</li>
-              <li><strong>5.</strong> Review lalu aktifkan dari daftar ujian.</li>
+              <li><strong>5.</strong> Review lalu aktifkan dari daftar mapel.</li>
             </ol>
           </Card>
         </aside>
@@ -279,7 +279,7 @@ function InfoStep({
   }, [exam, title])
 
   const handleNext = async () => {
-    if (title.trim().length < 4) { toast.error('Nama ujian minimal 4 karakter.'); return }
+    if (title.trim().length < 4) { toast.error('Nama mata pelajaran minimal 4 karakter.'); return }
     if (!startsAtTime || !endsAtTime) { toast.error('Jam mulai dan selesai wajib diisi.'); return }
     const baseYmd = exam ? getYmdFromIsoWib(exam.starts_at) : getWibTodayYmd()
     const endYmd = endsAtTime <= startsAtTime ? addDaysYmd(baseYmd, 1) : baseYmd
@@ -305,7 +305,7 @@ function InfoStep({
       })
       onNext()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Gagal menyimpan ujian.')
+      toast.error(err instanceof Error ? err.message : 'Gagal menyimpan mata pelajaran.')
     } finally {
       setSaving(false)
     }
@@ -316,8 +316,8 @@ function InfoStep({
   return (
     <Card>
       <div className="space-y-5 p-6">
-        <Input label="Nama Ujian" placeholder="cth: PTS Ganjil Matematika XII" value={title} onChange={(e) => setTitle(e.target.value)} required autoFocus />
-        <Textarea label="Deskripsi" placeholder="Deskripsi singkat cakupan materi ujian" value={description} onChange={(e) => setDescription(e.target.value)} />
+        <Input label="Nama Mata Pelajaran" placeholder="cth: PTS Ganjil Matematika XII" value={title} onChange={(e) => setTitle(e.target.value)} required autoFocus />
+        <Textarea label="Deskripsi" placeholder="Deskripsi singkat cakupan materi mata pelajaran" value={description} onChange={(e) => setDescription(e.target.value)} />
         <Textarea label="Instruksi untuk Siswa" placeholder="Petunjuk pengerjaan yang dibaca siswa sebelum mulai..." value={instructions} onChange={(e) => setInstructions(e.target.value)} />
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
@@ -327,7 +327,7 @@ function InfoStep({
           <Input label="Jam Selesai (WIB)" type="time" value={endsAtTime} onChange={(e) => setEndsAtTime(e.target.value)} required hint="Jika selesai lewat tengah malam, otomatis hari berikutnya." />
         </div>
         <div className="flex items-start gap-2 rounded-lg bg-sky-50 px-4 py-3 text-xs leading-relaxed text-sky-800">
-          Tanggal ujian otomatis hari pembuatan (WIB). Anda hanya perlu mengatur jam mulai & selesai. Durasi dihitung otomatis.
+          Tanggal mata pelajaran otomatis hari pembuatan (WIB). Anda hanya perlu mengatur jam mulai & selesai. Durasi dihitung otomatis.
         </div>
       </div>
       <div className="flex justify-end border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:bg-slate-800 dark:text-slate-200">
@@ -729,21 +729,6 @@ function QuestionsStep({
                         </Badge>
                       </div>
                     </div>
-                    <div className="w-20 shrink-0">
-                      <Input
-                        aria-label={`Poin soal ${index + 1}`}
-                        type="number"
-                        step={0.5}
-                        min={0.5}
-                        value={item.points ?? item.question.points}
-                        onChange={(e) => {
-                          const v = e.target.value === '' ? null : Number(e.target.value)
-                          setItems((prev) => prev.map((it, i) => (i === index ? { ...it, points: v } : it)))
-                          setHasUnsaved(true)
-                        }}
-                        className="!py-1.5 text-center text-xs"
-                      />
-                    </div>
                     <div className="flex shrink-0 flex-col gap-0.5">
                       <button
                         disabled={index === 0}
@@ -1109,7 +1094,7 @@ function SettingsStep({
         <Section title="Kode & PIN Akses">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="relative">
-              <Input label="Kode Ujian" value={examCode} onChange={(e) => setExamCode(e.target.value.toUpperCase())} hint="Opsional, untuk referensi cepat." />
+              <Input label="Kode Mapel" value={examCode} onChange={(e) => setExamCode(e.target.value.toUpperCase())} hint="Opsional, untuk referensi cepat." />
               <button
                 onClick={() => setExamCode(randomCode(6))}
                 className="absolute top-[34px] right-2 rounded-md bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200"
@@ -1117,7 +1102,7 @@ function SettingsStep({
                 Acak
               </button>
             </div>
-            <Input label="PIN Ujian" value={pinCode} onChange={(e) => setPinCode(e.target.value.replace(/\D/g, '').slice(0, 8))} placeholder="kosongkan jika tanpa PIN" hint="Siswa wajib memasukkan PIN sebelum mulai." />
+            <Input label="PIN Mapel" value={pinCode} onChange={(e) => setPinCode(e.target.value.replace(/\D/g, '').slice(0, 8))} placeholder="kosongkan jika tanpa PIN" hint="Siswa wajib memasukkan PIN sebelum mulai." />
           </div>
         </Section>
       </div>
@@ -1147,13 +1132,13 @@ function ReviewStep({ examId, onBack, onDone }: { examId: string | null; onBack:
     const eqs = await getExamQuestions(examId)
     const targets = await getExamTargets(examId)
     const { count: pCount } = await (await import('@/services/client')).supabase.from('exam_participants').select('student_id', { count: 'exact', head: true }).eq('exam_id', examId).eq('is_removed', false)
-    return { exam, totalPoints: eqs.reduce((sum, e) => sum + Number(e.points ?? e.questions?.points ?? 0), 0), count: eqs.length, targets: targets.length, participants: pCount ?? 0 }
+    return { exam, count: eqs.length, targets: targets.length, participants: pCount ?? 0 }
   }, [examId])
 
   if (!query.data?.exam) {
     return (
       <Card>
-        <EmptyState title="Ujian belum dibuat" description="Selesaikan langkah informasi terlebih dahulu." />
+        <EmptyState title="Mata pelajaran belum dibuat" description="Selesaikan langkah informasi terlebih dahulu." />
         <div className="px-6 pb-6"><Button variant="ghost" onClick={onBack}>Kembali</Button></div>
       </Card>
     )
@@ -1163,11 +1148,10 @@ function ReviewStep({ examId, onBack, onDone }: { examId: string | null; onBack:
   const isReady = query.data.count > 0 && (query.data.targets > 0 || query.data.participants > 0)
 
   const rows: [string, React.ReactNode][] = [
-    ['Nama Ujian', exam.title],
+    ['Nama Mata Pelajaran', exam.title],
     ['Jadwal', `${formatDateTime(exam.starts_at)} → ${formatDateTime(exam.ends_at)}`],
     ['Durasi', `${exam.duration_minutes} menit`],
     ['Jumlah Soal', String(query.data.count)],
-    ['Total Bobot', `${query.data.totalPoints} poin`],
     ['Target Grup', `${query.data.targets} grup / ${query.data.participants} peserta`],
     ['Passing Grade', exam.passing_grade > 0 ? String(exam.passing_grade) : 'Tidak ada'],
     ['Percobaan Maks', String(exam.max_attempts)],
@@ -1181,7 +1165,7 @@ function ReviewStep({ examId, onBack, onDone }: { examId: string | null; onBack:
     <Card>
       {!isReady && (
         <div className="border-b border-amber-200 bg-amber-50 px-5 py-3 text-xs leading-relaxed text-amber-800">
-          <strong>Ujian belum siap diaktifkan:</strong> {query.data.count === 0 ? 'Belum ada soal. ' : ''}{query.data.targets === 0 && query.data.participants === 0 ? 'Belum ada target kelas/jurusan atau peserta. ' : ''} Lengkapi langkah Peserta & Soal sebelum mengaktifkan.
+          <strong>Mapel belum siap diaktifkan:</strong> {query.data.count === 0 ? 'Belum ada soal. ' : ''}{query.data.targets === 0 && query.data.participants === 0 ? 'Belum ada target kelas/jurusan atau peserta. ' : ''} Lengkapi langkah Peserta & Soal sebelum mengaktifkan.
         </div>
       )}
       <dl className="divide-y divide-slate-100">
@@ -1205,7 +1189,7 @@ function QuickSummary({ examId }: { examId: string | null }) {
     if (!examId) return null
     const [eqs, targets] = await Promise.all([getExamQuestions(examId), getExamTargets(examId)])
     const { count: pCount } = await (await import('@/services/client')).supabase.from('exam_participants').select('student_id', { count: 'exact', head: true }).eq('exam_id', examId).eq('is_removed', false)
-    return { count: eqs.length, points: eqs.reduce((s, e) => s + Number(e.points ?? e.questions?.points ?? 0), 0), targets: targets.length, participants: pCount ?? 0 }
+    return { count: eqs.length, targets: targets.length, participants: pCount ?? 0 }
   }, [examId])
 
   const isReady = (query.data?.count ?? 0) > 0 && ((query.data?.targets ?? 0) > 0 || (query.data?.participants ?? 0) > 0)
@@ -1214,7 +1198,6 @@ function QuickSummary({ examId }: { examId: string | null }) {
     <>
       <ul className="mt-3 space-y-2.5 text-sm">
         <SummaryRow label="Soal" value={query.data ? String(query.data.count) : '...'} />
-        <SummaryRow label="Total Poin" value={query.data ? String(query.data.points) : '...'} />
         <SummaryRow label="Target" value={query.data ? `${query.data.targets} grup / ${query.data.participants} peserta` : '...'} />
         <SummaryRow label="Status" value={<Badge tone={isReady ? 'green' : 'amber'}>{isReady ? 'Siap Aktif' : 'Belum Siap'}</Badge>} />
       </ul>

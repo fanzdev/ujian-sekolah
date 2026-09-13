@@ -142,6 +142,16 @@ export async function gradeEssayFinal(input: {
   const { error } = await supabase.from('essay_grades').upsert(upsert, { onConflict: 'attempt_id,question_id' })
   if (error) throw error
 
+  try {
+    await supabase.rpc('recalc_result', { p_attempt_id: input.attemptId })
+  } catch {
+    try {
+      await supabase.rpc('ensure_result_recalc', { p_attempt_id: input.attemptId })
+    } catch {
+      // fallback to trigger - will recalc automatically
+    }
+  }
+
   void logAudit('GRADE_ESSAY', 'essay_grade', `${input.attemptId}:${input.questionId}`, {
     score: input.score,
   })

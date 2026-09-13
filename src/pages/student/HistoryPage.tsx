@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ClipboardCheck, Eye, Clock3 } from 'lucide-react'
+import { ClipboardCheck, Eye, Clock3, Trophy } from 'lucide-react'
 import { useAsync, useDocumentTitle } from '@/hooks/useAsync'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, CardBody } from '@/components/ui/Card'
@@ -13,10 +13,12 @@ import { getMyAttempts } from '@/services/attempts.service'
 import { formatDateTime, formatDuration } from '@/lib/datetime'
 import { formatNumber } from '@/lib/utils'
 import AttemptReview from '@/features/exam/AttemptReview'
+import { ClassRanking } from '@/components/exam/ClassRanking'
 
 export default function HistoryPage() {
   const [tab, setTab] = useState('all')
   const [reviewAttemptId, setReviewAttemptId] = useState<string | null>(null)
+  const [rankingExam, setRankingExam] = useState<{ id: string; title: string } | null>(null)
   useDocumentTitle('Riwayat & Nilai')
 
   const query = useAsync(() => getMyAttempts(), [])
@@ -114,6 +116,9 @@ export default function HistoryPage() {
                       ) : (
                         <Badge tone="amber">Menunggu penilaian essay</Badge>
                       )}
+                      <Button size="xs" variant="outline" onClick={() => setRankingExam({ id: a.exam_id, title: a.exams?.title ?? 'Ujian' })} icon={<Trophy className="h-3.5 w-3.5" />}>
+                        Peringkat Kelas
+                      </Button>
                       {a.exams && (
                         <Button size="xs" variant="outline" onClick={() => setReviewAttemptId(a.id)} icon={<Eye className="h-3.5 w-3.5" />}>
                           Review
@@ -121,7 +126,12 @@ export default function HistoryPage() {
                       )}
                     </div>
                   ) : (
-                    <Badge>Dikumpulkan</Badge>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge>Dikumpulkan</Badge>
+                      <Button size="xs" variant="outline" onClick={() => setRankingExam({ id: a.exam_id, title: a.exams?.title ?? 'Ujian' })} icon={<Trophy className="h-3.5 w-3.5" />}>
+                        Peringkat Kelas
+                      </Button>
+                    </div>
                   )}
                 </CardBody>
               </Card>
@@ -133,6 +143,14 @@ export default function HistoryPage() {
       {reviewAttemptId && (
         <Modal open onClose={() => setReviewAttemptId(null)} title="Review Jawaban" size="xl">
           <AttemptReviewLoader attemptId={reviewAttemptId} onClose={() => setReviewAttemptId(null)} />
+        </Modal>
+      )}
+
+      {rankingExam && (
+        <Modal open onClose={() => setRankingExam(null)} title={`Peringkat Kelas — ${rankingExam.title}`} size="lg">
+          <div className="max-h-[70vh] overflow-y-auto px-4 py-4 scrollbar-thin sm:px-6">
+            <ClassRanking examId={rankingExam.id} examTitle={rankingExam.title} />
+          </div>
         </Modal>
       )}
     </>

@@ -108,7 +108,7 @@ export default function GradingQueuePage() {
                 </div>
                 <div className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
                   {r.status === 'graded' ? (
-                    <Badge tone="green">Nilai: {Number(r.final_score).toLocaleString('id-ID')}/{r.max_points}</Badge>
+                    <Badge tone="green">Nilai: {Number(r.final_score).toLocaleString('id-ID')}</Badge>
                   ) : r.status === 'ai_graded' ? (
                     <Badge tone="sky">AI: {r.ai_score !== null ? Number(r.ai_score).toLocaleString('id-ID') : '-'} · Perlu review</Badge>
                   ) : (
@@ -174,8 +174,8 @@ function GradingModal({ item, onClose, onSaved }: { item: QueueItem; onClose: ()
   }
 
   const saveFinal = async () => {
-    if (score === '' || Number(score) < 0 || Number(score) > item.max_points) {
-      toast.error(`Nilai harus antara 0 dan ${item.max_points}.`)
+    if (score === '' || Number(score) < 0 || Number(score) > 100) {
+      toast.error(`Nilai harus antara 0 dan 100.`)
       return
     }
     setSaving(true)
@@ -200,7 +200,7 @@ function GradingModal({ item, onClose, onSaved }: { item: QueueItem; onClose: ()
     <Modal open onClose={onClose} title={`Nilai Essay · ${item.student_name}`} size="xl">
       <div className="space-y-5 px-6 py-5">
         <div className="rounded-2xl border border-primary-100 bg-primary-50/50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
-          <p className="font-mono text-[10px] tracking-[0.12em] text-primary-700 dark:text-primary-300">SOAL — {detail.maxPoints} POIN</p>
+          <p className="font-mono text-[10px] tracking-[0.12em] text-primary-700 dark:text-primary-300">SOAL</p>
           <p className="mt-1.5 text-sm font-semibold leading-relaxed text-slate-900 dark:text-white">{detail.questionText.replace(/<[^>]*>/g, '')}</p>
         </div>
 
@@ -214,11 +214,11 @@ function GradingModal({ item, onClose, onSaved }: { item: QueueItem; onClose: ()
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
-            label={`Nilai Final (maks. ${detail.maxPoints})`}
+            label={`Nilai Final (maks. 100)`}
             type="number"
             step={0.5}
             min={0}
-            max={detail.maxPoints}
+            max={100}
             value={score}
             onChange={(e) => setScore(e.target.value === '' ? '' : Number(e.target.value))}
             required

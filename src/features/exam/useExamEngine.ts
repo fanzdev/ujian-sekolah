@@ -277,7 +277,7 @@ export function useExamEngine(attemptId: string) {
         stored = mem
       }
       const last = Math.max(mem, stored)
-      if (now - last < 3000) return
+      if (now - last < 10000) return
       lastViolationAt.current[type] = now
       try {
         sessionStorage.setItem(`violation-ts:${attemptId}:${type}`, String(now))
@@ -305,22 +305,6 @@ export function useExamEngine(attemptId: string) {
       }
     },
     [attemptId, phase],
-  )
-
-  const triggerSecurity = useCallback(
-    async (type: string, severity: 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' = 'LOW', metadata: Record<string, unknown> = {}) => {
-      if (phase !== 'running' || submittingRef.current) return
-      const now = Date.now()
-      const key = `sec:${type}`
-      const last = lastViolationAt.current[key] ?? 0
-      if (now - last < 2500) return
-      lastViolationAt.current[key] = now
-      void recordSecurityEvent(attemptId, type, severity, metadata, getDeviceId()).catch(() => undefined)
-      if (['TAB_SWITCH','FULLSCREEN_EXIT','PAGE_RELOAD','COPY_ATTEMPT','PASTE_ATTEMPT'].includes(type)) {
-        void triggerViolation(type.toLowerCase(), 'warning', metadata)
-      }
-    },
-    [attemptId, phase, triggerViolation],
   )
 
   // multi-device / IP / duplicate tab + PAGE_REOPEN
@@ -380,25 +364,14 @@ export function useExamEngine(attemptId: string) {
     return () => { try { bc?.close() } catch (_e) { void _e } }
   }, [payload, phase, attemptId, triggerViolation])
 
-  // anti-cheat listeners — comprehensive
+  // anti-cheat listeners — normal mode (non-aggressive)
   useEffect(() => {
     if (phase !== 'running' || !payload) return
 
-    const mustFs = true
-    const isFsSupported = (() => {
-      const d = document as unknown as { fullscreenEnabled?: boolean; webkitFullscreenEnabled?: boolean }
-      const el = document.documentElement as unknown as { requestFullscreen?: unknown; webkitRequestFullscreen?: unknown }
-      return !!(d.fullscreenEnabled || d.webkitFullscreenEnabled || el.requestFullscreen || el.webkitRequestFullscreen)
-    })()
+    const mustFs = payload.exam.fullscreen_required === true
     const isFs = () => {
       const d = document as unknown as { fullscreenElement: Element | null; webkitFullscreenElement?: Element | null; mozFullScreenElement?: Element | null }
       return !!(d.fullscreenElement || d.webkitFullscreenElement || d.mozFullScreenElement)
-    }
-    const requestFs = () => {
-      if (!isFsSupported) return
-      const el = document.documentElement as unknown as { requestFullscreen?: () => Promise<void>; webkitRequestFullscreen?: () => Promise<void>; mozRequestFullScreen?: () => Promise<void> }
-      const req = el.requestFullscreen ?? el.webkitRequestFullscreen ?? el.mozRequestFullScreen
-      req?.call(el).catch(() => undefined)
     }
 
     void recordSecurityEvent(attemptId, 'EXAM_RESUME', 'INFO', { remaining: remainingSeconds }, getDeviceId())
@@ -407,15 +380,12 @@ export function useExamEngine(attemptId: string) {
     const onVisibility = () => {
       if (document.hidden) {
         void triggerViolation('tab_switch', 'warning', { visibilityState: document.visibilityState })
-        void triggerSecurity('TAB_SWITCH', 'LOW', { visibilityState: document.visibilityState })
         void recordSecurityEvent(attemptId, 'PAGE_BLUR', 'LOW', { reason: 'visibility_hidden' }, getDeviceId())
       } else {
         void recordSecurityEvent(attemptId, 'PAGE_FOCUS', 'INFO', {}, getDeviceId())
-        void triggerSecurity('PAGE_FOCUS', 'INFO', {})
       }
     }
     const onBlur = () => {
-      void triggerViolation('window_blur', 'warning', { type: 'window_blur' })
       void recordSecurityEvent(attemptId, 'PAGE_BLUR', 'LOW', {}, getDeviceId())
     }
     const onFocus = () => {
@@ -423,60 +393,36 @@ export function useExamEngine(attemptId: string) {
     }
     const onPageHide = () => {
       void recordSecurityEvent(attemptId, 'PAGE_LEAVE', 'MEDIUM', { persisted: false }, getDeviceId())
-      void triggerViolation('page_leave', 'warning', {})
     }
-    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+    const onBeforeUnload = () => {
       void recordSecurityEvent(attemptId, 'PAGE_RELOAD', 'MEDIUM', {}, getDeviceId())
-      void triggerViolation('page_reload', 'warning', {})
-      e.preventDefault()
-      e.returnValue = ''
     }
     const onFsChange = () => {
+      if (!mustFs) return
       if (!isFs() && !document.hidden) {
-        void triggerViolation('fullscreen_exit', 'serious', {})
-        void recordSecurityEvent(attemptId, 'FULLSCREEN_EXIT', 'HIGH', {}, getDeviceId())
-        requestFs()
+        void triggerViolation('fullscreen_exit', 'warning', {})
+        void recordSecurityEvent(attemptId, 'FULLSCREEN_EXIT', 'LOW', {}, getDeviceId())
       } else if (isFs()) {
         void recordSecurityEvent(attemptId, 'FULLSCREEN_ENTER', 'INFO', {}, getDeviceId())
-      } else if (!isFs()) {
-        void recordSecurityEvent(attemptId, 'FULLSCREEN_EXIT', 'HIGH', {}, getDeviceId())
       }
     }
-    const onContextMenu = (e: MouseEvent) => {
+    const onContextMenu = () => {
       void recordSecurityEvent(attemptId, 'CONTEXT_MENU', 'LOW', {}, getDeviceId())
-      void triggerViolation('context_menu', 'warning', {})
-      e.preventDefault()
     }
     const handleCopy = (e: Event) => {
-      e.preventDefault()
       void recordSecurityEvent(attemptId, 'COPY_ATTEMPT', 'LOW', { type: (e as ClipboardEvent).type }, getDeviceId())
-      void triggerViolation('copy_paste', 'warning', { sub: 'copy' })
     }
-    const handlePaste = (e: Event) => {
-      e.preventDefault()
-      void recordSecurityEvent(attemptId, 'PASTE_ATTEMPT', 'MEDIUM', {}, getDeviceId())
-      void triggerViolation('paste_attempt', 'warning', {})
+    const handlePaste = () => {
+      void recordSecurityEvent(attemptId, 'PASTE_ATTEMPT', 'LOW', {}, getDeviceId())
     }
-    const handleCut = (e: Event) => {
-      e.preventDefault()
+    const handleCut = () => {
       void recordSecurityEvent(attemptId, 'CUT_ATTEMPT', 'LOW', {}, getDeviceId())
-      void triggerViolation('cut_attempt', 'warning', {})
     }
     const onKeyDown = (e: KeyboardEvent) => {
       const mod = e.ctrlKey || e.metaKey
       const key = e.key.toLowerCase()
-      if (mod && ['c','v','x','u','s','p','a'].includes(key)) {
-        void recordSecurityEvent(attemptId, key === 'v' ? 'PASTE_ATTEMPT' : key === 'c' ? 'COPY_ATTEMPT' : 'CUT_ATTEMPT', 'MEDIUM', { key: e.key, ctrl: true }, getDeviceId())
-        e.preventDefault()
-        void triggerViolation('copy_paste', 'warning', { key })
-      }
-      if (e.key === 'F12' || (mod && e.shiftKey && ['i','j','c'].includes(key)) || key === 'printscreen' || (mod && key === 'k')) {
-        void recordSecurityEvent(attemptId, 'DEVTOOLS_SUSPECTED', 'MEDIUM', { key: e.key, heuristic: true }, getDeviceId())
-        e.preventDefault()
-      }
-      if (mod && key === 'r') {
-        void recordSecurityEvent(attemptId, 'PAGE_RELOAD', 'MEDIUM', { key: 'Ctrl+R' }, getDeviceId())
-        e.preventDefault()
+      if (e.key === 'F12' || (mod && e.shiftKey && ['i','j','c'].includes(key)) || key === 'printscreen') {
+        void recordSecurityEvent(attemptId, 'DEVTOOLS_SUSPECTED', 'LOW', { key: e.key, heuristic: true }, getDeviceId())
       }
     }
     const onOffline = () => {
@@ -489,27 +435,29 @@ export function useExamEngine(attemptId: string) {
     }
     let devtoolsOpen = false
     const checkDevtools = () => {
-      const threshold = 160
+      const threshold = 220
       const wDiff = window.outerWidth - window.innerWidth
       const hDiff = window.outerHeight - window.innerHeight
       const suspected = wDiff > threshold || hDiff > threshold
       if (suspected && !devtoolsOpen) {
         devtoolsOpen = true
-        void recordSecurityEvent(attemptId, 'DEVTOOLS_SUSPECTED', 'MEDIUM', { heuristic: true, wDiff, hDiff }, getDeviceId())
+        void recordSecurityEvent(attemptId, 'DEVTOOLS_SUSPECTED', 'LOW', { heuristic: true, wDiff, hDiff }, getDeviceId())
       } else if (!suspected && devtoolsOpen) {
         devtoolsOpen = false
       }
     }
-    const devtoolsInterval = window.setInterval(checkDevtools, 3000)
+    const devtoolsInterval = window.setInterval(checkDevtools, 12000)
 
     document.addEventListener('visibilitychange', onVisibility)
     window.addEventListener('blur', onBlur)
     window.addEventListener('focus', onFocus)
     window.addEventListener('pagehide', onPageHide)
     window.addEventListener('beforeunload', onBeforeUnload)
-    document.addEventListener('fullscreenchange', onFsChange)
-    document.addEventListener('webkitfullscreenchange', onFsChange as EventListener)
-    document.addEventListener('mozfullscreenchange', onFsChange as EventListener)
+    if (mustFs) {
+      document.addEventListener('fullscreenchange', onFsChange)
+      document.addEventListener('webkitfullscreenchange', onFsChange as EventListener)
+      document.addEventListener('mozfullscreenchange', onFsChange as EventListener)
+    }
     document.addEventListener('contextmenu', onContextMenu)
     document.addEventListener('copy', handleCopy)
     document.addEventListener('paste', handlePaste)
@@ -517,8 +465,6 @@ export function useExamEngine(attemptId: string) {
     document.addEventListener('keydown', onKeyDown)
     window.addEventListener('offline', onOffline)
     window.addEventListener('online', onOnline)
-
-    if (!isFs() && mustFs) requestFs()
 
     return () => {
       document.removeEventListener('visibilitychange', onVisibility)
@@ -537,13 +483,8 @@ export function useExamEngine(attemptId: string) {
       window.removeEventListener('offline', onOffline)
       window.removeEventListener('online', onOnline)
       window.clearInterval(devtoolsInterval)
-      const d = document as unknown as { fullscreenElement: Element | null; webkitFullscreenElement?: Element | null; mozFullScreenElement?: Element | null; exitFullscreen?: () => Promise<void>; webkitExitFullscreen?: () => Promise<void>; mozCancelFullScreen?: () => Promise<void> }
-      if (d.fullscreenElement || d.webkitFullscreenElement || d.mozFullScreenElement) {
-        const ex = d.exitFullscreen ?? d.webkitExitFullscreen ?? d.mozCancelFullScreen
-        ex?.call(document).catch(() => undefined)
-      }
     }
-  }, [phase, payload, attemptId, remainingSeconds, triggerViolation, triggerSecurity])
+  }, [phase, payload, attemptId, remainingSeconds, triggerViolation])
 
   // ---------------- derived ----------------
   const order = useMemo(() => payload?.order ?? [], [payload])
