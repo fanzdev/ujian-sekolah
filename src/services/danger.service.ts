@@ -81,22 +81,47 @@ export async function wipeAll(excludeSelfId?: string): Promise<void> {
   try { await wipeExams() } catch { void 0 }
   try { await wipeBanks() } catch { void 0 }
   try { await supabase.from('questions').delete().neq('id', '00000000-0000-0000-0000-000000000000') } catch { void 0 }
+  try { await supabase.from('matching_pairs').delete().neq('id', '00000000-0000-0000-0000-000000000000') } catch { void 0 }
+  try { await supabase.from('question_options').delete().neq('id', '00000000-0000-0000-0000-000000000000') } catch { void 0 }
   try { await wipeSubjects() } catch { void 0 }
+  try { await supabase.from('teacher_subjects').delete().neq('teacher_id', '00000000-0000-0000-0000-000000000000') } catch { void 0 }
+  try { await supabase.from('schedules').delete().neq('id', '00000000-0000-0000-0000-000000000000') } catch { void 0 }
   try { await wipeClasses() } catch { void 0 }
   try { await wipeDepartments() } catch { void 0 }
   try { await wipeTeachers(excludeSelfId) } catch { void 0 }
   try { await wipeStudents() } catch { void 0 }
   try { await wipeViolations() } catch { void 0 }
   try { await wipeAudit() } catch { void 0 }
+  try { await supabase.from('security_events').delete().neq('id', '00000000-0000-0000-0000-000000000000') } catch { void 0 }
   try { await supabase.from('notifications').delete().neq('id', '00000000-0000-0000-0000-000000000000') } catch { void 0 }
   try { await supabase.from('media_files').delete().neq('id', '00000000-0000-0000-0000-000000000000') } catch { void 0 }
 }
 
+async function resetSetupFlag(): Promise<void> {
+  const { error } = await supabase
+    .from('system_settings')
+    .upsert({ key: 'setup_completed', value: { done: false }, updated_at: new Date().toISOString() }, { onConflict: 'key' })
+  if (error) throw error
+}
+
 export async function wipeAllIncludingAdmin(): Promise<void> {
+  const rpc = await supabase.rpc('wipe_everything_reset_setup')
+  if (!rpc.error) return
+
+  const rpcUnsupported = rpc.error.message?.includes('wipe_everything_reset_setup')
+  if (!rpcUnsupported) throw rpc.error
+
   await wipeAll()
+
   const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin')
   for (const a of (admins ?? []) as unknown as { id: string }[]) {
     try { await supabase.rpc('admin_delete_user', { p_user_id: a.id }) } catch { void 0 }
     try { await supabase.from('profiles').delete().eq('id', a.id) } catch { void 0 }
   }
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    try { await supabase.from('profiles').delete().eq('id', user.id) } catch { void 0 }
+  }
+
+  await resetSetupFlag()
 }

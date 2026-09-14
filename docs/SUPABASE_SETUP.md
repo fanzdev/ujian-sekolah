@@ -26,6 +26,7 @@ Buka **SQL Editor** → New query, lalu jalankan file berikut **sesuai urutan** 
 | 5 | `00005_storage_seed.sql` | Bucket Storage + default pengaturan sistem (**tanpa** data demo) |
 | 6 | `00006_ai_keys.sql` | Tabel pool API Key AI + konfigurasi model default (**dihapus** oleh migrasi `00035_remove_ai.sql`) |
 | 7 | `00007_setup_bootstrap.sql` | Wizard setup admin pertama (sekali pakai + kunci permanen) |
+| 36 | `00036_reset_setup_on_full_wipe.sql` | Wipe total atomik: hapus semua data + admin, reset flag setup agar wizard `/setup` terbuka lagi |
 | 8 | `00008_remove_demo_data.sql` | Hapus sisa data demo dari database lama (guarded delete) |
 
 Setelah selesai, verifikasi: Table Editor menampilkan tabel-tabel di atas dan bucket `media` ada di Storage.

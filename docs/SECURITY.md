@@ -14,6 +14,7 @@
 | Replay autosave | Upsert idempotent PK `(attempt_id, question_id)` |
 | Secret bocor | Hanya anon key di frontend; `.env` di gitignore; workflow membaca dari GitHub Secrets |
 | Session abuse | Ban user nonaktif via auth admin API; audit log login/logout |
+| Penyalahgunaan wipe total | RPC `wipe_everything_reset_setup` hanya bisa dipanggil admin terautentikasi (guard `auth.uid()` + `is_admin()`); wizard `/setup` hanya terbuka setelah flag direset oleh RPC tersebut |
 
 ## Batasan yang Jujur
 

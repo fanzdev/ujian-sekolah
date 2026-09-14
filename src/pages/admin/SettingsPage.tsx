@@ -790,8 +790,8 @@ function DangerPanel() {
       const mod = await import('@/services/danger.service')
       if (includeAdmin) {
         await mod.wipeAllIncludingAdmin()
-        toast.success('Semua data termasuk admin dihapus. Anda akan logout.')
-        setTimeout(() => { window.location.href = '/login' }, 1200)
+        toast.success('Semua data termasuk admin dihapus. Anda akan diarahkan ke wizard setup.')
+        setTimeout(() => { window.location.href = `${import.meta.env.BASE_URL}setup` }, 1200)
       } else {
         const { data: { user } } = await (await import('@/services/client')).supabase.auth.getUser()
         await mod.wipeAll(user?.id)

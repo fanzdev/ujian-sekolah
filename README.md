@@ -245,6 +245,8 @@ Perintah lain yang tersedia:
 4. Anda diarahkan ke halaman login (username sudah terisi otomatis) → login dengan akun tersebut
 
 > 🔒 Keamanan: status setup disimpan sebagai flag di database. Setelah selesai, endpoint setup **ditolak permanen** — bahkan jika suatu saat semua admin terhapus, wizard tidak akan terbuka lagi. Jika admin sudah ada sejak awal, `/setup` langsung dialihkan ke `/login`.
+>
+> ♻️ Pengecualian: tombol **Hapus Total** (Pengaturan → Bahaya) menghapus semua data **termasuk semua akun admin** dan otomatis mereset flag setup dalam satu transaksi (RPC `wipe_everything_reset_setup`, migrasi `00036`) — sehingga wizard `/setup` tampil kembali untuk membuat admin baru. Jalankan migrasi `00036_reset_setup_on_full_wipe.sql` agar tombol ini berfungsi penuh.
 
 <details>
 <summary><strong>Alternatif: SQL script manual</strong></summary>
