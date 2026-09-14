@@ -258,49 +258,11 @@ Jika ingin membuat admin tanpa wizard, `scripts/create-admin.sql` tetap berfungs
 
 ---
 
-## F. AI Essay Grading (OpenRouter, Multi API Key)
+## F. Fitur AI — DiHapus
 
-Fitur penilaian essay memakai **OpenRouter** dengan sistem **pool banyak API Key + rotasi otomatis**:
+Fitur AI (**AI Grading**, **Chat AI**, **Laporan AI**) sudah dihapus total dari aplikasi. Tidak perlu konfigurasi API key AI (OpenRouter dst.) — folder Edge Function `chat-ai`/`grade-essay` dijim kantana dan tabel/kolom AI sudah dibersikhanan via migrasi `supabase/migrations/00035_remove_ai.sql`.
 
-```text
-Key #1 ──kena limit(429)/kuota habis(402)/invalid──► Key #2 ──masih gagal──► Key #3 ──► ...
-   ▲                                                                    │
-   └────────────── kembali ke key teratas pada request berikutnya ───────┘
-```
-
-**Yang perlu Anda lakukan (tanpa menyentuh kode):**
-
-1. Daftar di <https://openrouter.ai> → buka <https://openrouter.ai/keys> → buat API Key
-   - 💡 Disarankan membuat **beberapa key** (gratis maupun berbayar) supaya rotasi efektif
-2. Login sebagai **Admin** di aplikasi → **Pengaturan → tab "AI Grading"**
-3. Klik **Tambah Key** → tempel key → beri label (mis. *"Key Utama"*) → simpan
-4. Ulangi untuk key kedua, ketiga, … sesukanya
-5. Atur **Model Default** (ada tombol saran model populer), atau isi override model per key
-6. Urutkan prioritas dengan tombol ▲▼ — key paling atas dipakai pertama
-
-**Fitur panel AI Grading:**
-
-| Kemampuan | Keterangan |
-|---|---|
-➕ Tambah tak terbatas | Key #4, #5, … dst. sesuai kebutuhan |
-🔄 Rotasi otomatis | Rate-limit / kuota habis / key invalid → langsung pindah ke key berikutnya, transaksi tetap sukses selama masih ada key sehat |
-🩺 Status kesehatan | Tiap key menampilkan waktu terakhir dipakai & pesan error terakhir (mis. `HTTP 429: Rate limited`) |
-🔀 Model fleksibel | Default global + override per key |
-👁️ Aman | Key tersimpan di tabel khusus yang **hanya bisa dibaca admin** (RLS); ditampilkan ter-masker (`sk-or-v1•••••••1234`) |
-🎚️ Nonaktifkan sementara | Toggle ON/OFF per key tanpa hapus |
-
-> Tanpa API key sama sekali? Penilaian **manual** tetap bekerja normal — tombol AI hanya menampilkan pesan bahwa AI belum dikonfigurasi.
-
-<details>
-<summary><strong>Fallback darurat via environment (opsional)</strong></summary>
-
-Jika pool kosong, Edge Function masih mencoba satu key dari environment Supabase CLI:
-
-```bash
-supabase secrets set OPENROUTER_API_KEY=sk-or-v1-xxxxx
-supabase secrets set AI_MODEL=meta-llama/llama-3.3-70b-instruct
-```
-</details>
+Penilaian essay tetap berjalan **manual** dari halaman *Penilaian Essay* (guru beri nilai final & umpan balik langsung).
 
 ---
 
@@ -356,10 +318,6 @@ Checklist lengkap: [`docs/TESTING.md`](docs/TESTING.md).
 | `VITE_SUPABASE_ANON_KEY` | ✅ | Supabase → Settings → API → key `anon public` | ✅ Ya (dilindungi RLS) |
 
 > Hanya variabel berawalan `VITE_` yang masuk bundle browser — karena itu hanya dua nilai publik di atas yang boleh memakai prefix ini. Penjelasan lengkap ada di file `.env.example`.
-
-### AI OpenRouter — lewat UI Admin (disarankan), bukan `.env`
-
-API Key AI dikelola dinamis dari **Admin → Pengaturan → AI Grading** (lihat bagian F). Tidak ada lagi key AI yang perlu ditulis di file environment. Fallback CLI opsional: `supabase secrets set OPENROUTER_API_KEY=...`.
 
 ---
 

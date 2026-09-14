@@ -39,7 +39,6 @@ const ADMIN_NAV: NavItem[] = [
   { path: '/admin/results', label: 'Hasil Ujian', icon: ClipboardCheck },
   { path: '/admin/reports', label: 'Laporan', icon: BarChart3 },
   { path: '/admin/import-export', label: 'Import / Export', icon: Upload },
-  { path: '/admin/ai-usage', label: 'Laporan AI', icon: PencilRuler },
   { path: '/admin/audit-logs', label: 'Audit Log', icon: ScrollText },
   { path: '/admin/violation-logs', label: 'Pelanggaran', icon: ShieldAlert },
   { path: '/admin/settings', label: 'Pengaturan', icon: Settings },

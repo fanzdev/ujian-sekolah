@@ -1,5 +1,4 @@
 import { supabase } from './client'
-import { invokeEdge } from './client'
 import { logAudit } from './audit.service'
 import type { ExamResult, UserRole } from '@/types/models'
 
@@ -8,8 +7,6 @@ export interface EssayQueueItem {
   attempt_id: string
   question_id: string
   status: string | null
-  ai_score: number | null
-  ai_feedback: string | null
   final_score: number | null
   final_feedback: string | null
   graded_by: string | null
@@ -32,7 +29,7 @@ export async function listEssayQueue(params: {
          id, status,
          students(profiles(full_name), nis)
        ),
-       essay_grades(status, ai_score, ai_feedback, final_score, final_feedback, graded_by)`,
+       essay_grades(status, final_score, final_feedback, graded_by)`,
     )
     .eq('questions.type', 'essay')
     .in('attempts.status', ['submitted', 'auto_submitted', 'graded'])
@@ -62,8 +59,6 @@ export async function listEssayQueue(params: {
       attempt_id: r.attempt_id,
       question_id: r.question_id,
       status: grade?.status ?? 'pending',
-      ai_score: grade?.ai_score ?? null,
-      ai_feedback: grade?.ai_feedback ?? null,
       final_score: grade?.final_score ?? null,
       final_feedback: grade?.final_feedback ?? null,
       graded_by: grade?.graded_by ?? null,
@@ -97,8 +92,8 @@ interface EssayAnswerRow {
     students: { profiles: { full_name: string }; nis: string | null }[] | { profiles: { full_name: string }; nis: string | null }
   }
   essay_grades:
-    | { status: string; ai_score: number | null; ai_feedback: string | null; final_score: number | null; final_feedback: string | null; graded_by: string | null }[]
-    | { status: string; ai_score: number | null; ai_feedback: string | null; final_score: number | null; final_feedback: string | null; graded_by: string | null }
+    | { status: string; final_score: number | null; final_feedback: string | null; graded_by: string | null }[]
+    | { status: string; final_score: number | null; final_feedback: string | null; graded_by: string | null }
     | null
 }
 
@@ -172,19 +167,6 @@ export async function gradeEssayFinal(input: {
       type: 'result',
     })
   }
-}
-
-export async function requestAiGrade(attemptId: string, questionId: string): Promise<{
-  score: number
-  feedback: string
-  confidence: number
-}> {
-  const result = await invokeEdge<{ suggestion: { score: number; feedback: string; confidence: number } }>(
-    'grade-essay',
-    { attempt_id: attemptId, question_id: questionId },
-  )
-  void logAudit('GRADE_ESSAY', 'ai', `${attemptId}:${questionId}`)
-  return result.suggestion
 }
 
 // ---------- Results ----------

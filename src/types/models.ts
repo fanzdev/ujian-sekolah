@@ -227,15 +227,11 @@ export interface ExamResult {
 export interface EssayGrade {
   attempt_id: string
   question_id: string
-  ai_score: number | null
-  ai_feedback: string | null
-  ai_confidence: number | null
-  ai_provider: string | null
   final_score: number | null
   final_feedback: string | null
   graded_by: string | null
   graded_at: string | null
-  status: 'pending' | 'ai_graded' | 'graded'
+  status: 'pending' | 'graded'
 }
 
 export interface Violation {
@@ -316,25 +312,6 @@ export interface SystemSettingsMap {
   security: { camera_snapshots_enabled: boolean; ip_logging: boolean; device_logging: boolean }
   password_policy: { min_length: number }
   username_policy: { lowercase: boolean; pattern: string }
-  ai: {
-    provider: string
-    model: string
-    models?: string[]
-    temperature?: number
-  }
-}
-
-export interface AiProviderKey {
-  id: string
-  provider: 'openrouter' | string
-  label: string
-  api_key: string
-  model: string | null
-  priority: number
-  is_active: boolean
-  last_error: string | null
-  last_used_at: string | null
-  created_at: string
 }
 
 export type AvailableExamStatus = 'upcoming' | 'can_start' | 'resume' | 'no_attempts' | 'closed'

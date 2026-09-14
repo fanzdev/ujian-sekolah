@@ -29,7 +29,7 @@ export async function rpc<T = unknown>(fn: string, args: Record<string, unknown>
   return data as T
 }
 
-type EdgeName = 'manage-user' | 'grade-essay' | 'chat-ai'
+type EdgeName = 'manage-user'
 
 export async function invokeEdge<T>(name: EdgeName, body: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke(name, { body })

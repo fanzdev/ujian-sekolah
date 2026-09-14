@@ -141,7 +141,7 @@ export default function LoginPage() {
                   </div>
                   <div className="flex gap-3">
                     <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-white/40" />
-                    <p className="text-sm leading-snug text-white/55">Essay dinilai guru, dibantu saran AI. Skor final tetap keputusan guru.</p>
+                    <p className="text-sm leading-snug text-white/55">Essay dinilai langsung oleh guru. Skor final tetap keputusan guru.</p>
                   </div>
                   <div className="flex items-center gap-2 pt-1 font-mono text-[10px] tracking-wide text-white/45">
                     <span className="h-px flex-1 bg-white/10" />

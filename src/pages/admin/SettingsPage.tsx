@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/Input'
 import { ToggleSwitch } from '@/components/ui/FormControls'
 import { Tabs } from '@/components/ui/Tabs'
 import { ErrorState, Spinner } from '@/components/ui/Feedback'
-import AiKeysPanel from '@/components/settings/AiKeysPanel'
 import {
   fetchSchoolSettings,
   updateSchoolSettings,
@@ -36,7 +35,6 @@ export default function SettingsPage() {
           { id: 'branding', label: 'Branding' },
           { id: 'exam', label: 'Default Ujian' },
           { id: 'security', label: 'Keamanan' },
-          { id: 'ai', label: 'AI Grading' },
           { id: 'danger', label: 'Bahaya' },
         ]}
       />
@@ -44,7 +42,6 @@ export default function SettingsPage() {
         {tab === 'branding' && <BrandingPanel />}
         {tab === 'exam' && <ExamDefaultsPanel />}
         {tab === 'security' && <SecurityPanel />}
-        {tab === 'ai' && <AiKeysPanel />}
         {tab === 'danger' && <DangerPanel />}
       </div>
     </>

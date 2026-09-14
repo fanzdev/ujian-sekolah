@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PencilRuler, Sparkles, Save, Search, Clock3, CheckCircle2, GraduationCap, Filter } from 'lucide-react'
+import { PencilRuler, Save, Search, Clock3, CheckCircle2, GraduationCap, Filter } from 'lucide-react'
 import { useAsync, useDebounce, useDocumentTitle } from '@/hooks/useAsync'
 import { useToast } from '@/hooks/useToast'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -10,7 +10,7 @@ import { Input, Textarea } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { EmptyState, ErrorState, Spinner } from '@/components/ui/Feedback'
-import { listEssayQueue, getEssayDetail, gradeEssayFinal, requestAiGrade } from '@/services/grading.service'
+import { listEssayQueue, getEssayDetail, gradeEssayFinal } from '@/services/grading.service'
 import { listExams } from '@/services/exams.service'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -30,14 +30,14 @@ export default function GradingQueuePage() {
   if (query.error) return <ErrorState message={String(query.error)} onRetry={query.reload} />
 
   const rows = query.data ?? []
-  const pending = rows.filter((r) => r.status === 'pending' || r.status === 'ai_graded')
+  const pending = rows.filter((r) => r.status === 'pending')
   const graded = rows.filter((r) => r.status === 'graded')
 
   return (
     <>
       <PageHeader
         title="Penilaian Essay"
-        subtitle="Review jawaban essay dengan bantuan AI — keputusan final tetap di guru"
+        subtitle="Review jawaban essay dan beri nilai final untuk siswa"
         icon={<PencilRuler className="h-5 w-5" />}
       />
 
@@ -109,15 +109,13 @@ export default function GradingQueuePage() {
                 <div className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
                   {r.status === 'graded' ? (
                     <Badge tone="green">Nilai: {Number(r.final_score).toLocaleString('id-ID')}</Badge>
-                  ) : r.status === 'ai_graded' ? (
-                    <Badge tone="sky">AI: {r.ai_score !== null ? Number(r.ai_score).toLocaleString('id-ID') : '-'} · Perlu review</Badge>
                   ) : (
                     <Badge tone="amber" dot>Menunggu</Badge>
                   )}
                   <span className="font-mono text-[10px] tracking-wide text-slate-400 group-hover:text-primary-600 dark:group-hover:text-primary-300">Klik untuk nilai →</span>
                 </div>
                 <div className="sm:hidden">
-                  {r.status === 'graded' ? <Badge tone="green">{Number(r.final_score)}</Badge> : r.status === 'ai_graded' ? <Badge tone="sky">AI</Badge> : <Badge tone="amber" dot>•</Badge>}
+                  {r.status === 'graded' ? <Badge tone="green">{Number(r.final_score)}</Badge> : <Badge tone="amber" dot>•</Badge>}
                 </div>
               </button>
             ))}
@@ -144,10 +142,9 @@ function GradingModal({ item, onClose, onSaved }: { item: QueueItem; onClose: ()
   const { profile } = useAuth()
   const detailQuery = useAsync(() => getEssayDetail(item.attempt_id, item.question_id), [item])
 
-  const [score, setScore] = useState<number | ''>(item.final_score !== null ? Number(item.final_score) : item.ai_score !== null ? Number(item.ai_score) : '')
-  const [feedback, setFeedback] = useState(item.final_feedback ?? item.ai_feedback ?? '')
+  const [score, setScore] = useState<number | ''>(item.final_score !== null ? Number(item.final_score) : '')
+  const [feedback, setFeedback] = useState(item.final_feedback ?? '')
   const [saving, setSaving] = useState(false)
-  const [aiLoading, setAiLoading] = useState(false)
 
   if (detailQuery.loading || !detailQuery.data) {
     return (
@@ -158,20 +155,6 @@ function GradingModal({ item, onClose, onSaved }: { item: QueueItem; onClose: ()
   }
 
   const detail = detailQuery.data
-
-  const runAi = async () => {
-    setAiLoading(true)
-    try {
-      const result = await requestAiGrade(item.attempt_id, item.question_id)
-      setScore(Number(result.score.toFixed(1)))
-      setFeedback(result.feedback)
-      toast.success(`AI menyarankan nilai ${result.score.toFixed(1)}. Review lalu simpan.`)
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Gagal memanggil AI.')
-    } finally {
-      setAiLoading(false)
-    }
-  }
 
   const saveFinal = async () => {
     if (score === '' || Number(score) < 0 || Number(score) > 100) {
@@ -212,31 +195,18 @@ function GradingModal({ item, onClose, onSaved }: { item: QueueItem; onClose: ()
           <div className="max-h-56 overflow-y-auto rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap scrollbar-thin dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-200">{detail.answerText || '(kosong)'}</div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Input
-            label={`Nilai Final (maks. 100)`}
-            type="number"
-            step={0.5}
-            min={0}
-            max={100}
-            value={score}
-            onChange={(e) => setScore(e.target.value === '' ? '' : Number(e.target.value))}
-            required
-          />
-          <div className="flex items-end pb-1">
-            <Button variant="outline" onClick={runAi} loading={aiLoading} icon={<Sparkles className="h-4 w-4" />} className="w-full border-primary-200 text-primary-700 hover:bg-primary-50 dark:border-white/10 dark:text-white dark:hover:bg-white/10">
-              Saran Nilai dari AI
-            </Button>
-          </div>
-        </div>
+        <Input
+          label={`Nilai Final (maks. 100)`}
+          type="number"
+          step={0.5}
+          min={0}
+          max={100}
+          value={score}
+          onChange={(e) => setScore(e.target.value === '' ? '' : Number(e.target.value))}
+          required
+        />
 
         <Textarea label="Umpan Balik untuk Siswa" placeholder="Komentar singkat mengenai jawaban siswa..." value={feedback} onChange={(e) => setFeedback(e.target.value)} />
-
-        {item.status === 'ai_graded' && (
-          <p className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-xs leading-relaxed text-sky-800 dark:border-sky-900/30 dark:bg-sky-500/10 dark:text-sky-200">
-            Nilai AI tersedia sebagai saran ({item.ai_score}). Anda bebas mengubah nilai final — nilai guru selalu yang dipakai.
-          </p>
-        )}
       </div>
 
       <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:border-white/5 dark:bg-white/[0.03]">

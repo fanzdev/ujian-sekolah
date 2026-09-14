@@ -13,7 +13,6 @@
 | Duplicate submission | `FOR UPDATE` lock + cek status `in_progress` di `submit_attempt` |
 | Replay autosave | Upsert idempotent PK `(attempt_id, question_id)` |
 | Secret bocor | Hanya anon key di frontend; `.env` di gitignore; workflow membaca dari GitHub Secrets |
-| API Key AI bocor | Disimpan pada tabel `ai_provider_keys` yang hanya bisa dibaca admin (RLS total); dibaca Edge Function via service role; ditampilkan ter-masker di UI |
 | Session abuse | Ban user nonaktif via auth admin API; audit log login/logout |
 
 ## Batasan yang Jujur
@@ -27,4 +26,3 @@
 - [ ] Ganti password default admin pertama segera setelah login.
 - [ ] Nonaktifkan (ban) akun lulusan/alumni.
 - [ ] Tinjau Audit Log & Violation Log secara berkala.
-- [ ] Rotasi AI API key jika digunakan.

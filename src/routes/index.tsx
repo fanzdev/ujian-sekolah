@@ -22,7 +22,6 @@ const LogPages = () => import('@/pages/admin/LogPages')
 const AuditLogsPage = lazy(() => LogPages().then((m) => ({ default: m.AuditLogsPage })))
 const ViolationsPage = lazy(() => LogPages().then((m) => ({ default: m.ViolationsPage })))
 const SettingsPage = lazy(() => import('@/pages/admin/SettingsPage'))
-const AiUsagePage = lazy(() => import('@/pages/admin/AiUsagePage'))
 const AdminSchedulePage = lazy(() => import('@/pages/admin/AdminSchedulePage'))
 
 const TeacherDashboard = lazy(() => import('@/pages/teacher/TeacherDashboard'))
@@ -121,7 +120,6 @@ export function AppRoutes() {
           <Route path="/admin/results" element={<S><ResultsPage /></S>} />
           <Route path="/admin/reports" element={<S><ReportsPage /></S>} />
           <Route path="/admin/import-export" element={<S><ImportExportPage /></S>} />
-          <Route path="/admin/ai-usage" element={<S><AiUsagePage /></S>} />
           <Route path="/admin/audit-logs" element={<S><AuditLogsPage /></S>} />
           <Route path="/admin/violation-logs" element={<S><ViolationsPage /></S>} />
           <Route path="/admin/settings" element={<S><SettingsPage /></S>} />

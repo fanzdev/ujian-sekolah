@@ -56,7 +56,7 @@ Guru/Admin:
 - [ ] Monitoring peserta menampilkan status real-time-ish (refresh/auto).
 - [ ] Violation Log berisi entri tab_switch dsb.
 - [ ] Hasil ujian: skor objektif benar sesuai kunci & bobot (cek manual PGK parsial, isian variasi kapital/spasi, menjodohkan).
-- [ ] Essay: AI suggestion (bila dikonfigurasi) → override nilai final → nilai akhir & kelulusan ikut ter-update.
+- [ ] Essay: dinilai manual di Penilaian Essay → nilai final & kelulusan ikut ter-update.
 - [ ] Export CSV/Excel/PDF hasil unduh dan isinya benar.
 
 ## 6. Import

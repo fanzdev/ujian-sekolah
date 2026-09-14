@@ -24,11 +24,13 @@ Buka **SQL Editor** → New query, lalu jalankan file berikut **sesuai urutan** 
 | 3 | `00003_triggers.sql` | Sinkronisasi peserta, total poin, rekalkulasi nilai |
 | 4 | `00004_rls.sql` | Row Level Security seluruh tabel |
 | 5 | `00005_storage_seed.sql` | Bucket Storage + default pengaturan sistem (**tanpa** data demo) |
-| 6 | `00006_ai_keys.sql` | Tabel pool API Key AI + konfigurasi model default |
+| 6 | `00006_ai_keys.sql` | Tabel pool API Key AI + konfigurasi model default (**dihapus** oleh migrasi `00035_remove_ai.sql`) |
 | 7 | `00007_setup_bootstrap.sql` | Wizard setup admin pertama (sekali pakai + kunci permanen) |
 | 8 | `00008_remove_demo_data.sql` | Hapus sisa data demo dari database lama (guarded delete) |
 
 Setelah selesai, verifikasi: Table Editor menampilkan tabel-tabel di atas dan bucket `media` ada di Storage.
+
+> 💡 Fitur AI (chat AI, AI grading, laporan AI) sudah dihapus total. Jika database lama masih mengandung tabel `ai_provider_keys`, kolom `ai_score`/`ai_feedback`/`ai_confidence`/`ai_provider` pada `essay_grades`, atau setting `system_settings.key='ai'`, jalankan migrasi terakhir **`00035_remove_ai.sql`** untuk membersihkan.
 
 > Semua skema dapat dibuat ulang dari migrasi — tidak ada setup manual yang tidak terdokumentasi.
 
@@ -51,30 +53,6 @@ supabase link --project-ref YOUR_PROJECT_REF
 
 # Wajib untuk pembuatan akun siswa/guru oleh admin:
 supabase functions deploy manage-user
-
-# Opsional untuk saran nilai essay AI:
-supabase functions deploy grade-essay
-```
-
-### Secret AI (opsional)
-
-**Cara utama & disarankan:** kelola API Key langsung dari aplikasi —
-
-> **Admin → Pengaturan → tab "AI Grading" → Tambah Key**
-
-Anda dapat memasukkan banyak API Key OpenRouter; sistem otomatis merotasi ke key berikutnya saat key sebelumnya kena rate-limit/kuota habis. Key tersimpan pada tabel `ai_provider_keys` yang hanya bisa dibaca admin (RLS).
-
-Deploy fungsi AI:
-
-```bash
-supabase functions deploy grade-essay
-```
-
-**Fallback darurat via environment** (hanya dipakai bila pool kosong):
-
-```bash
-supabase secrets set OPENROUTER_API_KEY=sk-or-v1-xxxxx
-supabase secrets set AI_MODEL=meta-llama/llama-3.3-70b-instruct
 ```
 
 ### Verifikasi

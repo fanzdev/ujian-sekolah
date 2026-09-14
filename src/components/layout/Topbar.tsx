@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Bell, LogOut, ChevronDown, MessageSquare, Wifi, WifiOff } from 'lucide-react'
+import { Bell, LogOut, ChevronDown, Wifi, WifiOff } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { Profile, UserRole } from '@/types/models'
 import { roleLabel } from '@/services/auth.service'
@@ -8,7 +8,6 @@ import { relativeTime } from '@/lib/datetime'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
 import { Breadcrumb } from './Breadcrumb'
-import { ChatAiCard } from '@/components/ai/ChatAiCard'
 import { supabase } from '@/services/client'
 import { getDefaultLogo, resolveLogoUrl, sanitizeLogoUrl } from '@/lib/logo'
 
@@ -216,8 +215,6 @@ export function Topbar({
   }
 
   const unread = notifs.filter((n) => !n.is_read).length
-  const [chatOpen, setChatOpen] = useState(false)
-  const chatButtonRef = useRef<HTMLButtonElement>(null)
 
   return (
     <header className="fixed top-0 left-0 right-0 z-30 flex h-14 items-center gap-1.5 border-b border-black/5 bg-white/90 px-2 backdrop-blur-xl dark:border-white/10 dark:bg-[var(--c-sidebar-bg)]/90 sm:gap-2 sm:px-4 lg:left-64 lg:h-16 lg:px-6">
@@ -246,22 +243,6 @@ export function Topbar({
       <div className="flex min-w-0 flex-1 items-center sm:hidden" />
 
       <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
-        {profile.role !== 'student' && (
-          <button
-            ref={chatButtonRef}
-            onClick={() => {
-              setChatOpen((o) => !o)
-              setNotifOpen(false)
-              setMenuOpen(false)
-            }}
-            aria-label="Chat AI"
-            aria-expanded={chatOpen}
-            className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 sm:h-9 sm:w-9 sm:rounded-xl sm:border sm:border-slate-200 sm:bg-white sm:hover:border-slate-300 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 sm:dark:border-slate-700 sm:dark:bg-slate-900 sm:dark:hover:border-slate-600"
-          >
-            <MessageSquare className="h-[16px] w-[16px] sm:h-[18px] sm:w-[18px]" />
-          </button>
-        )}
-
         <div className="relative" ref={notifRef}>
         <button
           ref={notifButtonRef}
@@ -402,7 +383,6 @@ export function Topbar({
         )}
       </div>
       </div>
-      {profile.role !== 'student' && <ChatAiCard open={chatOpen} onClose={() => setChatOpen(false)} anchorRef={chatButtonRef} />}
     </header>
   )
 }
