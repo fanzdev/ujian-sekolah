@@ -26,6 +26,7 @@ declare
   v_sub      text;
   v_ident    jsonb;
   v_prof_id  uuid;
+  v_teacher_id uuid;
 begin
   select private.is_admin() into v_is_admin;
   if not coalesce(v_is_admin, false) then
@@ -141,10 +142,11 @@ begin
       nullif(trim(coalesce(p_teacher->>'phone','')), ''),
       nullif(trim(coalesce(p_teacher->>'email','')), ''),
       nullif(trim(coalesce(p_teacher->>'address','')), '')
-    );
+    )
+    returning id into v_teacher_id;
     if coalesce(p_teacher->'subject_ids','[]'::jsonb) != '[]'::jsonb then
       insert into public.teacher_subjects (teacher_id, subject_id)
-      select v_uid, (value #>> '{}')::uuid
+      select v_teacher_id, (value #>> '{}')::uuid
       from jsonb_array_elements_text(p_teacher->'subject_ids') with ordinality
       on conflict do nothing;
     end if;

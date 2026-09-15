@@ -43,6 +43,7 @@ const ExamListPage = lazy(() => import('@/pages/shared/ExamListPage'))
 const ExamEditorPage = lazy(() => import('@/pages/shared/ExamEditorPage'))
 const ResultsPage = lazy(() => import('@/pages/shared/ResultsPage'))
 const ReportsPage = lazy(() => import('@/pages/shared/ReportsPage'))
+const RankingPage = lazy(() => import('@/pages/shared/RankingPage'))
 const MonitoringPage = lazy(() => import('@/pages/shared/MonitoringPage'))
 
 const ExamRunnerPage = lazy(() => import('@/pages/exam/ExamRunnerPage'))
@@ -96,6 +97,7 @@ export function AppRoutes() {
           <Route path="/teacher/exams/:examId/participants" element={<S><MonitoringPage /></S>} />
           <Route path="/teacher/schedule" element={<S><TeacherSchedulePage /></S>} />
           <Route path="/teacher/results" element={<S><ResultsPage /></S>} />
+          <Route path="/teacher/ranking" element={<S><RankingPage /></S>} />
           <Route path="/teacher/grading" element={<S><GradingQueuePage /></S>} />
           <Route path="/teacher/reports" element={<S><ReportsPage /></S>} />
           <Route path="/teacher/profile" element={<S><ProfilePage /></S>} />
@@ -118,6 +120,7 @@ export function AppRoutes() {
           <Route path="/admin/exams/:examId/participants" element={<S><MonitoringPage /></S>} />
           <Route path="/admin/schedule" element={<S><AdminSchedulePage /></S>} />
           <Route path="/admin/results" element={<S><ResultsPage /></S>} />
+          <Route path="/admin/ranking" element={<S><RankingPage /></S>} />
           <Route path="/admin/reports" element={<S><ReportsPage /></S>} />
           <Route path="/admin/import-export" element={<S><ImportExportPage /></S>} />
           <Route path="/admin/audit-logs" element={<S><AuditLogsPage /></S>} />

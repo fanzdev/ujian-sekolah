@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   PencilRuler,
   IdCard,
+  Trophy,
 } from 'lucide-react'
 
 export interface NavItem {
@@ -37,6 +38,7 @@ const ADMIN_NAV: NavItem[] = [
   { path: '/admin/exams', label: 'Mata Pelajaran', icon: FileText },
   { path: '/admin/schedule', label: 'Jadwal', icon: CalendarClock },
   { path: '/admin/results', label: 'Hasil Ujian', icon: ClipboardCheck },
+  { path: '/admin/ranking', label: 'Peringkat', icon: Trophy },
   { path: '/admin/reports', label: 'Laporan', icon: BarChart3 },
   { path: '/admin/import-export', label: 'Import / Export', icon: Upload },
   { path: '/admin/audit-logs', label: 'Audit Log', icon: ScrollText },
@@ -51,6 +53,7 @@ const TEACHER_NAV: NavItem[] = [
   { path: '/teacher/exams', label: 'Mata Pelajaran', icon: FileText },
   { path: '/teacher/schedule', label: 'Jadwal', icon: CalendarClock },
   { path: '/teacher/results', label: 'Hasil Ujian', icon: ClipboardCheck },
+  { path: '/teacher/ranking', label: 'Peringkat', icon: Trophy },
   { path: '/teacher/grading', label: 'Penilaian Essay', icon: CheckSquareIcon },
   { path: '/teacher/reports', label: 'Laporan', icon: BarChart3 },
 ]

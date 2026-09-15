@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { BarChart3, Download, TrendingUp, TrendingDown } from 'lucide-react'
+import { BarChart3, Download, TrendingUp, TrendingDown, Sparkles } from 'lucide-react'
 import { useAsync, useDocumentTitle } from '@/hooks/useAsync'
 import { useToast } from '@/hooks/useToast'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -25,8 +25,33 @@ interface ResultJoin {
 
 export default function ReportsPage() {
   const [examId, setExamId] = useState('')
+  const [aiAnalysis, setAiAnalysis] = useState<import('@/services/ai.service').AiAnalysis | null>(null)
+  const [aiLoading, setAiLoading] = useState(false)
   useDocumentTitle('Laporan')
   const toast = useToast()
+
+  useEffect(() => {
+    setAiAnalysis(null)
+  }, [examId])
+
+  const runAiAnalysis = async () => {
+    const data = report.data
+    if (!data || aiLoading) return
+    setAiLoading(true)
+    try {
+      const { aiAnalyzeResult } = await import('@/services/ai.service')
+      const result = await aiAnalyzeResult({
+        examTitle: data.examTitle,
+        totalQuestions: data.questionStats.length,
+        rows: data.rows.map((r) => ({ score: Number(r.final_score ?? r.objective_score ?? 0), passed: r.passed })),
+      })
+      setAiAnalysis(result)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal meminta analisis AI.')
+    } finally {
+      setAiLoading(false)
+    }
+  }
 
   const examsQuery = useAsync(() => listExams({ pageSize: 200 }), [])
 
@@ -106,6 +131,17 @@ export default function ReportsPage() {
         subtitle="Statistik nilai dan analisis butir soal"
         icon={<BarChart3 className="h-5 w-5" />}
         actions={
+          <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<Sparkles className="h-4 w-4" />}
+            disabled={!stats || aiLoading}
+            loading={aiLoading}
+            onClick={() => void runAiAnalysis()}
+          >
+            Analisis AI
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -130,8 +166,42 @@ export default function ReportsPage() {
           >
             Unduh PDF
           </Button>
+          </div>
         }
       />
+
+      {aiAnalysis && (
+        <Card className="mb-5 border-primary-100 dark:border-primary-500/20">
+          <CardHeader title="Ringkasan AI" subtitle={`Skor rata-rata ${formatNumber(aiAnalysis.overallScore, 1)} · ${stats?.n ?? 0} peserta`} />
+          <CardBody className="space-y-3">
+            <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">{aiAnalysis.summary}</p>
+            {aiAnalysis.strongTopics.length > 0 && (
+              <div>
+                <p className="text-xs font-bold text-emerald-600">Topik dikuasai</p>
+                <ul className="mt-1 list-disc space-y-0.5 pl-5 text-xs text-slate-500 dark:text-slate-400">
+                  {aiAnalysis.strongTopics.map((t, i) => <li key={i}>{t}</li>)}
+                </ul>
+              </div>
+            )}
+            {aiAnalysis.weakTopics.length > 0 && (
+              <div>
+                <p className="text-xs font-bold text-rose-500">Perlu perhatian</p>
+                <ul className="mt-1 list-disc space-y-0.5 pl-5 text-xs text-slate-500 dark:text-slate-400">
+                  {aiAnalysis.weakTopics.map((t, i) => <li key={i}>{t}</li>)}
+                </ul>
+              </div>
+            )}
+            {aiAnalysis.recommendations.length > 0 && (
+              <div>
+                <p className="text-xs font-bold text-slate-600 dark:text-slate-300">Rekomendasi</p>
+                <ul className="mt-1 list-disc space-y-0.5 pl-5 text-xs text-slate-500 dark:text-slate-400">
+                  {aiAnalysis.recommendations.map((t, i) => <li key={i}>{t}</li>)}
+                </ul>
+              </div>
+            )}
+          </CardBody>
+        </Card>
+      )}
 
       <Card className="mb-5">
         <div className="p-4">

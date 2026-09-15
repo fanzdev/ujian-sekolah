@@ -186,7 +186,7 @@ end $$;
 -- ------------------------------------------------------------
 -- STUDENT: start (or resume) an attempt
 -- ------------------------------------------------------------
-create or replace function public.start_attempt(p_exam_id uuid, p_pin text default null)
+create or replace function public.start_attempt(p_exam_id uuid, p_pin text default null, p_user_agent text default null, p_ip text default null, p_device_info jsonb default null)
 returns jsonb
 language plpgsql volatile security definer set search_path = public, private as $$
 declare
@@ -346,7 +346,7 @@ begin
     select eq.position as pos,
            coalesce(eq.points, q.points) as pts,
            q.id, q.type, q.text, q.media_url, q.media_type,
-           q.difficulty, q.scoring_rule, q.explanation
+           q.difficulty, q.scoring_rule, q.default_answer, q.explanation
     from public.exam_questions eq
     join public.questions q on q.id = eq.question_id
     where eq.exam_id = v_attempt.exam_id

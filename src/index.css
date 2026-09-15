@@ -3,23 +3,23 @@
 @tailwind utilities;
 
 :root {
-  --c-primary-50: 239 246 255;
-  --c-primary-100: 219 234 254;
-  --c-primary-200: 191 219 254;
-  --c-primary-300: 147 197 253;
-  --c-primary-400: 96 165 250;
-  --c-primary-500: 59 130 246;
-  --c-primary-600: 37 99 235;
-  --c-primary-700: 29 78 216;
-  --c-primary-800: 30 64 175;
-  --c-primary-900: 30 58 138;
-  --c-accent-600: 14 165 233;
-  --c-accent-50: 240 249 255;
-  --c-app-bg: 253 249 243;
-  --c-app-bg-hex: #FDF9F3;
+  --c-primary-50: 243 249 249;
+  --c-primary-100: 226 240 242;
+  --c-primary-200: 195 225 227;
+  --c-primary-300: 146 201 205;
+  --c-primary-400: 86 170 177;
+  --c-primary-500: 37 146 154;
+  --c-primary-600: 13 134 143;
+  --c-primary-700: 11 118 126;
+  --c-primary-800: 10 102 109;
+  --c-primary-900: 8 86 92;
+  --c-accent-600: 13 134 143;
+  --c-accent-50: 232 245 246;
+  --c-app-bg: 237 237 237;
+  --c-app-bg-hex: #EDEDED;
   --c-login-bg: #0B1E24;
-  --c-sidebar-bg: #0B1E24;
-  --c-splash-bg: #0B1E24;
+  --c-sidebar-bg: #0D868F;
+  --c-splash-bg: #064247;
 }
 
 @layer base {
@@ -36,11 +36,22 @@
   }
   body {
     @apply text-slate-800 antialiased font-sans;
-    background-color: var(--c-app-bg-hex, #FDF9F3);
+    background-color: var(--c-app-bg-hex, #EDEDED);
     font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.006em;
     overflow-y: auto;
     overflow-x: clip;
     min-height: 100dvh;
+  }
+  h1, h2, h3 {
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
   #root {
     min-height: 100dvh;

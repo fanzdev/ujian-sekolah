@@ -13,7 +13,10 @@ import { Modal } from '@/components/ui/Modal'
 import { Badge } from '@/components/ui/Badge'
 import { EmptyState, ErrorState } from '@/components/ui/Feedback'
 import { listBanks, createBank, updateBank, deleteBank, listQuestions, type BankInput } from '@/services/questions.service'
-import type { QuestionBank } from '@/types/models'
+import { listClasses } from '@/services/academics.service'
+import { AiBankModal } from '@/components/ai/AiBankModal'
+import { AiGlassButton } from '@/components/ai/AiGlassButton'
+import type { QuestionBank, SchoolClass } from '@/types/models'
 
 const STATUS_TONES: Record<string, 'gray' | 'green' | 'amber'> = {
   draft: 'amber',
@@ -41,6 +44,10 @@ export default function QuestionBanksPage() {
   const confirmDialog = useConfirm()
   const [editorOpen, setEditorOpen] = useState(false)
   const [editing, setEditing] = useState<QuestionBank | null>(null)
+  const classesQuery = useAsync(() => listClasses().catch(() => [] as SchoolClass[]), [])
+  const [aiBankOpen, setAiBankOpen] = useState(false)
+  const navigateAi = useNavigate()
+  const aiRole = useLocation().pathname.split('/')[1] ?? 'admin'
 
   if (query.error) return <ErrorState message={query.error} onRetry={query.reload} />
 
@@ -79,9 +86,14 @@ export default function QuestionBanksPage() {
         subtitle="Kelola koleksi soal untuk ujian"
         icon={<Database className="h-5 w-5" />}
         actions={
-          <Button icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
-            Buat Bank Soal
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <AiGlassButton onClick={() => setAiBankOpen(true)}>
+              Buat Soal dengan AI
+            </AiGlassButton>
+            <Button icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
+              Buat Bank Soal
+            </Button>
+          </div>
         }
       />
 
@@ -127,11 +139,23 @@ export default function QuestionBanksPage() {
         open={editorOpen}
         onClose={() => setEditorOpen(false)}
         editing={editing}
+        classes={classesQuery.data ?? []}
         onSaved={() => {
           setEditorOpen(false)
           query.reload()
         }}
       />
+
+      {aiBankOpen && (
+        <AiBankModal
+          onClose={() => setAiBankOpen(false)}
+          onSaved={(bankId) => {
+            setAiBankOpen(false)
+            query.reload()
+            navigateAi(`/${aiRole}/question-banks/${bankId}`)
+          }}
+        />
+      )}
     </>
   )
 }
@@ -281,15 +305,25 @@ function BankCardGrid({
   )
 }
 
+function uniqueLevels(classes: SchoolClass[]): number[] {
+  const seen = new Set<number>()
+  for (const c of classes) {
+    if (Number.isFinite(c.level)) seen.add(c.level)
+  }
+  return [...seen].sort((a, b) => a - b)
+}
+
 function BankEditorModal({
   open,
   onClose,
   editing,
+  classes,
   onSaved,
 }: {
   open: boolean
   onClose: () => void
   editing: QuestionBank | null
+  classes: SchoolClass[]
   onSaved: () => void
 }) {
   const toast = useToast()
@@ -354,11 +388,17 @@ function BankEditorModal({
         <Textarea label="Deskripsi" placeholder="Deskripsi singkat isi bank soal" value={form.description ?? ''} onChange={(e) => setForm({ ...form, description: e.target.value })} />
         <Select
           label="Tingkat Kelas"
-          placeholder="Semua tingkat"
+          placeholder={classes.length > 0 ? 'Semua tingkat' : 'Belum ada kelas'}
           value={form.grade_level ?? ''}
           onChange={(e) => setForm({ ...form, grade_level: e.target.value ? Number(e.target.value) : null })}
-          options={Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: `Kelas ${i + 1}` }))}
+          options={uniqueLevels(classes).map((level) => ({
+            value: String(level),
+            label: `Tingkat ${level} — ${classes.filter((c) => c.level === level).map((c) => c.name).join(', ')}`,
+          }))}
         />
+        {classes.length === 0 && (
+          <p className="-mt-2 text-xs text-slate-400">Belum ada kelas buatan admin. Tingkat boleh dikosongkan.</p>
+        )}
 
         <Input label="Tag" placeholder="pisahkan dengan koma, cth: aljabar, geometri" value={tagText} onChange={(e) => setTagText(e.target.value)} hint="Tag memudahkan pencarian soal." />
       </div>

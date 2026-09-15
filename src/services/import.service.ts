@@ -213,11 +213,7 @@ export const soalRowSchema = z.object({
   question_text: z.string().min(5, 'teks soal minimal 5 karakter'),
   type: z.string().transform((v) => normType(v)).refine((v) => ['multiple_choice', 'multiple_response', 'true_false', 'short_answer', 'essay', 'matching'].includes(v), 'jenis harus: Pilihan Ganda / Pilihan Ganda Kompleks / Benar/Salah / Isian Singkat / Esai / Menjodohkan'),
   difficulty: z.string().optional().default('medium').transform((v) => normDiff(String(v))).refine((v) => ['easy', 'medium', 'hard'].includes(v), 'tingkat kesulitan harus: Mudah / Sedang / Sulit'),
-  points: z.union([z.string(), z.number()]).optional().default(10).transform((v) => {
-    if (v === '' || v === undefined || v === null) return 10
-    const n = Number(v)
-    return Number.isFinite(n) ? n : 10
-  }).refine((n) => Number.isFinite(n) && n > 0 && n <= 100, 'poin 1-100'),
+  points: z.union([z.string(), z.number()]).optional().default('').transform(() => 1),
   option_a: z.string().optional().default(''),
   option_b: z.string().optional().default(''),
   option_c: z.string().optional().default(''),
@@ -483,18 +479,17 @@ export const importKindMeta: Record<string, { headers: string[]; examples: strin
     },
   },
   question_banks: {
-    headers: ['nama_bank', 'teks_soal', 'jenis_soal', 'poin', 'pilihan_a', 'pilihan_b', 'pilihan_c', 'pilihan_d', 'kunci_jawaban', 'pembahasan'],
+    headers: ['nama_bank', 'teks_soal', 'jenis_soal', 'pilihan_a', 'pilihan_b', 'pilihan_c', 'pilihan_d', 'kunci_jawaban', 'pembahasan'],
     examples: [
-      ['Bank UTS MTK X', 'Ibu kota Indonesia adalah?', 'Pilihan Ganda', '10', 'Jakarta', 'Surabaya', 'Bandung', 'Medan', 'A', 'Jakarta adalah ibu kota negara Indonesia'],
-      ['Bank UTS MTK X', 'Air mendidih pada suhu 100°C', 'Benar/Salah', '5', '', '', '', '', 'Benar', 'Titik didih air 100°C pada tekanan 1 atm'],
-      ['Bank UAS Fisika', 'Jelaskan proses fotosintesis pada tumbuhan', 'Esai', '20', '', '', '', '', '', 'Dinilai dari kelengkapan, ketepatan konsep, dan keruntutan penjelasan'],
+      ['Bank UTS MTK X', 'Ibu kota Indonesia adalah?', 'Pilihan Ganda', 'Jakarta', 'Surabaya', 'Bandung', 'Medan', 'A', 'Jakarta adalah ibu kota negara Indonesia'],
+      ['Bank UTS MTK X', 'Air mendidih pada suhu 100°C', 'Benar/Salah', '', '', '', '', 'Benar', 'Titik didih air 100°C pada tekanan 1 atm'],
+      ['Bank UAS Fisika', 'Jelaskan proses fotosintesis pada tumbuhan', 'Esai', '', '', '', '', '', 'Dinilai dari kelengkapan, ketepatan konsep, dan keruntutan penjelasan'],
     ],
     required: ['nama_bank', 'teks_soal', 'jenis_soal', 'kunci_jawaban'],
     desc: {
       nama_bank: 'Judul Bank Soal tujuan (harus persis, mapel otomatis ikut bank)',
       teks_soal: 'Teks pertanyaan (HTML didukung, min 5 karakter)',
       jenis_soal: 'Jenis: Pilihan Ganda / Pilihan Ganda Kompleks / Benar/Salah / Isian Singkat / Esai / Menjodohkan',
-      poin: 'Bobot poin 1-100 (default 10)',
       pilihan_a: 'Pilihan A (wajib untuk Pilihan Ganda)',
       pilihan_b: 'Pilihan B',
       pilihan_c: 'Pilihan C (opsional)',

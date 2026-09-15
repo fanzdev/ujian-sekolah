@@ -3,7 +3,7 @@ import { useRef, useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom'
 import {
   ArrowLeft, Plus, Pencil, Trash2, HelpCircle, Image as ImageIcon,
-  UploadCloud, X, Download, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Zap,
+  UploadCloud, X, Download, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Zap, Sparkles,
 } from 'lucide-react'
 import { useAsync, useDebounce, useDocumentTitle } from '@/hooks/useAsync'
 import { useToast } from '@/hooks/useToast'
@@ -21,6 +21,9 @@ import { QUESTION_TYPE_LABELS, DIFFICULTY_LABELS } from '@/lib/constants'
 import { stripHtml } from '@/lib/sanitize'
 import { uploadMedia } from '@/services/storage.service'
 import { parseAnyFile, validateRows, soalRowSchema, downloadTemplateCsv, downloadTemplateExcel, importKindMeta, type ImportRowResult } from '@/services/import.service'
+import { aiStatus } from '@/services/ai.service'
+import { AiGenerateModal } from '@/components/ai/AiGenerateModal'
+import type { AiGeneratedQuestion } from '@/services/ai.service'
 import type { Difficulty, Question, QuestionType } from '@/types/models'
 
 type Mode = 'bank' | 'all'
@@ -46,6 +49,9 @@ export default function BankQuestionsPage({ mode = 'bank' }: { mode?: Mode }) {
   const [newQuestionNum, setNewQuestionNum] = useState(1)
   const [editQuestionNum, setEditQuestionNum] = useState(1)
   const [importOpen, setImportOpen] = useState(false)
+  const [aiOpen, setAiOpen] = useState(false)
+  const [aiSaving, setAiSaving] = useState(false)
+  const aiHealth = useAsync(() => aiStatus().catch(() => null), [])
   const PAGE_SIZE = 10
 
   const banksQuery = useAsync(() => import('@/services/questions.service').then((m) => m.listBanks({ pageSize: 100 })), [])
@@ -71,6 +77,23 @@ export default function BankQuestionsPage({ mode = 'bank' }: { mode?: Mode }) {
   const rowsRef = useRef<Question[]>([])
   if (query.data?.rows) rowsRef.current = query.data.rows
 
+  const saveAiQuestions = async (list: AiGeneratedQuestion[]) => {
+    if (!bankId || aiSaving) return
+    setAiSaving(true)
+    try {
+      const { saveAiQuestionsToBank } = await import('@/services/ai.service')
+      const { done, errors } = await saveAiQuestionsToBank(bankId, list)
+      if (done > 0) {
+        toast.success(`${done} soal AI tersimpan.`)
+        setAiOpen(false)
+        query.reload()
+      }
+      if (errors.length > 0 && done === 0) toast.error(errors[0])
+    } finally {
+      setAiSaving(false)
+    }
+  }
+
   if (query.error) return <ErrorState message={query.error} onRetry={query.reload} />
 
   return (
@@ -87,13 +110,25 @@ export default function BankQuestionsPage({ mode = 'bank' }: { mode?: Mode }) {
             </Link>
           )}
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">{title}</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">{title}</h1>
+              {aiHealth.data?.configured && <Badge tone="green"><Sparkles className="mr-1 inline h-3 w-3" />AI aktif</Badge>}
+            </div>
             <p className="mt-0.5 text-sm text-slate-400">
               {mode === 'bank' ? 'Kelola koleksi soal dalam bank ini' : 'Seluruh soal yang dapat Anda akses'}
             </p>
           </div>
         </div>
         <div className="flex gap-2">
+          {bankId && (
+            <Button
+              variant="outline"
+              icon={<Sparkles className="h-4 w-4" />}
+              onClick={() => setAiOpen(true)}
+            >
+              Generate AI
+            </Button>
+          )}
           {bankId && (
             <Button
               variant="outline"
@@ -270,6 +305,12 @@ export default function BankQuestionsPage({ mode = 'bank' }: { mode?: Mode }) {
           }}
         />
       )}
+      {aiOpen && bankId && (
+        <AiGenerateModal
+          onClose={() => setAiOpen(false)}
+          onGenerated={(list) => void saveAiQuestions(list)}
+        />
+      )}
       {importOpen && bankId && (
         <ImportQuestionsModal
           bankId={bankId}
@@ -327,6 +368,43 @@ function QuestionEditorModal({
   const toast = useToast()
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [aiExplainLoading, setAiExplainLoading] = useState(false)
+
+  const handleAiExplain = async () => {
+    if (stripHtml(form.text).length < 5) {
+      toast.error('Isi teks pertanyaan dulu (min. 5 karakter).')
+      return
+    }
+    setAiExplainLoading(true)
+    try {
+      const { aiExplain } = await import('@/services/ai.service')
+      const letters = ['A', 'B', 'C', 'D', 'E', 'F']
+      const filledOptions = form.options.filter((o) => o.option_text.trim())
+      const optionsText = needsOptions
+        ? filledOptions.map((o) => o.option_text.trim())
+        : form.type === 'matching'
+          ? form.pairs.filter((p) => p.left_text.trim() && p.right_text.trim()).map((p) => `${p.left_text.trim()} - ${p.right_text.trim()}`)
+          : []
+      const correctAnswer = needsOptions
+        ? filledOptions.map((o, i) => (o.is_correct ? letters[i] ?? '' : '')).filter(Boolean).join(',')
+        : form.type === 'true_false'
+          ? form.tf_answer ? 'Benar' : 'Salah'
+          : form.sa_accepted
+      const result = await aiExplain({
+        questionText: stripHtml(form.text),
+        optionsText,
+        correctAnswer,
+        type: form.type,
+        depth: 'brief',
+      })
+      setForm((p) => ({ ...p, explanation: result.explanation }))
+      toast.success('Pembahasan AI dimasukkan. Periksa sebelum menyimpan.')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal membuat pembahasan.')
+    } finally {
+      setAiExplainLoading(false)
+    }
+  }
 
   const makeDefault = (overrides?: Partial<EditorForm>): EditorForm => ({
     type: editing?.type ?? defaultType,
@@ -421,7 +499,7 @@ function QuestionEditorModal({
         media_url: form.media_url,
         media_type: form.media_type,
         difficulty: form.difficulty,
-        points: form.points,
+        points: 1,
         explanation: form.explanation || null,
         scoring_rule: scoringRule,
         options: needsOptions
@@ -759,6 +837,17 @@ function QuestionEditorModal({
           value={form.explanation}
           onChange={(e) => setForm((p) => ({ ...p, explanation: e.target.value }))}
         />
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            variant="outline"
+            icon={<Sparkles className="h-3.5 w-3.5" />}
+            loading={aiExplainLoading}
+            onClick={() => void handleAiExplain()}
+          >
+            Buatkan Pembahasan dengan AI
+          </Button>
+        </div>
       </div>
 
       <div className="sticky bottom-0 flex flex-col gap-2 border-t border-slate-100 bg-white/95 px-4 py-3 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 sm:px-6 sm:py-4">
@@ -826,7 +915,7 @@ function ImportQuestionsModal({ bankId, bankTitle, onClose, onImported }: { bank
         const type = rawType as QuestionType
         const text = String(data.question_text ?? '').trim()
         const difficulty = (String(data.difficulty ?? 'medium').trim().toLowerCase() || 'medium') as Difficulty
-        const points = Number(String(data.points ?? '10').trim() || 10)
+        const points = 1
         const explanation = String(data.explanation ?? '').trim() || null
         const correctRaw = String(data.correct_answer ?? '').trim()
         const optionFields = ['option_a', 'option_b', 'option_c', 'option_d', 'option_e'] as const

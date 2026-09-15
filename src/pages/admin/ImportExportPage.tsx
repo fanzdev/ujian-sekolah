@@ -235,7 +235,7 @@ function ImportPanel() {
           const rawDiff = String(data.difficulty ?? 'medium').trim().toLowerCase()
           const diffNorm = diffMap[rawDiff] ?? rawDiff
           const difficulty = (diffNorm || 'medium') as 'easy' | 'medium' | 'hard'
-          const points = Number(String(data.points ?? '10').trim() || 10)
+          const points = 1
           const explanation = String(data.explanation ?? '').trim() || null
           const correctRaw = String(data.correct_answer ?? '').trim()
           const optionFields = ['option_a', 'option_b', 'option_c', 'option_d', 'option_e'] as const
@@ -656,6 +656,7 @@ function ImportPanel() {
                   <li>Untuk TF: correct_answer = Benar/Salah</li>
                   <li>Untuk isian: correct_answer = Jawaban1; Jawaban2</li>
                   <li>Bank tujuan wajib dipilih</li>
+                  <li>Bobot otomatis: tiap soal setara, nilai akhir selalu 0-100</li>
                 </>
               )}
               {kind === 'exams' && (

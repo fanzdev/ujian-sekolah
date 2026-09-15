@@ -7,6 +7,8 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, CardBody, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { AcademicYearPicker } from '@/components/ui/AcademicYearPicker'
+import { SemesterPicker } from '@/components/ui/SemesterPicker'
 import { ToggleSwitch } from '@/components/ui/FormControls'
 import { Tabs } from '@/components/ui/Tabs'
 import { ErrorState, Spinner } from '@/components/ui/Feedback'
@@ -70,12 +72,12 @@ function BrandingPanel() {
         ...query.data,
         extra_colors: Array.isArray(query.data.extra_colors) ? (query.data.extra_colors as string[]).filter((c) => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c)).slice(0, 12) : [],
         primary_color: query.data.primary_color || '#0D868F',
-        secondary_color: query.data.secondary_color || '#0CBCC9',
+        secondary_color: query.data.secondary_color || '#2DD4BF',
         theme_preset: (query.data as unknown as { theme_preset?: string | null }).theme_preset ?? 'bengkel-presisi',
         login_color: (query.data as unknown as { login_color?: string | null }).login_color || '#0B1E24',
-        sidebar_color: (query.data as unknown as { sidebar_color?: string | null }).sidebar_color || '#0B1E24',
-        app_bg_color: (query.data as unknown as { app_bg_color?: string | null }).app_bg_color || '#FDF9F3',
-        splash_bg_color: (query.data as unknown as { splash_bg_color?: string | null }).splash_bg_color || '#0B1E24',
+        sidebar_color: (query.data as unknown as { sidebar_color?: string | null }).sidebar_color || '#0D868F',
+        app_bg_color: (query.data as unknown as { app_bg_color?: string | null }).app_bg_color || '#EDEDED',
+        splash_bg_color: (query.data as unknown as { splash_bg_color?: string | null }).splash_bg_color || '#064247',
         card_gradients: sanitizeGrad((query.data as unknown as { card_gradients?: unknown }).card_gradients),
       } as unknown as SchoolSettings
       setForm(normalized)
@@ -87,11 +89,11 @@ function BrandingPanel() {
     if (!form) return
     const curPreset = THEME_PRESETS.find((p) => p.id === (form as unknown as { theme_preset?: string | null }).theme_preset) ?? null
     const effPrimary = curPreset ? curPreset.primary : form.primary_color || '#0D868F'
-    const effSecondary = curPreset ? curPreset.secondary : form.secondary_color || '#0CBCC9'
+    const effSecondary = curPreset ? curPreset.secondary : form.secondary_color || '#2DD4BF'
     const effLogin = /^#[0-9a-fA-F]{6}$/.test((form as unknown as { login_color?: string }).login_color ?? '') ? (form as unknown as { login_color: string }).login_color : '#0B1E24'
-    const effSidebar = /^#[0-9a-fA-F]{6}$/.test((form as unknown as { sidebar_color?: string }).sidebar_color ?? '') ? (form as unknown as { sidebar_color: string }).sidebar_color : '#0B1E24'
-    const effAppBg = /^#[0-9a-fA-F]{6}$/.test((form as unknown as { app_bg_color?: string }).app_bg_color ?? '') ? (form as unknown as { app_bg_color: string }).app_bg_color : '#FDF9F3'
-    const effSplash = /^#[0-9a-fA-F]{6}$/.test((form as unknown as { splash_bg_color?: string }).splash_bg_color ?? '') ? (form as unknown as { splash_bg_color: string }).splash_bg_color : '#0B1E24'
+    const effSidebar = /^#[0-9a-fA-F]{6}$/.test((form as unknown as { sidebar_color?: string }).sidebar_color ?? '') ? (form as unknown as { sidebar_color: string }).sidebar_color : '#0D868F'
+    const effAppBg = /^#[0-9a-fA-F]{6}$/.test((form as unknown as { app_bg_color?: string }).app_bg_color ?? '') ? (form as unknown as { app_bg_color: string }).app_bg_color : '#EDEDED'
+    const effSplash = /^#[0-9a-fA-F]{6}$/.test((form as unknown as { splash_bg_color?: string }).splash_bg_color ?? '') ? (form as unknown as { splash_bg_color: string }).splash_bg_color : '#064247'
     const effExtras = Array.isArray(form.extra_colors) ? (form.extra_colors as string[]).filter((c) => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c)).slice(0, 12) : []
     const effGrads = ((form as unknown as { card_gradients?: Record<string, string[]> }).card_gradients ?? {}) as Record<string, string[]>
     const id = window.setTimeout(() => {
@@ -118,11 +120,11 @@ function BrandingPanel() {
 
   const currentPreset = THEME_PRESETS.find((p) => p.id === (form as unknown as { theme_preset?: string | null }).theme_preset) ?? null
   const effectivePrimary = currentPreset ? currentPreset.primary : form.primary_color || '#0D868F'
-  const effectiveSecondary = currentPreset ? currentPreset.secondary : form.secondary_color || '#0CBCC9'
+  const effectiveSecondary = currentPreset ? currentPreset.secondary : form.secondary_color || '#2DD4BF'
   const effectiveLogin = /^#[0-9a-fA-F]{6}$/.test((form as unknown as { login_color?: string }).login_color ?? '') ? (form as unknown as { login_color: string }).login_color : '#0B1E24'
-  const effectiveSidebar = /^#[0-9a-fA-F]{6}$/.test((form as unknown as { sidebar_color?: string }).sidebar_color ?? '') ? (form as unknown as { sidebar_color: string }).sidebar_color : '#0B1E24'
-  const effectiveAppBg = /^#[0-9a-fA-F]{6}$/.test((form as unknown as { app_bg_color?: string }).app_bg_color ?? '') ? (form as unknown as { app_bg_color: string }).app_bg_color : '#FDF9F3'
-  const effectiveSplash = /^#[0-9a-fA-F]{6}$/.test((form as unknown as { splash_bg_color?: string }).splash_bg_color ?? '') ? (form as unknown as { splash_bg_color: string }).splash_bg_color : '#0B1E24'
+  const effectiveSidebar = /^#[0-9a-fA-F]{6}$/.test((form as unknown as { sidebar_color?: string }).sidebar_color ?? '') ? (form as unknown as { sidebar_color: string }).sidebar_color : '#0D868F'
+  const effectiveAppBg = /^#[0-9a-fA-F]{6}$/.test((form as unknown as { app_bg_color?: string }).app_bg_color ?? '') ? (form as unknown as { app_bg_color: string }).app_bg_color : '#EDEDED'
+  const effectiveSplash = /^#[0-9a-fA-F]{6}$/.test((form as unknown as { splash_bg_color?: string }).splash_bg_color ?? '') ? (form as unknown as { splash_bg_color: string }).splash_bg_color : '#064247'
   const effectiveExtras = Array.isArray(form.extra_colors) ? (form.extra_colors as string[]).filter((c) => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c)).slice(0, 12) : []
   const effectivePalette = [effectivePrimary, effectiveSecondary, ...effectiveExtras].filter((c): c is string => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c))
   const cardGrads = ((form as unknown as { card_gradients?: Record<string, string[]> }).card_gradients ?? {}) as Record<string, string[]>
@@ -235,8 +237,8 @@ function BrandingPanel() {
           <div className="grid gap-4 sm:grid-cols-2">
             <Input label="Nama Aplikasi" value={form.app_name} onChange={(e) => setForm({ ...form, app_name: e.target.value })} required placeholder="Veyra CBT" />
             <Input label="Nama Sekolah" value={form.school_name} onChange={(e) => setForm({ ...form, school_name: e.target.value })} required placeholder="SMK AL-FATA" />
-            <Input label="Tahun Ajaran" placeholder="cth: 2026/2027" value={form.academic_year ?? ''} onChange={(e) => setForm({ ...form, academic_year: e.target.value })} />
-            <Input label="Semester" placeholder="Ganjil / Genap" value={form.semester ?? ''} onChange={(e) => setForm({ ...form, semester: e.target.value })} />
+            <AcademicYearPicker value={form.academic_year ?? ''} onChange={(v) => setForm({ ...form, academic_year: v })} />
+            <SemesterPicker value={form.semester ?? ''} onChange={(v) => setForm({ ...form, semester: v })} />
             <Input label="Kepala Sekolah" value={form.headmaster ?? ''} onChange={(e) => setForm({ ...form, headmaster: e.target.value })} placeholder="Nama Kepala Sekolah" />
             <Input label="Kota" value={form.city ?? ''} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Kota / Kabupaten" />
           </div>
@@ -321,10 +323,10 @@ function BrandingPanel() {
                   </div>
                   <div className="rounded-xl border border-primary-900/10 bg-white p-3 dark:border-white/10 dark:bg-white/5">
                     <div className="flex items-center gap-2">
-                      <input type="color" aria-label="Warna Sekunder" value={/^#[0-9a-fA-F]{6}$/.test(form.secondary_color || '') ? form.secondary_color! : '#C67C3B'} onChange={(e) => setForm({ ...form, secondary_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="h-8 w-10 cursor-pointer rounded-md border-0 bg-transparent p-0" />
+                      <input type="color" aria-label="Warna Sekunder" value={/^#[0-9a-fA-F]{6}$/.test(form.secondary_color || '') ? form.secondary_color! : '#2DD4BF'} onChange={(e) => setForm({ ...form, secondary_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="h-8 w-10 cursor-pointer rounded-md border-0 bg-transparent p-0" />
                       <div className="min-w-0 flex-1">
                         <p className="font-mono text-[10px] tracking-wide text-[#8A9AA0]">Warna Sekunder</p>
-                        <input type="text" value={form.secondary_color || '#C67C3B'} onChange={(e) => setForm({ ...form, secondary_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="w-full bg-transparent font-mono text-xs font-bold text-primary-900 outline-none dark:text-white" maxLength={7} placeholder="#C67C3B" />
+                        <input type="text" value={form.secondary_color || '#2DD4BF'} onChange={(e) => setForm({ ...form, secondary_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="w-full bg-transparent font-mono text-xs font-bold text-primary-900 outline-none dark:text-white" maxLength={7} placeholder="#2DD4BF" />
                       </div>
                     </div>
                     <p className="mt-2 text-[11px] leading-snug text-[#6B7A7F] dark:text-white/65">Aksen gradasi, badge. Bersama utama → `--app-gradient` header &amp; tombol.</p>
@@ -379,10 +381,10 @@ function BrandingPanel() {
                   </div>
                   <div className="rounded-xl border border-primary-900/10 bg-white p-3 dark:border-white/10 dark:bg-white/5">
                     <div className="flex items-center gap-2">
-                      <input type="color" aria-label="Warna Sidebar" value={/^#[0-9a-fA-F]{6}$/.test((form as unknown as { sidebar_color?: string }).sidebar_color ?? '') ? (form as unknown as { sidebar_color: string }).sidebar_color : '#0B1E24'} onChange={(e) => setForm({ ...form, sidebar_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="h-8 w-10 cursor-pointer rounded-md border-0 bg-transparent p-0" />
+                      <input type="color" aria-label="Warna Sidebar" value={/^#[0-9a-fA-F]{6}$/.test((form as unknown as { sidebar_color?: string }).sidebar_color ?? '') ? (form as unknown as { sidebar_color: string }).sidebar_color : '#0D868F'} onChange={(e) => setForm({ ...form, sidebar_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="h-8 w-10 cursor-pointer rounded-md border-0 bg-transparent p-0" />
                       <div className="min-w-0 flex-1">
                         <p className="font-mono text-[10px] tracking-wide text-[#8A9AA0]">Warna Sidebar</p>
-                        <input type="text" value={(form as unknown as { sidebar_color?: string }).sidebar_color || '#0B1E24'} onChange={(e) => setForm({ ...form, sidebar_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="w-full bg-transparent font-mono text-xs font-bold text-primary-900 outline-none dark:text-white" maxLength={7} placeholder="#0B1E24" />
+                        <input type="text" value={(form as unknown as { sidebar_color?: string }).sidebar_color || '#0D868F'} onChange={(e) => setForm({ ...form, sidebar_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="w-full bg-transparent font-mono text-xs font-bold text-primary-900 outline-none dark:text-white" maxLength={7} placeholder="#0D868F" />
                       </div>
                     </div>
                     <p className="mt-2 text-[11px] leading-snug text-[#6B7A7F] dark:text-white/65">Sidebar `--c-sidebar-bg`. Teks putih di atasnya.</p>
@@ -408,10 +410,10 @@ function BrandingPanel() {
                   </div>
                   <div className="rounded-xl border border-primary-900/10 bg-white p-3 dark:border-white/10 dark:bg-white/5">
                     <div className="flex items-center gap-2">
-                      <input type="color" aria-label="Warna Latar Aplikasi" value={/^#[0-9a-fA-F]{6}$/.test((form as unknown as { app_bg_color?: string }).app_bg_color ?? '') ? (form as unknown as { app_bg_color: string }).app_bg_color : '#FDF9F3'} onChange={(e) => setForm({ ...form, app_bg_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="h-8 w-10 cursor-pointer rounded-md border-0 bg-transparent p-0" />
+                      <input type="color" aria-label="Warna Latar Aplikasi" value={/^#[0-9a-fA-F]{6}$/.test((form as unknown as { app_bg_color?: string }).app_bg_color ?? '') ? (form as unknown as { app_bg_color: string }).app_bg_color : '#EDEDED'} onChange={(e) => setForm({ ...form, app_bg_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="h-8 w-10 cursor-pointer rounded-md border-0 bg-transparent p-0" />
                       <div className="min-w-0 flex-1">
                         <p className="font-mono text-[10px] tracking-wide text-[#8A9AA0]">Warna Latar Aplikasi</p>
-                        <input type="text" value={(form as unknown as { app_bg_color?: string }).app_bg_color || '#FDF9F3'} onChange={(e) => setForm({ ...form, app_bg_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="w-full bg-transparent font-mono text-xs font-bold text-primary-900 outline-none dark:text-white" maxLength={7} placeholder="#FDF9F3" />
+                        <input type="text" value={(form as unknown as { app_bg_color?: string }).app_bg_color || '#EDEDED'} onChange={(e) => setForm({ ...form, app_bg_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="w-full bg-transparent font-mono text-xs font-bold text-primary-900 outline-none dark:text-white" maxLength={7} placeholder="#EDEDED" />
                       </div>
                     </div>
                     <p className="mt-2 text-[11px] leading-snug text-[#6B7A7F] dark:text-white/65">Body &amp; dashboard `--c-app-bg`.</p>
@@ -437,10 +439,10 @@ function BrandingPanel() {
                   </div>
                   <div className="rounded-xl border border-primary-900/10 bg-white p-3 dark:border-white/10 dark:bg-white/5">
                     <div className="flex items-center gap-2">
-                      <input type="color" aria-label="Warna Splash" value={/^#[0-9a-fA-F]{6}$/.test((form as unknown as { splash_bg_color?: string }).splash_bg_color ?? '') ? (form as unknown as { splash_bg_color: string }).splash_bg_color : '#0B1E24'} onChange={(e) => setForm({ ...form, splash_bg_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="h-8 w-10 cursor-pointer rounded-md border-0 bg-transparent p-0" />
+                      <input type="color" aria-label="Warna Splash" value={/^#[0-9a-fA-F]{6}$/.test((form as unknown as { splash_bg_color?: string }).splash_bg_color ?? '') ? (form as unknown as { splash_bg_color: string }).splash_bg_color : '#064247'} onChange={(e) => setForm({ ...form, splash_bg_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="h-8 w-10 cursor-pointer rounded-md border-0 bg-transparent p-0" />
                       <div className="min-w-0 flex-1">
                         <p className="font-mono text-[10px] tracking-wide text-[#8A9AA0]">Warna Splash Screen</p>
-                        <input type="text" value={(form as unknown as { splash_bg_color?: string }).splash_bg_color || '#0B1E24'} onChange={(e) => setForm({ ...form, splash_bg_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="w-full bg-transparent font-mono text-xs font-bold text-primary-900 outline-none dark:text-white" maxLength={7} placeholder="#0B1E24" />
+                        <input type="text" value={(form as unknown as { splash_bg_color?: string }).splash_bg_color || '#064247'} onChange={(e) => setForm({ ...form, splash_bg_color: e.target.value, theme_preset: 'custom' } as unknown as SchoolSettings)} className="w-full bg-transparent font-mono text-xs font-bold text-primary-900 outline-none dark:text-white" maxLength={7} placeholder="#064247" />
                       </div>
                     </div>
                     <p className="mt-2 text-[11px] leading-snug text-[#6B7A7F] dark:text-white/65">Splash `--c-splash-bg`.</p>
@@ -805,14 +807,15 @@ function DangerPanel() {
   }
 
   const items: { key: string; label: string; desc: string; fn: () => Promise<unknown> }[] = [
-    { key: 'students', label: 'Siswa + Akun', desc: 'Hapus semua siswa & akun login siswa', fn: async () => (await import('@/services/danger.service')).wipeStudents() },
-    { key: 'teachers', label: 'Guru + Akun', desc: 'Hapus semua guru & akun (kecuali Anda)', fn: async () => { const { supabase } = await import('@/services/client'); const { data: { user } } = await supabase.auth.getUser(); return (await import('@/services/danger.service')).wipeTeachers(user?.id) } },
-    { key: 'classes', label: 'Kelas', desc: 'Hapus semua kelas', fn: async () => (await import('@/services/danger.service')).wipeClasses() },
-    { key: 'departments', label: 'Jurusan', desc: 'Hapus semua jurusan', fn: async () => (await import('@/services/danger.service')).wipeDepartments() },
-    { key: 'banks', label: 'Bank Soal', desc: 'Hapus semua bank & soal', fn: async () => (await import('@/services/danger.service')).wipeBanks() },
-    { key: 'exams', label: 'Ujian', desc: 'Hapus semua ujian & peserta', fn: async () => (await import('@/services/danger.service')).wipeExams() },
+    { key: 'students', label: 'Siswa + Akun', desc: 'Hapus semua siswa, nilai, attempt & akun login siswa', fn: async () => (await import('@/services/danger.service')).wipeStudents() },
+    { key: 'teachers', label: 'Guru + Akun', desc: 'Hapus semua guru & akun (kecuali Anda) beserta jadwalnya', fn: async () => { const { supabase } = await import('@/services/client'); const { data: { user } } = await supabase.auth.getUser(); return (await import('@/services/danger.service')).wipeTeachers(user?.id) } },
+    { key: 'classes', label: 'Kelas', desc: 'Hapus semua kelas beserta jadwal kelas tersebut', fn: async () => (await import('@/services/danger.service')).wipeClasses() },
+    { key: 'departments', label: 'Jurusan', desc: 'Hapus semua jurusan, kelas & jadwal terkait', fn: async () => (await import('@/services/danger.service')).wipeDepartments() },
+    { key: 'banks', label: 'Bank Soal', desc: 'Hapus semua bank, soal, ujian & nilai terkait', fn: async () => (await import('@/services/danger.service')).wipeBanks() },
+    { key: 'exams', label: 'Ujian', desc: 'Hapus semua ujian, jadwal, peserta & nilai', fn: async () => (await import('@/services/danger.service')).wipeExams() },
+    { key: 'schedules', label: 'Jadwal', desc: 'Hapus semua jadwal pelajaran', fn: async () => (await import('@/services/danger.service')).wipeSchedules() },
     { key: 'results', label: 'Hasil Ujian', desc: 'Hapus attempts & nilai', fn: async () => (await import('@/services/danger.service')).wipeResults() },
-    { key: 'violations', label: 'Pelanggaran', desc: 'Hapus log pelanggaran', fn: async () => (await import('@/services/danger.service')).wipeViolations() },
+    { key: 'violations', label: 'Pelanggaran', desc: 'Hapus log pelanggaran & keamanan', fn: async () => (await import('@/services/danger.service')).wipeViolations() },
     { key: 'audit', label: 'Audit Log', desc: 'Hapus jejak audit', fn: async () => (await import('@/services/danger.service')).wipeAudit() },
   ]
 
@@ -848,7 +851,7 @@ function DangerPanel() {
         <CardBody className="space-y-4">
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/30 dark:bg-amber-950/20">
             <p className="text-xs font-bold text-amber-900 dark:text-amber-100">Hapus SEMUA DATA (kecuali akun Anda)</p>
-            <p className="mt-1 text-xs leading-relaxed text-amber-700 dark:text-amber-300">Akan menghapus: hasil, ujian, bank soal, soal, kelas, jurusan, guru, siswa, pelanggaran, audit, notifikasi. Akun admin yang sedang login tetap.</p>
+            <p className="mt-1 text-xs leading-relaxed text-amber-700 dark:text-amber-300">Akan menghapus tanpa terkecuali: hasil, ujian, jadwal, bank soal, soal, kelas, jurusan, mapel, guru, siswa, pelanggaran, keamanan, audit, notifikasi, media. Akun admin yang sedang login tetap.</p>
             <div className="mt-3 flex gap-2">
               <Input placeholder='Ketik HAPUS untuk konfirmasi' value={confirmText} onChange={(e) => setConfirmText(e.target.value)} className="flex-1" />
               <Button variant="outline" className="border-rose-200 text-rose-600 hover:bg-rose-50" loading={busy === 'wipeAll'} onClick={() => void wipeAll(false)} icon={<Trash2 className="h-4 w-4" />}>Hapus Semua</Button>

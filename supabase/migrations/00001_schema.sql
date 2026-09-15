@@ -3,10 +3,13 @@
 -- Aman dijalankan ulang: objek yang sudah ada akan dilewati.
 -- ============================================================
 
-create extension if not exists pgcrypto;
+create schema if not exists extensions;
+create extension if not exists pgcrypto with schema extensions;
+create extension if not exists citext with schema extensions;
 create extension if not exists citext;
 
 create schema if not exists private;
+grant usage on schema private to authenticated;
 
 -- ---------- Enumerations (idempotent) ----------
 do $$ begin

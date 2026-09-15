@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
-import { corsHeaders, json, error } from '../_shared/cors.ts'
+import { alwaysIncludeCors, resolveCorsHeaders, json, error } from '../_shared/cors.ts'
 
 interface CreatePayload {
   action: 'create_user'
@@ -36,24 +36,33 @@ type Payload =
 
 const AUTH_DOMAIN = 'cbt.local'
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+async function handle(req: Request): Promise<Response> {
+  const cors = resolveCorsHeaders(req)
   if (req.method !== 'POST') {
-    return error('Method not allowed', 405)
+    return error('Method not allowed', 405, cors)
+  }
+
+  let payload: Payload
+  try {
+    payload = await req.json()
+  } catch {
+    return error('Body request bukan JSON yang valid.', 400, cors)
+  }
+  if (!payload || typeof payload !== 'object' || !('action' in payload)) {
+    return error('Kolom "action" wajib diisi.', 400, cors)
   }
 
   const authHeader = req.headers.get('Authorization') ?? ''
   if (!authHeader.startsWith('Bearer ')) {
-    return error('Missing authorization', 401)
+    return error('Sesi tidak valid. Silakan login ulang.', 401, cors)
   }
   const jwt = authHeader.replace('Bearer ', '')
 
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   if (!serviceKey || !supabaseUrl) {
-    return error('Service misconfigured: missing SUPABASE_SERVICE_ROLE_KEY', 500)
+    console.error('[manage-user] secrets platform tidak lengkap: SUPABASE_SERVICE_ROLE_KEY / SUPABASE_URL')
+    return error('Layanan belum terkonfigurasi dengan benar. Hubungi admin.', 500, cors)
   }
 
   const admin = createClient(supabaseUrl, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } })
@@ -64,7 +73,7 @@ Deno.serve(async (req) => {
     auth: { autoRefreshToken: false, persistSession: false },
   })
   const { data: userData, error: userErr } = await verifier.auth.getUser(jwt)
-  if (userErr || !userData.user) return error('Invalid token', 401)
+  if (userErr || !userData.user) return error('Sesi tidak valid atau sudah kedaluwarsa. Silakan login ulang.', 401, cors)
 
   const { data: profile } = await admin
     .from('profiles')
@@ -72,29 +81,22 @@ Deno.serve(async (req) => {
     .eq('id', userData.user.id)
     .single()
   if (!profile || profile.role !== 'admin' || !profile.is_active) {
-    return error('Hanya admin yang diizinkan.', 403)
-  }
-
-  let payload: Payload
-  try {
-    payload = await req.json()
-  } catch {
-    return error('Invalid JSON body')
+    return error('Hanya admin yang diizinkan.', 403, cors)
   }
 
   try {
     switch (payload.action) {
       case 'ping':
-        return json({ ok: true, version: 1 })
+        return json({ ok: true, version: 1 }, 200, cors)
 
       case 'create_user': {
         const { username, password, full_name, role } = payload
         if (!username || !password || !full_name || !role) {
-          return error('username, password, full_name, role wajib diisi.')
+          return error('username, password, full_name, role wajib diisi.', 400, cors)
         }
-        if (password.length < 8) return error('Password minimal 8 karakter.')
+        if (password.length < 8) return error('Password minimal 8 karakter.', 400, cors)
         if (!/^[a-zA-Z0-9._-]{3,30}$/.test(username)) {
-          return error('Username hanya boleh huruf, angka, titik, garis bawah/strip (3-30 karakter).')
+          return error('Username hanya boleh huruf, angka, titik, garis bawah/strip (3-30 karakter).', 400, cors)
         }
 
         const uname = username.toLowerCase()
@@ -105,7 +107,7 @@ Deno.serve(async (req) => {
           .select('id')
           .ilike('username', uname)
           .maybeSingle()
-        if (dupProfile) return error(`Username "${uname}" sudah digunakan.`)
+        if (dupProfile) return error(`Username "${uname}" sudah digunakan.`, 400, cors)
 
         const { data: created, error: createErr } = await admin.auth.admin.createUser({
           email,
@@ -113,7 +115,7 @@ Deno.serve(async (req) => {
           email_confirm: true,
           user_metadata: { username: uname, full_name, role },
         })
-        if (createErr) return error(createErr.message, 400)
+        if (createErr) return error(createErr.message, 400, cors)
 
         const uid = created.user.id
 
@@ -131,7 +133,7 @@ Deno.serve(async (req) => {
             email: s.email || null,
             class_id: s.class_id || null,
           })
-          if (ins.error) return error(ins.error.message, 400)
+          if (ins.error) return error(ins.error.message, 400, cors)
         }
 
         if (role === 'teacher') {
@@ -143,7 +145,7 @@ Deno.serve(async (req) => {
             email: t.email || null,
             address: t.address || null,
           })
-          if (ins.error) return error(ins.error.message, 400)
+          if (ins.error) return error(ins.error.message, 400, cors)
           if (t.subject_ids?.length) {
             await admin
               .from('teacher_subjects')
@@ -157,12 +159,12 @@ Deno.serve(async (req) => {
           role,
         }).eq('id', uid)
 
-        return json({ ok: true, user_id: uid, email })
+        return json({ ok: true, user_id: uid, email }, 200, cors)
       }
 
       case 'update_user': {
         const { user_id, full_name, is_active } = payload
-        if (!user_id) return error('user_id wajib.')
+        if (!user_id) return error('user_id wajib.', 400, cors)
         if (typeof is_active === 'boolean') {
           await admin.auth.admin.updateUserById(user_id, {
             ban_duration: is_active ? 'none' : '876000h',
@@ -173,35 +175,37 @@ Deno.serve(async (req) => {
         if (typeof is_active === 'boolean') upd.is_active = is_active
         if (Object.keys(upd).length > 0) {
           const r = await admin.from('profiles').update(upd).eq('id', user_id)
-          if (r.error) return error(r.error.message, 400)
+          if (r.error) return error(r.error.message, 400, cors)
         }
-        return json({ ok: true })
+        return json({ ok: true }, 200, cors)
       }
 
       case 'reset_password': {
         const { user_id, new_password } = payload
-        if (!user_id || !new_password) return error('user_id & new_password wajib.')
-        if (new_password.length < 8) return error('Password minimal 8 karakter.')
+        if (!user_id || !new_password) return error('user_id & new_password wajib.', 400, cors)
+        if (new_password.length < 8) return error('Password minimal 8 karakter.', 400, cors)
         const { error: resetErr } = await admin.auth.admin.updateUserById(user_id, {
           password: new_password,
         })
-        if (resetErr) return error(resetErr.message, 400)
-        return json({ ok: true })
+        if (resetErr) return error(resetErr.message, 400, cors)
+        return json({ ok: true }, 200, cors)
       }
 
       case 'delete_user': {
         const { user_id } = payload
-        if (!user_id) return error('user_id wajib.')
-        if (user_id === userData.user.id) return error('Tidak dapat menghapus akun sendiri.')
+        if (!user_id) return error('user_id wajib.', 400, cors)
+        if (user_id === userData.user.id) return error('Tidak dapat menghapus akun sendiri.', 400, cors)
         const { error: delErr } = await admin.auth.admin.deleteUser(user_id)
-        if (delErr) return error(delErr.message, 400)
-        return json({ ok: true })
+        if (delErr) return error(delErr.message, 400, cors)
+        return json({ ok: true }, 200, cors)
       }
 
       default:
-        return error('Unknown action')
+        return error('Unknown action', 400, cors)
     }
   } catch (e) {
-    return error(e instanceof Error ? e.message : 'Unexpected error', 500)
+    return error(e instanceof Error ? e.message : 'Unexpected error', 500, cors)
   }
-})
+}
+
+Deno.serve(alwaysIncludeCors(handle))

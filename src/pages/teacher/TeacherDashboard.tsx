@@ -57,22 +57,22 @@ export default function TeacherDashboard() {
         <TableSkeleton rows={5} cols={4} />
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
-            <StatCard label="Ujian Saya" value={<Link to="/teacher/exams" className="hover:text-primary-600 dark:hover:text-primary-300">{d.totalExams}</Link>} icon={<FileText className="h-5 w-5" />} tone="blue" />
-            <StatCard label="Sedang Aktif" value={d.activeExams} icon={<PlayCircle className="h-5 w-5 animate-pulse-soft" />} tone="green" hint={`${d.upcomingExams} mendatang`} />
-            <StatCard label="Total Peserta" value={d.participants} icon={<Users className="h-5 w-5" />} tone="purple" hint={`${d.submissions} submission`} />
-            <StatCard label="Bank Soal" value={d.banks} icon={<Database className="h-5 w-5" />} tone="blue" hint={`${d.questions} soal`} />
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            <StatCard label="Ujian Saya" value={<Link to="/teacher/exams" className="hover:text-primary-600 dark:hover:text-primary-300">{d.totalExams}</Link>} icon={<FileText className="h-5 w-5" />} tone="blue" hint="Kelola mata pelajaran" />
+            <StatCard label="Sedang Aktif" value={d.activeExams} icon={<PlayCircle className="h-5 w-5" />} tone="green" hint={`${d.upcomingExams} terjadwal`} />
+            <StatCard label="Total Peserta" value={d.participants} icon={<Users className="h-5 w-5" />} tone="purple" hint={`${d.submissions} pengumpulan`} />
+            <StatCard label="Bank Soal" value={d.banks} icon={<Database className="h-5 w-5" />} tone="blue" hint={`${d.questions} soal tersimpan`} />
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-4 sm:gap-4 lg:grid-cols-4">
-            <StatCard label="Essay Belum Dinilai" value={<Link to="/teacher/grading" className="hover:text-primary-600 dark:hover:text-primary-300">{d.pendingEssays}</Link>} icon={<PencilRuler className="h-5 w-5" />} tone={d.pendingEssays > 0 ? 'rose' : 'green'} />
-            <StatCard label="Sudah Dinilai" value={d.essayGraded} icon={<Award className="h-5 w-5" />} tone="green" />
-            <StatCard label="Rata-rata Nilai" value={fmtNum(d.avgScore, 1)} icon={<TrendingUp className="h-5 w-5" />} tone="amber" hint={`${d.resultCount} hasil`} />
-            <StatCard label="Pelanggaran" value={d.violations} icon={<Shield className="h-5 w-5" />} tone={d.violations > 0 ? 'rose' : 'green'} hint={d.violations ? 'perlu perhatian' : 'aman'} />
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:mt-4 sm:gap-4 lg:grid-cols-4">
+            <StatCard label="Essay Belum Dinilai" value={<Link to="/teacher/grading" className="hover:text-primary-600 dark:hover:text-primary-300">{d.pendingEssays}</Link>} icon={<PencilRuler className="h-5 w-5" />} tone={d.pendingEssays > 0 ? 'rose' : 'green'} hint={d.pendingEssays > 0 ? 'Perlu penilaian' : 'Selesai'} />
+            <StatCard label="Sudah Dinilai" value={d.essayGraded} icon={<Award className="h-5 w-5" />} tone="green" hint="Essay ternilai" />
+            <StatCard label="Rata-rata Nilai" value={fmtNum(d.avgScore, 1)} icon={<TrendingUp className="h-5 w-5" />} tone="amber" hint={`${d.resultCount} hasil · skala 0-100`} />
+            <StatCard label="Pelanggaran" value={d.violations} icon={<Shield className="h-5 w-5" />} tone={d.violations > 0 ? 'rose' : 'green'} hint={d.violations ? 'Perlu perhatian' : 'Kondusif'} />
           </div>
 
           <section className="mt-6 sm:mt-8">
-            <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-400 sm:mb-4">
-              <TrendingUp className="h-4 w-4" /> Analitik Mengajar · 14 Hari Terakhir
+            <h2 className="mb-3 text-sm font-semibold text-slate-500 dark:text-slate-400 sm:mb-4">
+              Aktivitas 14 Hari Terakhir
             </h2>
             <div className="grid gap-3 sm:gap-5 sm:grid-cols-2 xl:grid-cols-3">
               <div className="card min-w-0 p-4 animate-fade-in sm:p-5 sm:xl:col-span-2">
@@ -132,8 +132,8 @@ export default function TeacherDashboard() {
           </section>
 
           <section className="mt-6 sm:mt-8">
-            <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-400 sm:mb-4">
-              <FileQuestion className="h-4 w-4" /> Kesehatan Soal & Keamanan
+            <h2 className="mb-3 text-sm font-semibold text-slate-500 dark:text-slate-400 sm:mb-4">
+              Soal dan Keamanan
             </h2>
             <div className="grid gap-3 sm:gap-5 sm:grid-cols-2 xl:grid-cols-3">
               <div className="card min-w-0 p-4 animate-fade-in sm:p-5">

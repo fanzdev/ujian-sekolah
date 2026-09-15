@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PencilRuler, Save, Search, Clock3, CheckCircle2, GraduationCap, Filter } from 'lucide-react'
+import { PencilRuler, Save, Search, Clock3, CheckCircle2, GraduationCap, Filter, Sparkles } from 'lucide-react'
 import { useAsync, useDebounce, useDocumentTitle } from '@/hooks/useAsync'
 import { useToast } from '@/hooks/useToast'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -42,7 +42,7 @@ export default function GradingQueuePage() {
       />
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="relative overflow-hidden rounded-[20px] p-4 text-white shadow-sm" style={{ background: 'var(--app-gradient, linear-gradient(135deg, #0D868F, #C67C3B))' }}>
+        <div className="relative overflow-hidden rounded-[20px] p-4 text-white shadow-sm" style={{ background: 'var(--app-gradient, linear-gradient(135deg, #0D868F, #2DD4BF))' }}>
           <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/15 blur-xl" />
           <div className="pointer-events-none absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '18px 18px' }} />
           <div className="relative">
@@ -145,6 +145,27 @@ function GradingModal({ item, onClose, onSaved }: { item: QueueItem; onClose: ()
   const [score, setScore] = useState<number | ''>(item.final_score !== null ? Number(item.final_score) : '')
   const [feedback, setFeedback] = useState(item.final_feedback ?? '')
   const [saving, setSaving] = useState(false)
+  const [aiLoading, setAiLoading] = useState(false)
+
+  const gradeWithAi = async () => {
+    if (detailQuery.loading || !detailQuery.data) return
+    setAiLoading(true)
+    try {
+      const { aiGradeEssay } = await import('@/services/ai.service')
+      const result = await aiGradeEssay({
+        questionText: detailQuery.data.questionText.replace(/<[^>]*>/g, ''),
+        answerText: detailQuery.data.answerText,
+        maxScore: 100,
+      })
+      setScore(result.score)
+      setFeedback(result.feedback)
+      toast.success('Saran nilai AI dimasukkan. Periksa sebelum menyimpan.')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal meminta penilaian AI.')
+    } finally {
+      setAiLoading(false)
+    }
+  }
 
   if (detailQuery.loading || !detailQuery.data) {
     return (
@@ -196,21 +217,23 @@ function GradingModal({ item, onClose, onSaved }: { item: QueueItem; onClose: ()
         </div>
 
         <Input
-          label={`Nilai Final (maks. 100)`}
+          label="Nilai Essay (0-100)"
           type="number"
           step={0.5}
           min={0}
           max={100}
           value={score}
           onChange={(e) => setScore(e.target.value === '' ? '' : Number(e.target.value))}
+          hint="Skala 0-100 per soal. Sistem otomatis membobot setara dengan soal lain."
           required
         />
 
         <Textarea label="Umpan Balik untuk Siswa" placeholder="Komentar singkat mengenai jawaban siswa..." value={feedback} onChange={(e) => setFeedback(e.target.value)} />
       </div>
 
-      <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:border-white/5 dark:bg-white/[0.03]">
+      <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:border-white/5 dark:bg-white/[0.03]">
         <Button variant="ghost" onClick={onClose}>Batal</Button>
+        <Button variant="outline" onClick={() => void gradeWithAi()} loading={aiLoading} icon={<Sparkles className="h-4 w-4" />}>Nilai dengan AI</Button>
         <Button onClick={saveFinal} loading={saving} icon={<Save className="h-4 w-4" />} style={{ background: 'var(--app-gradient, var(--c-primary-600))' }} className="border-0 text-white hover:opacity-95">Simpan Nilai Final</Button>
       </div>
     </Modal>

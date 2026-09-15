@@ -23,6 +23,7 @@ import { pingManageUser, createFullUser, resetUserPassword, updateUser as edgeUp
 import { supabase } from '@/services/client'
 import { friendlyError } from '@/lib/errors'
 import { randomCode } from '@/lib/utils'
+import { formatDate } from '@/lib/datetime'
 import type { Student } from '@/types/models'
 
 export default function StudentsPage() {
@@ -111,6 +112,7 @@ export default function StudentsPage() {
                   ),
                 },
                 { key: 'nis', header: 'NIS', render: (s) => s.nis ?? '-', className: 'whitespace-nowrap' },
+                { key: 'nisn', header: 'NISN', render: (s) => s.nisn ?? '-', className: 'whitespace-nowrap' },
                 {
                   key: 'class',
                   header: 'Kelas',
@@ -130,6 +132,29 @@ export default function StudentsPage() {
                   },
                 },
                 { key: 'gender', header: 'L/P', render: (s) => (s.gender === 'L' ? 'Laki-laki' : s.gender === 'P' ? 'Perempuan' : '-') },
+                {
+                  key: 'contact',
+                  header: 'Kontak',
+                  render: (s) => (
+                    <div className="min-w-[140px]">
+                      <p className="text-xs text-slate-700 dark:text-slate-300">{s.phone ?? '-'}</p>
+                      <p className="max-w-[180px] truncate text-[11px] text-slate-400">{s.email ?? ''}</p>
+                    </div>
+                  ),
+                },
+                {
+                  key: 'birth',
+                  header: 'TTL',
+                  render: (s) => {
+                    if (!s.birth_place && !s.birth_date) return <span className="text-xs text-slate-400">-</span>
+                    return (
+                      <div className="min-w-[120px]">
+                        <p className="text-xs text-slate-700 dark:text-slate-300">{s.birth_place ?? '-'}</p>
+                        <p className="text-[11px] text-slate-400">{s.birth_date ? formatDate(s.birth_date) : ''}</p>
+                      </div>
+                    )
+                  },
+                },
                 {
                   key: 'status',
                   header: 'Status',

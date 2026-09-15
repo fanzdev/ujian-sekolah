@@ -679,6 +679,9 @@ function QuestionsStep({
                 Ada perubahan belum disimpan — klik <strong>Simpan & Lanjut ke Aturan</strong> untuk menyimpan soal ke ujian.
               </div>
             )}
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300">
+              Bobot otomatis: setiap soal bernilai setara. Nilai akhir selalu skala 0-100 (contoh: 10 soal, benar 7, nilai 70). Tidak perlu mengatur poin per soal.
+            </div>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Badge tone="blue">{items.length} soal dipilih</Badge>

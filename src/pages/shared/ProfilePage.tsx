@@ -57,7 +57,7 @@ function ProfileHero() {
   const [uploading, setUploading] = useState(false)
   const brandingQuery = useAsync(() => fetchSchoolSettings(), [])
   const pc = brandingQuery.data?.primary_color || '#0D868F'
-  const sc = brandingQuery.data?.secondary_color || '#0CBCC9'
+  const sc = brandingQuery.data?.secondary_color || '#2DD4BF'
 
   if (!profile) return null
 

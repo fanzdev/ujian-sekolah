@@ -43,14 +43,14 @@ export default function LoginPage() {
   }), [])
   const setupCheck = useAsync(() => getSetupStatus(), [])
   const loginBg = ((branding as unknown as { login_color?: string } | null)?.login_color && /^#[0-9a-fA-F]{6}$/.test((branding as unknown as { login_color: string }).login_color) ? (branding as unknown as { login_color: string }).login_color : '#0B1E24') as string
-  const appBg = ((branding as unknown as { app_bg_color?: string } | null)?.app_bg_color && /^#[0-9a-fA-F]{6}$/.test((branding as unknown as { app_bg_color: string }).app_bg_color) ? (branding as unknown as { app_bg_color: string }).app_bg_color : '#FDF9F3') as string
+  const appBg = ((branding as unknown as { app_bg_color?: string } | null)?.app_bg_color && /^#[0-9a-fA-F]{6}$/.test((branding as unknown as { app_bg_color: string }).app_bg_color) ? (branding as unknown as { app_bg_color: string }).app_bg_color : '#EDEDED') as string
   const primary = ((branding as unknown as { primary_color?: string } | null)?.primary_color && /^#[0-9a-fA-F]{6}$/.test((branding as unknown as { primary_color: string }).primary_color) ? (branding as unknown as { primary_color: string }).primary_color : '#0D868F') as string
-  const secondary = ((branding as unknown as { secondary_color?: string } | null)?.secondary_color && /^#[0-9a-fA-F]{6}$/.test((branding as unknown as { secondary_color: string }).secondary_color) ? (branding as unknown as { secondary_color: string }).secondary_color : '#C67C3B') as string
+  const secondary = ((branding as unknown as { secondary_color?: string } | null)?.secondary_color && /^#[0-9a-fA-F]{6}$/.test((branding as unknown as { secondary_color: string }).secondary_color) ? (branding as unknown as { secondary_color: string }).secondary_color : '#2DD4BF') as string
 
   if (!isEnvConfigured()) return <Navigate to="/env-required" replace />
   if (setupCheck.loading && !setupCheck.error) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-[#FDF9F3] dark:bg-slate-950">
+      <div className="flex min-h-dvh items-center justify-center bg-[#EDEDED] dark:bg-slate-950">
         <Spinner className="h-8 w-8" />
       </div>
     )
@@ -196,9 +196,8 @@ export default function LoginPage() {
                 </div>
               )}
 
-              <div className="relative mt-6 overflow-hidden rounded-[22px] border border-black/10 bg-transparent p-6 shadow-none backdrop-blur-sm dark:border-white/10 dark:bg-transparent sm:p-7">
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-1 opacity-90" style={{ background: 'var(--app-gradient, linear-gradient(90deg, rgb(var(--c-primary-600)), rgb(var(--c-accent-600))))' }} />
-                <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-transparent opacity-0 blur-2xl" />
+              <div className="login-clean relative mt-6 px-1 sm:mt-7">
+                <style>{`.login-clean .input-base{background-color:transparent}.login-clean .input-base:focus{background-color:transparent}`}</style>
                 <form onSubmit={handleSubmit} noValidate className="relative space-y-5">
                   {error && (
                     <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 dark:border-rose-900/30 dark:bg-rose-500/10 dark:text-rose-300">
@@ -237,23 +236,23 @@ export default function LoginPage() {
               </div>
 
               <div className="hidden lg:block">
-                <div className="mt-4 rounded-2xl border border-black/5 bg-transparent p-4 shadow-none backdrop-blur-sm dark:border-white/10 dark:bg-transparent">
+                <div className="mt-6">
                   <div className="flex items-center justify-between">
                     <p className="font-mono text-[10px] tracking-[0.14em] text-[#8A9AA0] dark:text-slate-400">BANTUAN CEPAT</p>
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   </div>
                   <div className="mt-3 grid grid-cols-3 gap-2.5">
-                    <div className="rounded-xl border border-black/5 bg-transparent px-3 py-3 dark:border-white/10 dark:bg-transparent">
+                    <div className="px-1 py-1">
                       <p className="font-mono text-[10px] tracking-wide text-accent">01</p>
                       <p className="mt-1 text-xs font-semibold leading-tight text-primary-900 dark:text-white">Username dari admin</p>
                       <p className="mt-0.5 text-[11px] leading-snug text-[#6B7A7F] dark:text-slate-400">Huruf kecil, tanpa spasi</p>
                     </div>
-                    <div className="rounded-xl border border-black/5 bg-transparent px-3 py-3 dark:border-white/10 dark:bg-transparent">
+                    <div className="px-1 py-1">
                       <p className="font-mono text-[10px] tracking-wide text-accent">02</p>
                       <p className="mt-1 text-xs font-semibold leading-tight text-primary-900 dark:text-white">Password awal</p>
                       <p className="mt-0.5 text-[11px] leading-snug text-[#6B7A7F] dark:text-slate-400">Min. 8 karakter</p>
                     </div>
-                    <div className="rounded-xl border border-black/5 bg-transparent px-3 py-3 dark:border-white/10 dark:bg-transparent">
+                    <div className="px-1 py-1">
                       <p className="font-mono text-[10px] tracking-wide text-accent">03</p>
                       <p className="mt-1 text-xs font-semibold leading-tight text-primary-900 dark:text-white">Lupa? Hubungi</p>
                       <p className="mt-0.5 text-[11px] leading-snug text-[#6B7A7F] dark:text-slate-400">Wali kelas / admin</p>

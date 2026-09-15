@@ -19,12 +19,12 @@ export function SplashScreen({ visible }: { visible: boolean }) {
       const c = raw ? (JSON.parse(raw) as { app_name?: string; school_name?: string; logo_url?: string; primary_color?: string; secondary_color?: string; splash_bg_color?: string }) : null
       if (!c?.app_name) return null
       const sanitized = sanitizeLogoUrl(c.logo_url)
-      const splash = c.splash_bg_color && /^#[0-9a-fA-F]{6}$/.test(c.splash_bg_color) ? c.splash_bg_color : '#0B1E24'
+      const splash = c.splash_bg_color && /^#[0-9a-fA-F]{6}$/.test(c.splash_bg_color) ? c.splash_bg_color : '#064247'
       if (!sanitized && c.logo_url) {
         try { const copy = { ...c, logo_url: undefined }; localStorage.setItem('cbt-branding', JSON.stringify(copy)) } catch { void 0 }
-        return { app_name: c.app_name, school_name: c.school_name ?? 'SMK AL-FATA', logo_url: null, primary_color: c.primary_color || '#0D868F', secondary_color: c.secondary_color || '#0CBCC9', splash_bg_color: splash }
+        return { app_name: c.app_name, school_name: c.school_name ?? 'SMK AL-FATA', logo_url: null, primary_color: c.primary_color || '#0D868F', secondary_color: c.secondary_color || '#2DD4BF', splash_bg_color: splash }
       }
-      return { app_name: c.app_name, school_name: c.school_name ?? 'SMK AL-FATA', logo_url: c.logo_url ? resolveLogoUrl(c.logo_url) : null, primary_color: c.primary_color || '#0D868F', secondary_color: c.secondary_color || '#0CBCC9', splash_bg_color: splash }
+      return { app_name: c.app_name, school_name: c.school_name ?? 'SMK AL-FATA', logo_url: c.logo_url ? resolveLogoUrl(c.logo_url) : null, primary_color: c.primary_color || '#0D868F', secondary_color: c.secondary_color || '#2DD4BF', splash_bg_color: splash }
     } catch { return null }
   })
 
@@ -44,14 +44,14 @@ export function SplashScreen({ visible }: { visible: boolean }) {
         return c
       } catch (e: unknown) { void e; return null }
     })()
-    if (cached?.app_name) setBranding({ app_name: cached.app_name, school_name: cached.school_name ?? 'SMK AL-FATA', logo_url: cached.logo_url ? resolveLogoUrl(cached.logo_url) : null, primary_color: cached.primary_color || '#0D868F', secondary_color: cached.secondary_color || '#0CBCC9', splash_bg_color: cached.splash_bg_color && /^#[0-9a-fA-F]{6}$/.test(cached.splash_bg_color) ? cached.splash_bg_color : '#0B1E24' })
+    if (cached?.app_name) setBranding({ app_name: cached.app_name, school_name: cached.school_name ?? 'SMK AL-FATA', logo_url: cached.logo_url ? resolveLogoUrl(cached.logo_url) : null, primary_color: cached.primary_color || '#0D868F', secondary_color: cached.secondary_color || '#2DD4BF', splash_bg_color: cached.splash_bg_color && /^#[0-9a-fA-F]{6}$/.test(cached.splash_bg_color) ? cached.splash_bg_color : '#064247' })
     import('@/services/settings.service').then(({ fetchSchoolSettings }) =>
       fetchSchoolSettings()
         .then((s) => {
           if (cancelled) return
           const cleanLogo = sanitizeLogoUrl(s.logo_url) ? resolveLogoUrl(s.logo_url) : null
-          const splash = (s as unknown as { splash_bg_color?: string }).splash_bg_color && /^#[0-9a-fA-F]{6}$/.test((s as unknown as { splash_bg_color: string }).splash_bg_color) ? (s as unknown as { splash_bg_color: string }).splash_bg_color : '#0B1E24'
-          setBranding({ app_name: s.app_name, school_name: s.school_name, logo_url: cleanLogo, primary_color: s.primary_color || '#0D868F', secondary_color: s.secondary_color || '#0CBCC9', splash_bg_color: splash })
+          const splash = (s as unknown as { splash_bg_color?: string }).splash_bg_color && /^#[0-9a-fA-F]{6}$/.test((s as unknown as { splash_bg_color: string }).splash_bg_color) ? (s as unknown as { splash_bg_color: string }).splash_bg_color : '#064247'
+          setBranding({ app_name: s.app_name, school_name: s.school_name, logo_url: cleanLogo, primary_color: s.primary_color || '#0D868F', secondary_color: s.secondary_color || '#2DD4BF', splash_bg_color: splash })
           try { localStorage.setItem('cbt-branding', JSON.stringify({ app_name: s.app_name, school_name: s.school_name, logo_url: cleanLogo ?? fallbackLogo, primary_color: s.primary_color, secondary_color: s.secondary_color, splash_bg_color: splash })) } catch (e: unknown) { void e }
         })
         .catch(() => undefined),
@@ -83,8 +83,8 @@ export function SplashScreen({ visible }: { visible: boolean }) {
   if (!mounted) return null
 
   const pc = branding?.primary_color || '#0D868F'
-  const sc = branding?.secondary_color || '#0CBCC9'
-  const splashBg = (branding as unknown as { splash_bg_color?: string } | null)?.splash_bg_color && /^#[0-9a-fA-F]{6}$/.test((branding as unknown as { splash_bg_color: string }).splash_bg_color) ? (branding as unknown as { splash_bg_color: string }).splash_bg_color : 'var(--c-splash-bg, #0B1E24)'
+  const sc = branding?.secondary_color || '#2DD4BF'
+  const splashBg = (branding as unknown as { splash_bg_color?: string } | null)?.splash_bg_color && /^#[0-9a-fA-F]{6}$/.test((branding as unknown as { splash_bg_color: string }).splash_bg_color) ? (branding as unknown as { splash_bg_color: string }).splash_bg_color : 'var(--c-splash-bg, #064247)'
 
   return (
     <div
@@ -125,11 +125,11 @@ export function SplashScreen({ visible }: { visible: boolean }) {
         </div>
 
         <h1 className="mt-7 text-[23px] font-black tracking-[-0.03em] text-white" style={{ letterSpacing: '-0.03em', animation: 'ssText 0.6s ease-out 0.2s both', textShadow: '0 1px 12px rgba(0,0,0,0.18)' }}>{branding?.app_name ?? 'Veyra CBT'}</h1>
-        <p className="mt-1.5 text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: '#E8B86A', animation: 'ssText 0.6s ease-out 0.3s both' }}>{branding?.school_name ? `${branding.school_name} • CBT` : 'Computer Based Test'}</p>
-        <p className="mt-2 max-w-[360px] text-xs leading-relaxed text-white/62" style={{ animation: 'ssText 0.6s ease-out 0.4s both' }}>Sistem Ujian Digital — Aman, Cepat, Terintegrasi untuk Guru &amp; Siswa</p>
+        <p className="mt-1.5 text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: '#8FD8DC', animation: 'ssText 0.6s ease-out 0.3s both' }}>{branding?.school_name ? `${branding.school_name} • CBT` : 'Computer Based Test'}</p>
+        <p className="mt-2 max-w-[360px] text-xs leading-relaxed text-white" style={{ animation: 'ssText 0.6s ease-out 0.4s both' }}>Sistem Ujian Digital — Aman, Cepat, Terintegrasi untuk Guru &amp; Siswa</p>
 
         <div className="mt-8 flex items-center gap-2.5" aria-label="Memuat" style={{ animation: 'ssText 0.5s ease-out 0.5s both' }}>
-          <span className="h-2 w-2 rounded-full shadow-sm will-change-transform" style={{ background: '#C67C3B', boxShadow: `0 0 8px #C67C3B66`, animation: 'ssDotPro 1.1s cubic-bezier(0.4,0,0.2,1) infinite' }} />
+          <span className="h-2 w-2 rounded-full shadow-sm will-change-transform" style={{ background: sc, boxShadow: `0 0 8px ${sc}66`, animation: 'ssDotPro 1.1s cubic-bezier(0.4,0,0.2,1) infinite' }} />
           <span className="h-2 w-2 rounded-full shadow-sm will-change-transform" style={{ background: pc, boxShadow: `0 0 8px ${pc}4d`, animation: 'ssDotPro 1.1s cubic-bezier(0.4,0,0.2,1) 0.16s infinite' }} />
           <span className="h-2 w-2 rounded-full shadow-sm will-change-transform" style={{ background: pc, boxShadow: `0 0 8px ${pc}4d`, animation: 'ssDotPro 1.1s cubic-bezier(0.4,0,0.2,1) 0.32s infinite' }} />
         </div>
@@ -138,7 +138,7 @@ export function SplashScreen({ visible }: { visible: boolean }) {
           <div className="h-full w-full overflow-hidden rounded-full">
             <div
               className="h-full w-[44%] rounded-full will-change-transform"
-              style={{ background: `linear-gradient(90deg, ${pc}, #C67C3B, ${pc})`, transform: 'translateZ(0)', animation: 'ssBarPro 1.2s cubic-bezier(0.4,0,0.6,1) infinite alternate', boxShadow: `0 0 10px ${pc}66` }}
+              style={{ background: `linear-gradient(90deg, ${pc}, ${sc}, ${pc})`, transform: 'translateZ(0)', animation: 'ssBarPro 1.2s cubic-bezier(0.4,0,0.6,1) infinite alternate', boxShadow: `0 0 10px ${pc}66` }}
             />
           </div>
           <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white/15 to-transparent opacity-0" style={{ animation: 'ssShine 1.6s ease-in-out infinite' }} />

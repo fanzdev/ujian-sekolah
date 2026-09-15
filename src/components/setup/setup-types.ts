@@ -1,5 +1,4 @@
 export interface SchoolForm {
-  appName: string
   schoolName: string
   city: string
   address: string
@@ -16,7 +15,6 @@ export interface AdminForm {
 }
 
 export const EMPTY_SCHOOL: SchoolForm = {
-  appName: 'Veyra CBT',
   schoolName: 'SMK AL-FATA',
   city: '',
   address: '',

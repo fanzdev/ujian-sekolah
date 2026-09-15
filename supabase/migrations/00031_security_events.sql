@@ -24,20 +24,21 @@ create index if not exists idx_security_events_severity on public.security_event
 alter table public.security_events enable row level security;
 
 drop policy if exists "security_events_select_own_or_staff" on public.security_events;
-create policy "security_events_select_own_or_staff" on public.security_events for select using (
+create policy "security_events_select_own_or_staff" on public.security_events for select to authenticated using (
   auth.uid() = user_id
-  or public.is_admin()
+  or private.is_admin()
   or exists (
     select 1 from public.exams e
+    join public.teachers t on t.id = e.teacher_id
     where e.id = security_events.exam_id
-    and e.teacher_id = auth.uid()
+    and t.profile_id = auth.uid()
   )
 );
 
 drop policy if exists "security_events_insert_own" on public.security_events;
-create policy "security_events_insert_own" on public.security_events for insert with check (
+create policy "security_events_insert_own" on public.security_events for insert to authenticated with check (
   auth.uid() = user_id
-  or public.is_admin()
+  or private.is_admin()
 );
 
 comment on table public.security_events is 'Comprehensive security events for anti-cheat: TAB_SWITCH, PAGE_BLUR, FULLSCREEN_EXIT, etc.';
@@ -72,32 +73,31 @@ create or replace function public.record_security_event(
   p_metadata jsonb default '{}'::jsonb,
   p_device_id text default null
 ) returns uuid
-language plpgsql security definer
+language plpgsql security definer set search_path = public, private
 as $$
 declare
-  v_user_id uuid;
+  v_student_id uuid;
+  v_profile_id uuid;
   v_exam_id uuid;
   v_ip text;
   v_ua text;
   v_id uuid;
 begin
-  select student_id, exam_id into v_user_id, v_exam_id
+  select student_id, exam_id into v_student_id, v_exam_id
   from public.exam_attempts
   where id = p_attempt_id;
 
-  if v_user_id is null then
-    -- try to get from attempt owned by current user
-    select id, exam_id, student_id into v_user_id, v_exam_id, v_user_id
-    from public.exam_attempts
-    where id = p_attempt_id and student_id = auth.uid();
-    if v_user_id is null then
-      raise exception 'Attempt not found or not owned';
-    end if;
+  if v_student_id is null then
+    raise exception 'Attempt tidak ditemukan.';
   end if;
 
-  -- allow only own or admin/teacher
-  if v_user_id != auth.uid() and not public.is_admin() then
-    perform public.load_attempt_checked(p_attempt_id);
+  select profile_id into v_profile_id
+  from public.students
+  where id = v_student_id;
+
+  -- allow only own or admin/teacher pemilik ujian
+  if v_profile_id is distinct from auth.uid() and not private.is_admin() then
+    perform private.load_attempt_checked(p_attempt_id);
   end if;
 
   -- try to get IP from request headers
@@ -112,7 +112,7 @@ begin
   end;
 
   insert into public.security_events (user_id, exam_id, attempt_id, event_type, severity, ip_address, user_agent, device_id, metadata)
-  values (v_user_id, v_exam_id, p_attempt_id, p_event_type, coalesce(p_severity,'LOW'), v_ip, v_ua, p_device_id, coalesce(p_metadata,'{}'::jsonb))
+  values (coalesce(v_profile_id, auth.uid()), v_exam_id, p_attempt_id, p_event_type, coalesce(p_severity,'LOW'), v_ip, v_ua, p_device_id, coalesce(p_metadata,'{}'::jsonb))
   returning id into v_id;
 
   return v_id;

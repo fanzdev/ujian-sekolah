@@ -10,10 +10,10 @@ export interface ThemePreset {
 export const THEME_PRESETS: ThemePreset[] = [
   {
     id: 'bengkel-presisi',
-    label: 'Bengkel Presisi',
-    description: 'Teal + Copper — default Veyra, hangat presisi',
+    label: 'Teal Lembut',
+    description: 'Teal bergradasi lembut — default aplikasi',
     primary: '#0D868F',
-    secondary: '#C67C3B',
+    secondary: '#2DD4BF',
   },
   {
     id: 'veyra-midnight',
@@ -51,7 +51,7 @@ export function getPresetOrFallback(id: string | null | undefined, primary: stri
     label: 'Kustom',
     description: 'Warna pilihan admin',
     primary: primary && /^#[0-9a-fA-F]{6}$/.test(primary) ? primary : '#0D868F',
-    secondary: secondary && /^#[0-9a-fA-F]{6}$/.test(secondary) ? secondary : '#C67C3B',
+    secondary: secondary && /^#[0-9a-fA-F]{6}$/.test(secondary) ? secondary : '#2DD4BF',
   }
 }
 
@@ -86,11 +86,11 @@ export function isContrastOk(fg: string, bg: string, min = 4.5): boolean {
 
 export function suggestSecondary(primary: string): string {
   const map: Record<string, string> = {
-    '#0D868F': '#C67C3B',
+    '#0D868F': '#2DD4BF',
     '#0B3D4F': '#E8B86A',
     '#1A6B7A': '#8EA7AD',
     '#334155': '#0D868F',
   }
   if (map[primary.toUpperCase()]) return map[primary.toUpperCase()]
-  return '#C67C3B'
+  return '#2DD4BF'
 }

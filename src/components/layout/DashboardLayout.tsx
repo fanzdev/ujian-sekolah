@@ -59,10 +59,10 @@ export function DashboardLayout() {
 
   if (!profile) return null
   const items = getNav(profile.role)
-  const sidebarBg = ((branding as unknown as { sidebar_color?: string } | null)?.sidebar_color && /^#[0-9a-fA-F]{6}$/.test((branding as unknown as { sidebar_color: string }).sidebar_color) ? (branding as unknown as { sidebar_color: string }).sidebar_color : '#0B1E24') as string
-  const appBg = ((branding as unknown as { app_bg_color?: string } | null)?.app_bg_color && /^#[0-9a-fA-F]{6}$/.test((branding as unknown as { app_bg_color: string }).app_bg_color) ? (branding as unknown as { app_bg_color: string }).app_bg_color : '#FDF9F3') as string
+  const sidebarBg = ((branding as unknown as { sidebar_color?: string } | null)?.sidebar_color && /^#[0-9a-fA-F]{6}$/.test((branding as unknown as { sidebar_color: string }).sidebar_color) ? (branding as unknown as { sidebar_color: string }).sidebar_color : '#0D868F') as string
+  const appBg = ((branding as unknown as { app_bg_color?: string } | null)?.app_bg_color && /^#[0-9a-fA-F]{6}$/.test((branding as unknown as { app_bg_color: string }).app_bg_color) ? (branding as unknown as { app_bg_color: string }).app_bg_color : '#EDEDED') as string
   const primary = ((branding as unknown as { primary_color?: string } | null)?.primary_color && /^#[0-9a-fA-F]{6}$/.test((branding as unknown as { primary_color: string }).primary_color) ? (branding as unknown as { primary_color: string }).primary_color : '#0D868F') as string
-  const secondary = ((branding as unknown as { secondary_color?: string } | null)?.secondary_color && /^#[0-9a-fA-F]{6}$/.test((branding as unknown as { secondary_color: string }).secondary_color) ? (branding as unknown as { secondary_color: string }).secondary_color : '#C67C3B') as string
+  const secondary = ((branding as unknown as { secondary_color?: string } | null)?.secondary_color && /^#[0-9a-fA-F]{6}$/.test((branding as unknown as { secondary_color: string }).secondary_color) ? (branding as unknown as { secondary_color: string }).secondary_color : '#2DD4BF') as string
 
   const handleSignOut = async () => {
     await signOut()
@@ -72,7 +72,6 @@ export function DashboardLayout() {
 
   return (
     <div className="min-h-dvh overflow-visible selection:bg-primary-500/10 app-bg" style={{ background: `var(--c-app-gradient, ${appBg})` }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Fragment+Mono&display=swap');`}</style>
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute inset-0 opacity-[0.035] dark:opacity-[0.05]" style={{ backgroundImage: `radial-gradient(circle at 1px 1px, #0B1E24 1px, transparent 0)`, backgroundSize: '22px 22px' }} />
         <div className="absolute -top-24 right-[-80px] h-[420px] w-[420px] rounded-full blur-3xl lg:h-[520px] lg:w-[520px]" style={{ background: `linear-gradient(135deg, ${primary}14, ${secondary}14, transparent)` }} />
@@ -90,7 +89,7 @@ export function DashboardLayout() {
             <Avatar name={profile.full_name} src={profile.avatar_url} size="sm" shape="xl" className="shadow-sm ring-1 ring-white/10" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-bold leading-none text-white">{profile.full_name}</p>
-              <p className="truncate font-mono text-[10px] leading-tight tracking-wide text-white/55" title={extra.email ?? `@${profile.username}`}>{extra.email ?? `@${profile.username}`}</p>
+              <p className="truncate text-xs leading-tight text-white/60" title={extra.email ?? `@${profile.username}`}>{extra.email ?? `@${profile.username}`}</p>
             </div>
             <span className="hidden h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-[#0B1E24] shadow-sm sm:flex">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>

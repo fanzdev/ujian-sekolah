@@ -24,11 +24,11 @@ export async function fetchSchoolSettings(): Promise<SchoolSettings> {
   }
   if (normalized) {
     if (!normalized.login_color || !/^#[0-9a-fA-F]{6}$/.test(normalized.login_color)) (normalized as unknown as { login_color: string }).login_color = '#0B1E24'
-    if (!normalized.sidebar_color || !/^#[0-9a-fA-F]{6}$/.test(normalized.sidebar_color)) (normalized as unknown as { sidebar_color: string }).sidebar_color = '#0B1E24'
+    if (!normalized.sidebar_color || !/^#[0-9a-fA-F]{6}$/.test(normalized.sidebar_color)) (normalized as unknown as { sidebar_color: string }).sidebar_color = '#0D868F'
     if (!normalized.primary_color || !/^#[0-9a-fA-F]{6}$/.test(normalized.primary_color)) normalized.primary_color = '#0D868F'
-    if (!normalized.secondary_color || !/^#[0-9a-fA-F]{6}$/.test(normalized.secondary_color)) normalized.secondary_color = '#0CBCC9'
-    if (!(normalized as unknown as { app_bg_color?: string }).app_bg_color || !/^#[0-9a-fA-F]{6}$/.test((normalized as unknown as { app_bg_color: string }).app_bg_color)) (normalized as unknown as { app_bg_color: string }).app_bg_color = '#FDF9F3'
-    if (!(normalized as unknown as { splash_bg_color?: string }).splash_bg_color || !/^#[0-9a-fA-F]{6}$/.test((normalized as unknown as { splash_bg_color: string }).splash_bg_color)) (normalized as unknown as { splash_bg_color: string }).splash_bg_color = '#0B1E24'
+    if (!normalized.secondary_color || !/^#[0-9a-fA-F]{6}$/.test(normalized.secondary_color)) normalized.secondary_color = '#2DD4BF'
+    if (!(normalized as unknown as { app_bg_color?: string }).app_bg_color || !/^#[0-9a-fA-F]{6}$/.test((normalized as unknown as { app_bg_color: string }).app_bg_color)) (normalized as unknown as { app_bg_color: string }).app_bg_color = '#EDEDED'
+    if (!(normalized as unknown as { splash_bg_color?: string }).splash_bg_color || !/^#[0-9a-fA-F]{6}$/.test((normalized as unknown as { splash_bg_color: string }).splash_bg_color)) (normalized as unknown as { splash_bg_color: string }).splash_bg_color = '#064247'
     const extras = (normalized as unknown as { extra_colors?: unknown }).extra_colors
     if (Array.isArray(extras)) {
       ;(normalized as unknown as { extra_colors: string[] }).extra_colors = extras.filter((c): c is string => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c)).slice(0, 12)
@@ -43,13 +43,13 @@ export async function fetchSchoolSettings(): Promise<SchoolSettings> {
       logo_url: getDefaultLogo(),
       favicon_url: getDefaultLogo(),
       primary_color: '#0D868F',
-      secondary_color: '#0CBCC9',
+      secondary_color: '#2DD4BF',
       extra_colors: [],
       theme_preset: 'bengkel-presisi',
       login_color: '#0B1E24',
-      sidebar_color: '#0B1E24',
-      app_bg_color: '#FDF9F3',
-      splash_bg_color: '#0B1E24',
+      sidebar_color: '#0D868F',
+      app_bg_color: '#EDEDED',
+      splash_bg_color: '#064247',
       card_gradients: {},
       address: null,
       city: null,
@@ -179,9 +179,9 @@ export function applyBranding(settings: SchoolSettings): void {
   const effectivePrimary = preset ? preset.primary : settings.primary_color
   const effectiveSecondary = preset ? preset.secondary : settings.secondary_color
   const effectiveLogin = /^#[0-9a-fA-F]{6}$/.test((settings as unknown as { login_color?: string | null }).login_color ?? '') ? (settings as unknown as { login_color: string }).login_color : '#0B1E24'
-  const effectiveSidebar = /^#[0-9a-fA-F]{6}$/.test((settings as unknown as { sidebar_color?: string | null }).sidebar_color ?? '') ? (settings as unknown as { sidebar_color: string }).sidebar_color : '#0B1E24'
-  const effectiveAppBg = /^#[0-9a-fA-F]{6}$/.test((settings as unknown as { app_bg_color?: string | null }).app_bg_color ?? '') ? (settings as unknown as { app_bg_color: string }).app_bg_color : '#FDF9F3'
-  const effectiveSplash = /^#[0-9a-fA-F]{6}$/.test((settings as unknown as { splash_bg_color?: string | null }).splash_bg_color ?? '') ? (settings as unknown as { splash_bg_color: string }).splash_bg_color : '#0B1E24'
+  const effectiveSidebar = /^#[0-9a-fA-F]{6}$/.test((settings as unknown as { sidebar_color?: string | null }).sidebar_color ?? '') ? (settings as unknown as { sidebar_color: string }).sidebar_color : '#0D868F'
+  const effectiveAppBg = /^#[0-9a-fA-F]{6}$/.test((settings as unknown as { app_bg_color?: string | null }).app_bg_color ?? '') ? (settings as unknown as { app_bg_color: string }).app_bg_color : '#EDEDED'
+  const effectiveSplash = /^#[0-9a-fA-F]{6}$/.test((settings as unknown as { splash_bg_color?: string | null }).splash_bg_color ?? '') ? (settings as unknown as { splash_bg_color: string }).splash_bg_color : '#064247'
   const effectiveExtras = Array.isArray((settings as unknown as { extra_colors?: unknown }).extra_colors) ? ((settings.extra_colors ?? []) as string[]).filter((c) => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c)).slice(0, 12) : []
   const rawGradients = (settings as unknown as { card_gradients?: unknown }).card_gradients
   const sanitize = (v: unknown): string[] => Array.isArray(v) ? (v as unknown[]).filter((c): c is string => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c)).slice(0, 8) : []

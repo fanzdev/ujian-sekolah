@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { School, Building2, Plus, Pencil, Trash2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { School, Building2, Plus, Pencil, Trash2, AlertCircle } from 'lucide-react'
 import { useAsync, useDocumentTitle } from '@/hooks/useAsync'
 import { useToast } from '@/hooks/useToast'
 import { useConfirm } from '@/hooks/useConfirm'
@@ -21,7 +22,7 @@ import {
 } from '@/services/academics.service'
 import { friendlyError } from '@/lib/errors'
 
-const LEVEL_OPTIONS = Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: `Kelas ${i + 1}` }))
+const LEVEL_OPTIONS = Array.from({ length: 13 }, (_, i) => ({ value: String(i + 1), label: `Kelas ${i + 1}` }))
 
 export function ClassesPage() {
   useDocumentTitle('Kelas')
@@ -29,7 +30,6 @@ export function ClassesPage() {
   const toast = useToast()
   const confirmDialog = useConfirm()
   const [editing, setEditing] = useState<null | { id?: string; name: string; level: number; department_id: string; homeroom_teacher_id: string }>(null)
-  const teachers = query.data?.[2] ?? []
 
   if (query.error) return <ErrorState message={query.error} onRetry={query.reload} />
   const classes = query.data?.[0] ?? []
@@ -41,11 +41,23 @@ export function ClassesPage() {
         subtitle={`${classes.length} kelas terdaftar`}
         icon={<School className="h-5 w-5" />}
         actions={
-          <Button icon={<Plus className="h-4 w-4" />} disabled={(query.data?.[1] ?? []).length === 0} onClick={() => setEditing({ name: '', level: 10, department_id: '', homeroom_teacher_id: '' })}>
+          <Button icon={<Plus className="h-4 w-4" />} onClick={() => setEditing({ name: '', level: 10, department_id: '', homeroom_teacher_id: '' })}>
             Tambah Kelas
           </Button>
         }
       />
+      {(query.data?.[1] ?? []).length === 0 && !query.loading && (
+        <div className="mb-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            Belum ada jurusan. Kelas wajib terhubung ke jurusan —{' '}
+            <Link to="/admin/departments" className="font-bold underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-100">
+              buat jurusan dulu
+            </Link>{' '}
+            sebelum menambah kelas.
+          </p>
+        </div>
+      )}
       <Card>
         {query.loading ? (
           <TableSkeleton cols={4} />
@@ -98,7 +110,15 @@ export function ClassesPage() {
             <div className="grid gap-4 px-6 py-5 sm:grid-cols-3">
               <Input label="Nama Kelas" placeholder="cth: XI.1" value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} required autoFocus className="sm:col-span-1" />
               <Select label="Tingkat" value={String(editing.level)} onChange={(e) => setEditing({ ...editing, level: Number(e.target.value) })} options={LEVEL_OPTIONS} required />
-              <Select label="Jurusan" placeholder={teachers.length ? 'Pilih jurusan' : 'Buat jurusan dulu'} required value={editing.department_id} onChange={(e) => setEditing({ ...editing, department_id: e.target.value })} options={(query.data?.[1] ?? []).map((d) => ({ value: d.id, label: `${d.code} · ${d.name}` }))} />
+              <Select label="Jurusan" placeholder="Pilih jurusan" required value={editing.department_id} onChange={(e) => setEditing({ ...editing, department_id: e.target.value })} options={(query.data?.[1] ?? []).map((d) => ({ value: d.id, label: `${d.code} · ${d.name}` }))} />
+              {(query.data?.[1] ?? []).length === 0 && (
+                <p className="-mt-2 text-xs text-amber-700 dark:text-amber-300">
+                  Belum ada jurusan.{' '}
+                  <Link to="/admin/departments" className="font-bold underline underline-offset-2">
+                    Buat jurusan dulu
+                  </Link>
+                </p>
+              )}
             </div>
             <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:bg-slate-800 dark:text-slate-200">
               <Button variant="ghost" onClick={() => setEditing(null)}>Batal</Button>

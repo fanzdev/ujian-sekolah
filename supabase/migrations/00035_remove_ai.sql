@@ -47,9 +47,14 @@ begin
   end loop;
 end $$;
 
--- 3d. Pembentukan ulang constraint status hanya pending/graded
+-- 3d. Pembentukan ulang constraint status hanya pending/graded (idempotent)
 alter table public.essay_grades
-  add constraint essay_grades_status_check check (status in ('pending', 'graded'));
+  drop constraint if exists essay_grades_status_check;
+do $$ begin
+  alter table public.essay_grades
+    add constraint essay_grades_status_check check (status in ('pending', 'graded'));
+exception when duplicate_object then null;
+end $$;
 
 -- ---------- 4) Hapus konfigurasi AI dari system_settings ----------
 delete from public.system_settings where key = 'ai';

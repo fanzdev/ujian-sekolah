@@ -90,12 +90,23 @@ export default function TeachersPage() {
                       <Avatar name={t.profiles?.full_name ?? '?'} size="xs" />
                       <div>
                         <p className="text-[13px] font-semibold text-slate-800">{t.profiles?.full_name}</p>
-                        <p className="text-[11px] text-slate-400">@{t.profiles?.username}{t.nip ? ` · NIP ${t.nip}` : ''}</p>
+                        <p className="text-[11px] text-slate-400">@{t.profiles?.username}</p>
                       </div>
                     </div>
                   ),
                 },
-                { key: 'phone', header: 'Kontak', render: (t) => t.phone ?? '-', className: 'whitespace-nowrap' },
+                { key: 'nip', header: 'NIP', render: (t) => t.nip ?? '-', className: 'whitespace-nowrap' },
+                { key: 'phone', header: 'Telepon', render: (t) => t.phone ?? '-', className: 'whitespace-nowrap' },
+                {
+                  key: 'email',
+                  header: 'Email',
+                  render: (t) => (t.email ? <p className="max-w-[200px] truncate text-xs text-slate-700 dark:text-slate-300">{t.email}</p> : <span className="text-xs text-slate-400">-</span>),
+                },
+                {
+                  key: 'address',
+                  header: 'Alamat',
+                  render: (t) => (t.address ? <p className="max-w-[220px] truncate text-xs text-slate-500" title={t.address}>{t.address}</p> : <span className="text-xs text-slate-400">-</span>),
+                },
                 {
                   key: 'status',
                   header: 'Status',

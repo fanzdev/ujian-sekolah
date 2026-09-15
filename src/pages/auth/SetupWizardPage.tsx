@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { CheckCircle2, ShieldCheck, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Feedback'
-import { Shell, StepSchool, StepAdmin } from '@/components/setup/SetupSteps'
+import { Shell, StepSchool, StepAdmin, Stepper } from '@/components/setup/SetupSteps'
 import { EMPTY_SCHOOL, EMPTY_ADMIN, scorePassword } from '@/components/setup/setup-types'
 import type { SchoolForm, AdminForm } from '@/components/setup/setup-types'
 import { getSetupStatus, runSetup } from '@/services/setup.service'
@@ -79,14 +79,13 @@ function SetupWizard() {
 
   const passwordScore = useMemo(() => scorePassword(admin.password), [admin.password])
 
-  const validateSchool = (): boolean => {
+  const validateSchool = (data: SchoolForm): boolean => {
     const e: Record<string, string> = {}
-    if (!school.appName.trim()) e.appName = 'Nama aplikasi wajib diisi.'
-    if (!school.schoolName.trim()) e.schoolName = 'Nama sekolah wajib diisi.'
-    if (school.logoUrl && !/^https?:\/\//i.test(school.logoUrl.trim())) {
-      e.logoUrl = 'URL logo harus dimulai dengan http:// atau https://'
+    if (!data.schoolName.trim()) e.schoolName = 'Nama sekolah wajib diisi.'
+    if (data.logoUrl && !/^https?:\/\//i.test(data.logoUrl.trim())) {
+      e.logoUrl = 'Logo belum valid, pilih ulang gambar logo.'
     }
-    if (school.academicYear && !/^\d{4}\/\d{4}$/.test(school.academicYear.trim())) {
+    if (data.academicYear && !/^\d{4}\/\d{4}$/.test(data.academicYear.trim())) {
       e.academicYear = 'Format tahun ajaran: 2026/2027'
     }
     setErrors(e)
@@ -113,7 +112,6 @@ function SetupWizard() {
         username: admin.username.trim(),
         password: admin.password,
         fullName: admin.fullName.trim(),
-        appName: school.appName.trim(),
         schoolName: school.schoolName.trim(),
         logoUrl: school.logoUrl.trim() || undefined,
         city: school.city.trim() || undefined,
@@ -134,17 +132,16 @@ function SetupWizard() {
     }
   }
 
-  /* ---------- Layar sukses ---------- */
   if (doneUsername !== null) {
     return (
       <Shell>
-        <div className="card w-full max-w-md p-8 text-center animate-fade-in">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-500">
+        <div className="card w-full p-8 text-center animate-fade-in rounded-2xl shadow-2xl">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-500 dark:bg-emerald-500/15">
             <CheckCircle2 className="h-8 w-8" />
           </div>
-          <h1 className="mt-5 text-xl font-extrabold tracking-tight text-slate-900">Setup Selesai! 🎉</h1>
-          <p className="mt-2 text-sm leading-relaxed text-slate-500">
-            Akun admin <strong className="font-mono text-slate-700">{doneUsername}</strong> dan profil sekolah
+          <h1 className="mt-5 text-xl font-bold tracking-tight text-slate-900 dark:text-white">Penyiapan Selesai</h1>
+          <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+            Akun admin <strong className="text-slate-700 dark:text-slate-200">{doneUsername}</strong> dan profil sekolah
             berhasil dibuat. Wizard setup kini terkunci permanen.
           </p>
           <Button
@@ -159,44 +156,39 @@ function SetupWizard() {
     )
   }
 
-  /* ---------- Wizard ---------- */
   return (
     <Shell>
-      <div className="w-full max-w-xl">
-        <div className="mb-6 text-center animate-fade-in">
-          <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="" width={64} height={64} className="mx-auto h-16 w-16 rounded-2xl shadow-lg" />
-          <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-white">Setup Awal Sistem</h1>
-          <p className="mt-1.5 text-sm text-primary-200">
-            Belum ada akun admin. Lengkapi wizard ini <strong>sekali saja</strong> untuk mengaktifkan sistem ujian.
-          </p>
+      <div className="w-full">
+        <div className="mb-6 flex items-center gap-3.5 animate-fade-in">
+          <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="Logo aplikasi" width={52} height={52} className="h-[52px] w-[52px] rounded-2xl bg-white object-contain p-1.5 shadow-lg" />
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary-200">Penyiapan Awal</p>
+            <h1 className="mt-0.5 text-2xl font-bold tracking-tight text-white">Siapkan sistem ujian</h1>
+          </div>
         </div>
+        <p className="-mt-3 mb-5 text-sm leading-relaxed text-white/60">
+          Belum ada akun admin. Lengkapi dua langkah ini <strong className="font-semibold text-white/85">sekali saja</strong> untuk mengaktifkan sistem.
+        </p>
 
-        <ol className="mb-5 flex items-center justify-center gap-2">
-          {['Profil Sekolah', 'Akun Admin'].map((label, i) => (
-            <li key={label} className="flex items-center gap-2">
-              <span
-                className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
-                  step >= i ? 'bg-white text-primary-700' : 'bg-white/20 text-white/60'
-                }`}
-              >
-                {step > i ? '✓' : i + 1}
-              </span>
-              <span className={`hidden text-xs font-semibold sm:block ${step >= i ? 'text-white' : 'text-white/50'}`}>
-                {label}
-              </span>
-              {i === 0 && <span className="mx-2 h-px w-10 bg-white/25 sm:w-16" />}
-            </li>
-          ))}
-        </ol>
+        <Stepper step={step} />
 
         {errors.form && (
-          <div role="alert" className="mb-4 rounded-xl border border-rose-300/50 bg-rose-500/15 px-4 py-3 text-sm font-medium text-rose-100 backdrop-blur animate-fade-in">
+          <div role="alert" className="mb-4 rounded-xl border border-rose-300/40 bg-rose-500/15 px-4 py-3 text-sm font-medium text-rose-100 backdrop-blur animate-fade-in">
             {errors.form}
           </div>
         )}
 
         {step === 0 ? (
-          <StepSchool school={school} setSchool={setSchool} errors={errors} onNext={() => validateSchool() && setStep(1)} />
+          <StepSchool
+            school={school}
+            setSchool={setSchool}
+            errors={errors}
+            onNext={(finalLogoUrl) => {
+              const next = { ...school, logoUrl: finalLogoUrl }
+              setSchool(next)
+              if (validateSchool(next)) setStep(1)
+            }}
+          />
         ) : (
           <StepAdmin
             admin={admin}
