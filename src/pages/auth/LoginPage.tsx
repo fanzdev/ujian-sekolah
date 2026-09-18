@@ -191,13 +191,7 @@ export default function LoginPage() {
           <h1 className="text-6xl xl:text-8xl font-black leading-[0.88] tracking-tight mb-8 animate-[slideUp_0.8s_ease-out_0.4s_both]"
             style={{ color: darkText }}>
             Ujian<br />
-            <span style={{
-              background: `linear-gradient(90deg, ${darkText}, ${secondary}, ${darkText})`,
-              backgroundSize: '200% auto',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              animation: 'shimmer 3s linear infinite'
-            }}>Terukur.</span>
+            <span style={{ color: 'white' }}>Terukur.</span>
           </h1>
 
           <p className="text-base leading-relaxed max-w-md mb-12 animate-[slideUp_0.8s_ease-out_0.6s_both]"
