@@ -125,6 +125,7 @@ export interface Question {
   explanation: string | null
   tags: string[]
   author_id: string
+  sort_order?: number
   question_options?: QuestionOption[]
   matching_pairs?: MatchingPair[]
 }

@@ -77,10 +77,10 @@ export async function invokeEdge<T>(name: EdgeName, body: Record<string, unknown
       if (serverMessage !== '') {
         throw new EdgeInvokeError('server', serverMessage, status)
       }
-      if (error.message?.includes('Failed to fetch') || error.message?.includes('fetch failed')) {
+      if (error.message?.includes('Failed to fetch') || error.message?.includes('fetch failed') || error.message?.includes('Failed to send a request')) {
         throw new EdgeInvokeError(
-          'not_deployed',
-          `Edge Function "${name}" tidak tersedia. Pastikan fungsi sudah di-deploy (lihat docs/SUPABASE_SETUP.md).`,
+          'cors_or_network',
+          `Browser gagal menghubungi Edge Function "${name}".${error.message?.includes('belum dikonfigurasi') ? ' Edge Function belum di-deploy.' : ' Biasanya karena CORS, ekstensi/adblock, atau jaringan.'} Buka halaman Veyra AI → tab Setup, pastikan konfigurasi sudah tersimpan. Jika masih gagal, buka Console (F12) untuk detail error.`,
           status,
         )
       }
@@ -106,13 +106,13 @@ export async function invokeEdge<T>(name: EdgeName, body: Record<string, unknown
     if (message.includes('Failed to fetch') || message.includes('fetch failed') || message.includes('NetworkError')) {
       throw new EdgeInvokeError(
         'cors_or_network',
-        `Browser gagal menghubungi Edge Function "${name}" (${(elapsed / 1000).toFixed(1)} dtk). Response diblokir browser — biasanya CORS Edge Function, ekstensi/adblock, atau jaringan.${cause !== '' ? ` Penyebab teknis: ${cause}.` : ''} Coba mode Incognito tanpa ekstensi, atau buka tab Network di DevTools (F12) untuk melihat request yang gagal.`,
+        `Browser gagal menghubungi Edge Function "${name}" (${(elapsed / 1000).toFixed(1)} dtk). Response diblokir browser — biasanya CORS Edge Function, ekstensi/adblock, atau jaringan.${cause !== '' ? ` Penyebab teknis: ${cause}.` : ''} Buka halaman Veyra AI → tab Setup untuk memastikan konfigurasi sudah tersimpan dengan benar.`,
       )
     }
     if (message.includes('Failed to send a request')) {
       throw new EdgeInvokeError(
         'cors_or_network',
-        `Browser gagal menghubungi Edge Function "${name}" (${(elapsed / 1000).toFixed(1)} dtk).${cause !== '' ? ` Penyebab teknis: ${cause}.` : ''} Biasanya karena CORS, ekstensi/adblock/antivirus, atau jaringan. Coba mode Incognito tanpa ekstensi, atau buka tab Network di DevTools (F12) untuk melihat request yang gagal.`,
+        `Browser gagal menghubungi Edge Function "${name}" (${(elapsed / 1000).toFixed(1)} dtk).${cause !== '' ? ` Penyebab teknis: ${cause}.` : ''} Buka halaman Veyra AI → tab Setup untuk memastikan Edge Function sudah terdeploy dan konfigurasi sudah tersimpan.`,
       )
     }
     throw new EdgeInvokeError('unknown', message)

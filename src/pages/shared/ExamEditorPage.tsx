@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import { ArrowLeft, ChevronRight, FileText, Target, ListChecks, Settings2, Check, Plus, X, GripVertical, HelpCircle } from 'lucide-react'
+import { ArrowLeft, ChevronRight, FileText, Target, ListChecks, Settings2, Check, Plus, X, GripVertical, HelpCircle, Eye } from 'lucide-react'
 import { useAsync, useDocumentTitle } from '@/hooks/useAsync'
 import { useToast } from '@/hooks/useToast'
 import { useConfirm } from '@/hooks/useConfirm'
@@ -19,6 +19,7 @@ import { QUESTION_TYPE_LABELS, DIFFICULTY_LABELS } from '@/lib/constants'
 import { toInputValue, fromWibInput, formatDateTime } from '@/lib/datetime'
 import { randomCode } from '@/lib/utils'
 import { RichContent } from '@/components/ui/RichTextEditor'
+import { ExamPreviewModal } from '@/components/exam/ExamPreviewModal'
 import type { ExamTarget } from '@/types/models'
 
 const STEPS = [
@@ -507,13 +508,35 @@ function QuestionsStep({
   onSaved: () => void
 }) {
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [questionPickerOpen, setQuestionPickerOpen] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
   const [items, setItems] = useState<{ question_id: string; position: number; points: number | null; question: { id: string; text: string; points: number; type: string; difficulty: string } }[]>([])
   const [loadingExisting, setLoadingExisting] = useState(Boolean(examId))
   const [saving, setSaving] = useState(false)
   const [hasUnsaved, setHasUnsaved] = useState(false)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
+  const listRef = useRef<HTMLUListElement>(null)
+  const draggedSourceRef = useRef<number | null>(null)
+  const listRectRef = useRef<DOMRect | null>(null)
+  const scrollActionRef = useRef<(() => void) | null>(null)
   const toast = useToast()
   const confirmDialog = useConfirm()
+
+  useEffect(() => {
+    const onDocMouseMove = () => {
+      if (draggedSourceRef.current === null) return
+      if (scrollActionRef.current) { scrollActionRef.current(); scrollActionRef.current = null }
+    }
+    document.addEventListener('mousemove', onDocMouseMove)
+    return () => document.removeEventListener('mousemove', onDocMouseMove)
+  }, [])
+
+  const clearScrollAction = () => { if (scrollActionRef.current) { scrollActionRef.current(); scrollActionRef.current = null } }
+
+  const performScroll = (fn: () => void) => {
+    clearScrollAction()
+    scrollActionRef.current = fn
+  }
 
   const availableCountQuery = useAsync(async () => {
     const banks = await listBanks({ pageSize: 100 })
@@ -560,37 +583,6 @@ function QuestionsStep({
       if (additions.length > 0) setHasUnsaved(true)
       return next
     })
-  }
-
-  const handleAutoFill = async () => {
-    try {
-      const banks = await listBanks({ pageSize: 100 })
-      const relevant = banks.rows
-      if (relevant.length === 0) {
-        toast.error('Tidak ada bank soal. Buat bank dulu.')
-        return
-      }
-      const allQs: typeof items = []
-      for (const b of relevant) {
-        const qs = await listQuestions({ bankId: b.id, pageSize: 100 })
-        for (const q of qs.rows) {
-          allQs.push({
-            question_id: q.id,
-            position: allQs.length,
-            points: null,
-            question: { id: q.id, text: q.text, points: Number(q.points), type: q.type, difficulty: q.difficulty },
-          })
-        }
-      }
-      if (allQs.length === 0) {
-        toast.error('Bank masih kosong. Isi bank dulu.')
-        return
-      }
-      addQuestions(allQs)
-      toast.success(`${allQs.length} soal dari bank ${relevant.map((b) => b.title).join(', ')} ditambahkan. Klik Simpan.`)
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Gagal auto-isi')
-    }
   }
 
   const save = async (): Promise<boolean> => {
@@ -665,7 +657,7 @@ function QuestionsStep({
               <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 dark:border-sky-800/50 dark:bg-sky-500/10">
                 <p className="text-sm font-semibold text-sky-800 dark:text-sky-200">Bank memiliki {availableCountQuery.data} soal, tapi ujian ini masih 0 soal.</p>
                 <p className="mt-1 text-xs text-sky-700 dark:text-sky-300">Klik tombol di bawah untuk isi otomatis semua soal dari bank, atau pilih manual.</p>
-                <Button size="sm" className="mt-3" icon={<Plus className="h-4 w-4" />} onClick={handleAutoFill}>Isi Otomatis {availableCountQuery.data} Soal dari Bank</Button>
+                <Button size="sm" className="mt-3" icon={<Plus className="h-4 w-4" />} onClick={() => setQuestionPickerOpen(true)}>Pilih Soal {availableCountQuery.data} dari Bank</Button>
               </div>
             )}
             {items.length === 0 && (availableCountQuery.data ?? 0) === 0 && (
@@ -688,8 +680,13 @@ function QuestionsStep({
                 {hasUnsaved && <Badge tone="amber">Belum disimpan</Badge>}
               </div>
               <div className="flex gap-2">
-                {(availableCountQuery.data ?? 0) > 0 && items.length === 0 && (
-                  <Button variant="outline" size="sm" icon={<Plus className="h-4 w-4" />} onClick={handleAutoFill}>Isi Otomatis</Button>
+                {(availableCountQuery.data ?? 0) > 0 && (
+                  <Button variant="outline" size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => setQuestionPickerOpen(true)}>Pilih Soal</Button>
+                )}
+                {items.length > 0 && (
+                  <Button variant="outline" size="sm" icon={<Eye className="h-4 w-4" />} onClick={() => setPreviewOpen(true)}>
+                    Preview sebagai Siswa
+                  </Button>
                 )}
                 <Button variant="outline" size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => setPickerOpen(true)}>
                   Ambil dari Bank Soal
@@ -700,25 +697,79 @@ function QuestionsStep({
             {items.length === 0 ? (
               <EmptyState icon={<ListChecks className="h-6 w-6" />} title="Belum ada soal" description="Ambil soal dari bank soal Anda." />
             ) : (
-              <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
+              <ul
+                ref={listRef}
+                onDragOver={(e) => {
+                  const el = listRef.current
+                  if (!el || draggedSourceRef.current === null) return
+                  const rect = el.getBoundingClientRect()
+                  listRectRef.current = rect
+                  const threshold = 80
+                  const curIdx = draggedSourceRef.current
+                  if (e.clientY - rect.top < threshold && curIdx > 0) {
+                    performScroll(() => {
+                      setItems((prev) => {
+                        const next = [...prev]
+                        const [moved] = next.splice(curIdx, 1)
+                        next.splice(curIdx - 1, 0, moved)
+                        return next.map((it, idx) => ({ ...it, position: idx }))
+                      })
+                      setDragIndex((prev) => prev !== null ? prev - 1 : null)
+                      draggedSourceRef.current = curIdx - 1
+                      setHasUnsaved(true)
+                    })
+                  } else if (rect.bottom - e.clientY < threshold && curIdx < items.length - 1) {
+                    performScroll(() => {
+                      setItems((prev) => {
+                        const next = [...prev]
+                        const [moved] = next.splice(curIdx, 1)
+                        next.splice(curIdx + 1, 0, moved)
+                        return next.map((it, idx) => ({ ...it, position: idx }))
+                      })
+                      setDragIndex((prev) => prev !== null ? prev + 1 : null)
+                      draggedSourceRef.current = curIdx + 1
+                      setHasUnsaved(true)
+                    })
+                  }
+                }}
+                onDragLeave={clearScrollAction}
+                className="divide-y divide-slate-100 rounded-xl border border-slate-200"
+              >
                 {items.map((item, index) => (
                   <li
                     key={item.question_id}
                     draggable
-                    onDragStart={() => setDragIndex(index)}
+                    onDragStart={(_e) => {
+                      draggedSourceRef.current = index
+                      listRectRef.current = listRef.current?.getBoundingClientRect() ?? null
+                      setDragIndex(index)
+                    }}
                     onDragOver={(e) => e.preventDefault()}
-                    onDrop={() => {
-                      if (dragIndex === null || dragIndex === index) return
-                      setItems((prev) => {
-                        const next = [...prev]
-                        const [moved] = next.splice(dragIndex, 1)
-                        next.splice(index, 0, moved)
-                        return next.map((it, idx) => ({ ...it, position: idx }))
-                      })
-                      setHasUnsaved(true)
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      const srcIdx = draggedSourceRef.current
+                      if (srcIdx === null) { clearScrollAction(); draggedSourceRef.current = null; return }
+                      const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
+                      const targetLi = el ? (el.closest('li[data-qid]') as HTMLElement | null) : null
+                      if (targetLi) {
+                        const targetIdx = Number(targetLi.dataset.qid)
+                        if (!isNaN(targetIdx) && targetIdx !== srcIdx) {
+                          setItems((prev) => {
+                            const next = [...prev]
+                            const [moved] = next.splice(srcIdx, 1)
+                            const finalIdx = moved ? next.indexOf(moved) : targetIdx
+                            next.splice(finalIdx, 0, moved)
+                            return next.map((it, i) => ({ ...it, position: i }))
+                          })
+                          setHasUnsaved(true)
+                        }
+                      }
+                      clearScrollAction()
+                      draggedSourceRef.current = null
                       setDragIndex(null)
                     }}
-                    onDragEnd={() => setDragIndex(null)}
+                    onDragEnd={() => { clearScrollAction(); draggedSourceRef.current = null; setDragIndex(null) }}
+                    data-qid={index}
                     className={`flex items-center gap-3 px-3 py-3 sm:px-4 transition-colors ${dragIndex === index ? 'opacity-40 bg-primary-50' : 'hover:bg-slate-50/60'}`}
                   >
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-50 text-xs font-bold text-primary-700 dark:bg-primary-600 dark:text-white">{index + 1}</span>
@@ -737,7 +788,7 @@ function QuestionsStep({
                         disabled={index === 0}
                         onClick={() => { setItems((prev) => reorder(prev, index, -1)); setHasUnsaved(true) }}
                         aria-label="Naikkan urutan"
-                        className="rounded p-1 text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30 dark:hover:bg-slate-700 dark:bg-slate-700 dark:text-slate-200"
+                        className="rounded p-1 text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30 dark:hover:bg-slate-700 dark:bg-slate-800 dark:text-slate-200"
                       >
                         <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" /></svg>
                       </button>
@@ -745,9 +796,9 @@ function QuestionsStep({
                         disabled={index === items.length - 1}
                         onClick={() => { setItems((prev) => reorder(prev, index, +1)); setHasUnsaved(true) }}
                         aria-label="Turunkan urutan"
-                        className="rounded p-1 text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30 dark:hover:bg-slate-700 dark:bg-slate-700 dark:text-slate-200"
+                        className="rounded p-1 text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30 dark:hover:bg-slate-700 dark:bg-slate-800 dark:text-slate-200"
                       >
-                        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" d="m19.5 8.25-7.5 7.5-7.5 7.5" /></svg>
                       </button>
                     </div>
                     <button
@@ -778,6 +829,25 @@ function QuestionsStep({
             addQuestions(picked)
             setPickerOpen(false)
           }}
+        />
+      )}
+      {questionPickerOpen && examId && (
+        <QuestionPicker
+          examId={examId}
+          existingIds={items.map((i) => i.question_id)}
+          onClose={() => setQuestionPickerOpen(false)}
+          onAdd={(q) => {
+            addQuestions([q])
+            setQuestionPickerOpen(false)
+          }}
+        />
+      )}
+      {previewOpen && examId && (
+        <ExamPreviewModal
+          open
+          onClose={() => setPreviewOpen(false)}
+          examId={examId}
+          orderedQuestionIds={items.map((i) => i.question_id)}
         />
       )}
     </Card>
@@ -1219,5 +1289,150 @@ function SummaryRow({ label, value }: { label: string; value: React.ReactNode })
       <span className="text-xs text-slate-400">{label}</span>
       <span className="text-sm font-bold text-slate-800">{value}</span>
     </li>
+  )
+}
+
+function QuestionPicker({
+  existingIds,
+  onClose,
+  onAdd,
+}: {
+  examId: string
+  existingIds: string[]
+  onClose: () => void
+  onAdd: (q: { question_id: string; position: number; points: number | null; question: { id: string; text: string; points: number; type: string; difficulty: string } }) => void
+}) {
+  const toast = useToast()
+  const [banks, setBanks] = useState<Awaited<ReturnType<typeof listBanks>>['rows']>([])
+  const [questionsMap, setQuestionsMap] = useState<Record<string, Awaited<ReturnType<typeof listQuestions>>['rows']>>({})
+  const [search, setSearch] = useState('')
+  const [activeBankId, setActiveBankId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    if (loaded) return
+    setLoading(true)
+    listBanks({ pageSize: 100 })
+      .then((r) => {
+        setBanks(r.rows)
+        if (r.rows.length > 0 && !activeBankId) setActiveBankId(r.rows[0].id)
+        return Promise.all(
+          r.rows.map((b) =>
+            listQuestions({ bankId: b.id, pageSize: 500 }).then((q) => [b.id, q.rows] as [string, typeof q.rows])
+              .catch(() => [b.id, [] as Awaited<ReturnType<typeof listQuestions>>['rows']] as [string, Awaited<ReturnType<typeof listQuestions>>['rows']]),
+          ),
+        )
+      })
+      .then((results) => {
+        const map: Record<string, Awaited<ReturnType<typeof listQuestions>>['rows']> = {}
+        for (const [id, rows] of results) map[id] = rows
+        setQuestionsMap(map)
+      })
+      .finally(() => { setLoading(false); setLoaded(true) })
+  }, [activeBankId, loaded])
+
+  const filtered = activeBankId ? (questionsMap[activeBankId] ?? []).filter((q) => {
+    if (!search) return true
+    const s = q.text.toLowerCase()
+    return s.includes(search.toLowerCase())
+  }) : []
+
+  const handleToggle = (q: Awaited<ReturnType<typeof listQuestions>>['rows'][number]) => {
+    if (existingIds.includes(q.id)) {
+      toast.warning('Soal ini sudah dipilih.')
+      return
+    }
+    onAdd({
+      question_id: q.id,
+      position: existingIds.length,
+      points: null,
+      question: { id: q.id, text: q.text, points: Number(q.points), type: q.type, difficulty: q.difficulty },
+    })
+  }
+
+  return (
+    <Modal open onClose={onClose} title="Pilih Soal" size="lg">
+      <div className="space-y-4 px-6 py-5">
+        <p className="text-xs text-slate-500 dark:text-slate-400">Langkah 1: pilih bank soal, lalu centang soal yang ingin ditambahkan.</p>
+        <div className="flex flex-wrap gap-2">
+          {loading ? (
+            <Spinner />
+          ) : banks.length === 0 ? (
+            <p className="text-xs text-slate-400">Belum ada bank soal.</p>
+          ) : (
+            banks.map((b) => (
+              <button
+                key={b.id}
+                onClick={() => { setActiveBankId(b.id); setSearch('') }}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                  activeBankId === b.id
+                    ? 'bg-primary-600 text-white ring-2 ring-primary-400'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                }`}
+              >
+                {b.title} ({questionsMap[b.id]?.length ?? 0})
+              </button>
+            ))
+          )}
+        </div>
+
+        {activeBankId && (
+          <>
+            <SearchInput placeholder="Cari soal..." value={search} onChange={(e) => setSearch(e.target.value)} />
+            <div className="max-h-96 space-y-2 overflow-y-auto scrollbar-thin">
+              {filtered.length === 0 ? (
+                <p className="py-8 text-center text-sm text-slate-400">Tidak ada soal di folder ini.</p>
+              ) : (
+                filtered.map((q) => (
+                  <QuestionCard
+                    key={q.id}
+                    q={q}
+                    isExisting={existingIds.includes(q.id)}
+                    onToggle={() => handleToggle(q)}
+                  />
+                ))
+              )}
+            </div>
+          </>
+        )}
+      </div>
+      <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/60">
+        <span className="text-xs text-slate-500">{existingIds.length} soal sudah dipilih</span>
+        <Button variant="ghost" onClick={onClose}>Tutup</Button>
+      </div>
+    </Modal>
+  )
+}
+
+function QuestionCard({
+  q,
+  isExisting,
+  onToggle,
+}: {
+  q: Awaited<ReturnType<typeof listQuestions>>['rows'][number]
+  isExisting: boolean
+  onToggle: () => void
+}) {
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 dark:border-slate-700 dark:bg-slate-900">
+      <input
+        type="checkbox"
+        checked={isExisting}
+        onChange={onToggle}
+        disabled={isExisting}
+        className="mt-0.5 h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 disabled:cursor-default"
+        aria-label={`Tambahkan soal ${q.id}`}
+      />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 pb-1">
+          <span className="text-[10px] font-bold uppercase text-slate-400">{q.type}</span>
+          {q.difficulty && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500 dark:bg-slate-800 dark:text-slate-400">{q.difficulty}</span>}
+          {q.points && <span className="text-[10px] text-slate-400">• {q.points} poin</span>}
+          {isExisting && <span className="rounded bg-green-100 px-1.5 py-0.5 text-[10px] font-semibold text-green-700 dark:bg-green-500/15 dark:text-green-400">Sudah dipilih</span>}
+        </div>
+        <p className="text-sm text-slate-700 dark:text-slate-200 line-clamp-2">{q.text}</p>
+      </div>
+    </div>
   )
 }

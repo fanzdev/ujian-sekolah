@@ -176,7 +176,7 @@ function ImportPanel() {
     let fail = 0
     const errors: { row: number; msg: string }[] = []
 
-    for (const row of validRows) {
+    for (const [rowIdx, row] of validRows.entries()) {
       try {
         const data = row.data as Record<string, string>
         if (kind === 'students') {
@@ -293,6 +293,7 @@ function ImportPanel() {
             scoring_rule: scoringRule,
             options,
             pairs,
+            sort_order: rowIdx * 10,
           } as never)
         } else if (kind === 'exams') {
           const title = String(data.title).trim()

@@ -123,12 +123,45 @@ export interface QuestionInput {
   default_answer?: Record<string, unknown> | null
   options?: { option_text: string; media_url?: string | null; is_correct: boolean }[]
   pairs?: { left_text: string; right_text: string }[]
+  sort_order?: number
 }
 
 export async function createQuestion(input: QuestionInput): Promise<Question> {
   const { data: sessionData } = await supabase.auth.getSession()
   const uid = sessionData.session?.user?.id
   if (!uid) throw new Error('Tidak ada sesi.')
+
+  const sortOrder = input.sort_order
+  if (sortOrder !== undefined) {
+    const { data, error } = await supabase
+      .from('questions')
+      .insert({
+        bank_id: input.bank_id,
+        type: input.type,
+        text: input.text,
+        media_url: input.media_url ?? null,
+        media_type: input.media_type ?? null,
+        difficulty: input.difficulty ?? 'medium',
+        points: input.points ?? 1,
+        explanation: input.explanation ?? null,
+        scoring_rule: input.scoring_rule ?? {},
+        default_answer: buildDefaultAnswer(input),
+        author_id: uid,
+        sort_order: sortOrder,
+      })
+      .select()
+      .single()
+    if (error) throw error
+    await persistChildren(data.id, input)
+    void logAudit('CREATE_QUESTION', 'question', data.id, { type: input.type })
+    return data as Question
+  }
+
+  const { data: existing } = await supabase
+    .from('questions')
+    .select('id')
+    .eq('bank_id', input.bank_id)
+  const nextOrder = ((existing?.length ?? 0)) * 10
 
   const { data, error } = await supabase
     .from('questions')
@@ -144,6 +177,7 @@ export async function createQuestion(input: QuestionInput): Promise<Question> {
       scoring_rule: input.scoring_rule ?? {},
       default_answer: buildDefaultAnswer(input),
       author_id: uid,
+      sort_order: nextOrder,
     })
     .select()
     .single()
@@ -227,4 +261,31 @@ export async function deleteQuestion(id: string): Promise<void> {
   const { error } = await supabase.from('questions').delete().eq('id', id)
   if (error) throw error
   void logAudit('DELETE_QUESTION', 'question', id)
+}
+
+export async function reorderQuestions(bankId: string, sourceId: string, targetId: string): Promise<void> {
+  const { data: allQuestions, error: fetchErr } = await supabase
+    .from('questions')
+    .select('id, sort_order')
+    .eq('bank_id', bankId)
+    .order('sort_order', { ascending: true })
+  if (fetchErr) throw fetchErr
+
+  const questions = allQuestions! as { id: string; sort_order: number }[]
+  const sourceIdx = questions.findIndex((q) => q.id === sourceId)
+  const targetIdx = questions.findIndex((q) => q.id === targetId)
+  if (sourceIdx === -1 || targetIdx === -1 || sourceIdx === targetIdx) return
+
+  const reordered = [...questions]
+  const [moved] = reordered.splice(sourceIdx, 1)
+  reordered.splice(targetIdx, 0, moved)
+
+  const updates = reordered.map((q, i) => ({
+    id: q.id,
+    sort_order: i * 10,
+  }))
+  await Promise.all(updates.map((u) =>
+    supabase.from('questions').update({ sort_order: u.sort_order }).eq('id', u.id),
+  ))
+  void logAudit('REORDER_QUESTION', 'question_bank', bankId, { source_id: sourceId, target_id: targetId })
 }

@@ -60,12 +60,6 @@ export default {
         'slide-in-top': { from: { opacity: '0', transform: 'translateY(-100%) scale(.95)' }, to: { opacity: '1', transform: 'translateY(0) scale(1)' } },
         shimmer: { '100%': { transform: 'translateX(100%)' } },
         pulseSoft: { '0%,100%': { opacity: '1' }, '50%': { opacity: '.55' } },
-        aiShadow: {
-          '0%,100%': { boxShadow: '0 6px 20px -6px rgb(13 134 143 / 0.55), 0 0 0 0 rgb(13 134 143 / 0)' },
-          '25%': { boxShadow: '0 6px 26px -4px rgb(56 189 248 / 0.65), 0 0 0 0 rgb(56 189 248 / 0)' },
-          '50%': { boxShadow: '0 6px 26px -4px rgb(167 139 250 / 0.65), 0 0 0 0 rgb(167 139 250 / 0)' },
-          '75%': { boxShadow: '0 6px 26px -4px rgb(45 212 191 / 0.65), 0 0 0 0 rgb(45 212 191 / 0)' },
-        },
       },
       animation: {
         'fade-in': 'fade-in .25s ease-out both',
@@ -74,7 +68,6 @@ export default {
         'slide-in-top': 'slide-in-top .3s cubic-bezier(.22,1,.36,1) both',
         shimmer: 'shimmer 1.6s infinite',
         'pulse-soft': 'pulseSoft 2s ease-in-out infinite',
-        'ai-shadow': 'aiShadow 4s ease-in-out infinite',
       },
       typography: {
         DEFAULT: { css: { maxWidth: 'none' } },

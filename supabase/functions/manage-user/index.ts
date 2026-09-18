@@ -37,7 +37,8 @@ type Payload =
 const AUTH_DOMAIN = 'cbt.local'
 
 async function handle(req: Request): Promise<Response> {
-  const cors = resolveCorsHeaders(req)
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+  const cors = resolveCorsHeaders(req, supabaseUrl)
   if (req.method !== 'POST') {
     return error('Method not allowed', 405, cors)
   }
@@ -59,7 +60,6 @@ async function handle(req: Request): Promise<Response> {
   const jwt = authHeader.replace('Bearer ', '')
 
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')
   if (!serviceKey || !supabaseUrl) {
     console.error('[manage-user] secrets platform tidak lengkap: SUPABASE_SERVICE_ROLE_KEY / SUPABASE_URL')
     return error('Layanan belum terkonfigurasi dengan benar. Hubungi admin.', 500, cors)

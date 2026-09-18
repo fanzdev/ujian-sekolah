@@ -22,7 +22,7 @@ import {
 } from '@/services/academics.service'
 import { friendlyError } from '@/lib/errors'
 
-const LEVEL_OPTIONS = Array.from({ length: 13 }, (_, i) => ({ value: String(i + 1), label: `Kelas ${i + 1}` }))
+const LEVEL_OPTIONS = Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: `Kelas ${i + 1}` }))
 
 export function ClassesPage() {
   useDocumentTitle('Kelas')

@@ -14,8 +14,6 @@ import { Badge } from '@/components/ui/Badge'
 import { EmptyState, ErrorState } from '@/components/ui/Feedback'
 import { listBanks, createBank, updateBank, deleteBank, listQuestions, type BankInput } from '@/services/questions.service'
 import { listClasses } from '@/services/academics.service'
-import { AiBankModal } from '@/components/ai/AiBankModal'
-import { AiGlassButton } from '@/components/ai/AiGlassButton'
 import type { QuestionBank, SchoolClass } from '@/types/models'
 
 const STATUS_TONES: Record<string, 'gray' | 'green' | 'amber'> = {
@@ -45,9 +43,6 @@ export default function QuestionBanksPage() {
   const [editorOpen, setEditorOpen] = useState(false)
   const [editing, setEditing] = useState<QuestionBank | null>(null)
   const classesQuery = useAsync(() => listClasses().catch(() => [] as SchoolClass[]), [])
-  const [aiBankOpen, setAiBankOpen] = useState(false)
-  const navigateAi = useNavigate()
-  const aiRole = useLocation().pathname.split('/')[1] ?? 'admin'
 
   if (query.error) return <ErrorState message={query.error} onRetry={query.reload} />
 
@@ -86,14 +81,9 @@ export default function QuestionBanksPage() {
         subtitle="Kelola koleksi soal untuk ujian"
         icon={<Database className="h-5 w-5" />}
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <AiGlassButton onClick={() => setAiBankOpen(true)}>
-              Buat Soal dengan AI
-            </AiGlassButton>
-            <Button icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
-              Buat Bank Soal
-            </Button>
-          </div>
+          <Button icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
+            Buat Bank Soal
+          </Button>
         }
       />
 
@@ -146,16 +136,7 @@ export default function QuestionBanksPage() {
         }}
       />
 
-      {aiBankOpen && (
-        <AiBankModal
-          onClose={() => setAiBankOpen(false)}
-          onSaved={(bankId) => {
-            setAiBankOpen(false)
-            query.reload()
-            navigateAi(`/${aiRole}/question-banks/${bankId}`)
-          }}
-        />
-      )}
+
     </>
   )
 }

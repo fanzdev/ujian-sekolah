@@ -8,9 +8,11 @@ function extraOrigins(): string[] {
     .filter((item) => item !== '')
 }
 
-export function resolveCorsHeaders(req: Request): Record<string, string> {
+export function resolveCorsHeaders(req: Request, extraOrigin?: string): Record<string, string> {
   const origin = (req.headers.get('origin') ?? '').replace(/\/+$/, '')
-  const allowed = origin !== '' && (BUILTIN_ORIGINS.includes(origin) || extraOrigins().includes(origin))
+  const allowedOrigins = new Set<string>([...BUILTIN_ORIGINS, ...extraOrigins()])
+  if (extraOrigin) allowedOrigins.add(extraOrigin.replace(/\/+$/, ''))
+  const allowed = origin !== '' && allowedOrigins.has(origin)
   const headers: Record<string, string> = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',

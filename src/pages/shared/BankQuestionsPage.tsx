@@ -2,9 +2,10 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom'
 import {
-  ArrowLeft, Plus, Pencil, Trash2, HelpCircle, Image as ImageIcon,
-  UploadCloud, X, Download, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Zap, Sparkles,
-} from 'lucide-react'
+   ArrowLeft, Plus, Pencil, Trash2, HelpCircle, Image as ImageIcon,
+   UploadCloud, X, Download, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Zap, FileText, Bot,
+   GripVertical,
+ } from 'lucide-react'
 import { useAsync, useDebounce, useDocumentTitle } from '@/hooks/useAsync'
 import { useToast } from '@/hooks/useToast'
 import { useConfirm } from '@/hooks/useConfirm'
@@ -21,9 +22,9 @@ import { QUESTION_TYPE_LABELS, DIFFICULTY_LABELS } from '@/lib/constants'
 import { stripHtml } from '@/lib/sanitize'
 import { uploadMedia } from '@/services/storage.service'
 import { parseAnyFile, validateRows, soalRowSchema, downloadTemplateCsv, downloadTemplateExcel, importKindMeta, type ImportRowResult } from '@/services/import.service'
-import { aiStatus } from '@/services/ai.service'
-import { AiGenerateModal } from '@/components/ai/AiGenerateModal'
-import type { AiGeneratedQuestion } from '@/services/ai.service'
+import { buildExplanationDraft } from '@/services/local-assist.service'
+import { veyraBuildExplanation } from '@/services/veyra-ai.service'
+import { VeyraAiModal } from '@/components/ai/VeyraAiModal'
 import type { Difficulty, Question, QuestionType } from '@/types/models'
 
 type Mode = 'bank' | 'all'
@@ -49,10 +50,28 @@ export default function BankQuestionsPage({ mode = 'bank' }: { mode?: Mode }) {
   const [newQuestionNum, setNewQuestionNum] = useState(1)
   const [editQuestionNum, setEditQuestionNum] = useState(1)
   const [importOpen, setImportOpen] = useState(false)
-  const [aiOpen, setAiOpen] = useState(false)
-  const [aiSaving, setAiSaving] = useState(false)
-  const aiHealth = useAsync(() => aiStatus().catch(() => null), [])
+  const [veyraOpen, setVeyraOpen] = useState(false)
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const [hoveredRowId, setHoveredRowId] = useState<string | null>(null)
+  const tableAreaRef = useRef<HTMLDivElement>(null)
   const PAGE_SIZE = 10
+
+  const handleDragStart = useCallback((e: React.DragEvent, qId: string) => {
+    setDraggingId(qId)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', qId)
+  }, [])
+
+  const handleDragEnd = useCallback(() => {
+    setDraggingId(null)
+    setHoveredRowId(null)
+  }, [])
+
+  const handleDragOver = useCallback((e: React.DragEvent, qId: string) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (qId !== draggingId) setHoveredRowId(qId)
+  }, [draggingId])
 
   const banksQuery = useAsync(() => import('@/services/questions.service').then((m) => m.listBanks({ pageSize: 100 })), [])
   const query = useAsync(
@@ -70,29 +89,27 @@ export default function BankQuestionsPage({ mode = 'bank' }: { mode?: Mode }) {
     [bankId, debouncedSearch, typeFilter, difficultyFilter, page],
   )
 
+  const handleDrop = useCallback(async (e: React.DragEvent, targetId: string) => {
+    e.preventDefault()
+    setDraggingId(null)
+    setHoveredRowId(null)
+    const sourceId = e.dataTransfer.getData('text/plain')
+    if (!sourceId || sourceId === targetId || !bankId) return
+    try {
+      const m = await import('@/services/questions.service')
+      await m.reorderQuestions(bankId, sourceId, targetId)
+      query.reload()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal menggeser.')
+    }
+  }, [bankId, query, toast])
+
   const title = mode === 'all' ? 'Semua Soal' : banksQuery.data?.rows.find((b) => b.id === bankId)?.title ?? 'Soal'
 
   useDocumentTitle(mode === 'all' ? 'Semua Soal' : `Soal · ${title}`)
 
   const rowsRef = useRef<Question[]>([])
   if (query.data?.rows) rowsRef.current = query.data.rows
-
-  const saveAiQuestions = async (list: AiGeneratedQuestion[]) => {
-    if (!bankId || aiSaving) return
-    setAiSaving(true)
-    try {
-      const { saveAiQuestionsToBank } = await import('@/services/ai.service')
-      const { done, errors } = await saveAiQuestionsToBank(bankId, list)
-      if (done > 0) {
-        toast.success(`${done} soal AI tersimpan.`)
-        setAiOpen(false)
-        query.reload()
-      }
-      if (errors.length > 0 && done === 0) toast.error(errors[0])
-    } finally {
-      setAiSaving(false)
-    }
-  }
 
   if (query.error) return <ErrorState message={query.error} onRetry={query.reload} />
 
@@ -110,25 +127,20 @@ export default function BankQuestionsPage({ mode = 'bank' }: { mode?: Mode }) {
             </Link>
           )}
           <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">{title}</h1>
-              {aiHealth.data?.configured && <Badge tone="green"><Sparkles className="mr-1 inline h-3 w-3" />AI aktif</Badge>}
-            </div>
+            <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">{title}</h1>
             <p className="mt-0.5 text-sm text-slate-400">
               {mode === 'bank' ? 'Kelola koleksi soal dalam bank ini' : 'Seluruh soal yang dapat Anda akses'}
             </p>
           </div>
         </div>
         <div className="flex gap-2">
-          {bankId && (
-            <Button
-              variant="outline"
-              icon={<Sparkles className="h-4 w-4" />}
-              onClick={() => setAiOpen(true)}
-            >
-              Generate AI
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            icon={<Bot className="h-4 w-4" />}
+            onClick={() => setVeyraOpen(true)}
+          >
+            Veyra AI
+          </Button>
           {bankId && (
             <Button
               variant="outline"
@@ -171,16 +183,16 @@ export default function BankQuestionsPage({ mode = 'bank' }: { mode?: Mode }) {
 
       <Card>
         <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-          <SearchInput placeholder="Cari teks soal..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} />
+          <SearchInput className="sm:w-60" placeholder="Cari teks soal..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} />
           <Select
-            className="w-full sm:w-48"
+            className="w-full sm:w-44"
             placeholder="Semua Tipe"
             value={typeFilter}
             onChange={(e) => { setTypeFilter(e.target.value); setPage(1) }}
             options={Object.entries(QUESTION_TYPE_LABELS).map(([v, l]) => ({ value: v, label: l }))}
           />
           <Select
-            className="w-full sm:w-40"
+            className="w-full sm:w-36"
             placeholder="Semua Level"
             value={difficultyFilter}
             onChange={(e) => { setDifficultyFilter(e.target.value); setPage(1) }}
@@ -192,13 +204,14 @@ export default function BankQuestionsPage({ mode = 'bank' }: { mode?: Mode }) {
           <TableSkeleton cols={4} />
         ) : (
           <>
+            <div ref={tableAreaRef}>
             <DataTable
               columns={[
                 {
                   key: 'text',
                   header: 'Soal',
                   render: (q) => (
-                    <div className="max-w-md">
+                    <div className={`max-w-md ${draggingId === q.id ? 'opacity-40' : ''}`}>
                       <RichContent html={q.text} className="line-clamp-2 [&_*]:text-[13px]" />
                       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                         <Badge tone="blue">{QUESTION_TYPE_LABELS[q.type]}</Badge>
@@ -218,8 +231,21 @@ export default function BankQuestionsPage({ mode = 'bank' }: { mode?: Mode }) {
                   key: 'actions',
                   header: '',
                   render: (q, rowIndex) => (
-                    <div className="flex justify-end gap-1">
-                      <button
+                     <div className={`flex items-center justify-end gap-1 ${hoveredRowId === q.id && draggingId && draggingId !== q.id ? 'ring-2 ring-primary-400 rounded-lg -m-1' : ''}`}>
+                       {bankId && (
+                         <span
+                           draggable
+                           onDragStart={(e) => handleDragStart(e, q.id)}
+                           onDragEnd={handleDragEnd}
+                           onDragOver={(e) => handleDragOver(e, q.id)}
+                           onDrop={(e) => handleDrop(e, q.id)}
+                           className={`flex shrink-0 cursor-grab items-center justify-center rounded p-1.5 transition-colors ${draggingId === q.id ? 'opacity-40' : 'text-slate-300 hover:text-slate-500 active:cursor-grabbing'}`}
+                           title="Geser untuk mengatur urutan"
+                         >
+                           <GripVertical className="h-4 w-4" />
+                         </span>
+                       )}
+                       <button
                         onClick={() => {
                           setEditingQuestion(q)
                           setEditQuestionNum((page - 1) * PAGE_SIZE + rowIndex + 1)
@@ -269,6 +295,7 @@ export default function BankQuestionsPage({ mode = 'bank' }: { mode?: Mode }) {
                 />
               }
             />
+            </div>
             <Pagination page={page} pageSize={PAGE_SIZE} total={query.data?.total ?? 0} onPageChange={setPage} />
           </>
         )}
@@ -305,10 +332,14 @@ export default function BankQuestionsPage({ mode = 'bank' }: { mode?: Mode }) {
           }}
         />
       )}
-      {aiOpen && bankId && (
-        <AiGenerateModal
-          onClose={() => setAiOpen(false)}
-          onGenerated={(list) => void saveAiQuestions(list)}
+      {veyraOpen && (
+        <VeyraAiModal
+          onClose={() => setVeyraOpen(false)}
+          onSaved={(newBankId) => {
+            setVeyraOpen(false)
+            query.reload()
+            navigate(`/${role}/question-banks/${newBankId}`)
+          }}
         />
       )}
       {importOpen && bankId && (
@@ -368,41 +399,46 @@ function QuestionEditorModal({
   const toast = useToast()
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [aiExplainLoading, setAiExplainLoading] = useState(false)
+  const [explaining, setExplaining] = useState(false)
 
-  const handleAiExplain = async () => {
+  const handleDraftExplanation = async () => {
     if (stripHtml(form.text).length < 5) {
       toast.error('Isi teks pertanyaan dulu (min. 5 karakter).')
       return
     }
-    setAiExplainLoading(true)
+    const letters = ['A', 'B', 'C', 'D', 'E', 'F']
+    const filledOptions = form.options.filter((o) => o.option_text.trim())
+    const optionsText = needsOptions
+      ? filledOptions.map((o) => o.option_text.trim())
+      : form.type === 'matching'
+        ? form.pairs.filter((p) => p.left_text.trim() && p.right_text.trim()).map((p) => `${p.left_text.trim()} - ${p.right_text.trim()}`)
+        : []
+    const correctAnswer = needsOptions
+      ? filledOptions.map((o, i) => (o.is_correct ? letters[i] ?? '' : '')).filter(Boolean).join(',')
+      : form.type === 'true_false'
+        ? form.tf_answer ? 'Benar' : 'Salah'
+        : form.sa_accepted
+    setExplaining(true)
     try {
-      const { aiExplain } = await import('@/services/ai.service')
-      const letters = ['A', 'B', 'C', 'D', 'E', 'F']
-      const filledOptions = form.options.filter((o) => o.option_text.trim())
-      const optionsText = needsOptions
-        ? filledOptions.map((o) => o.option_text.trim())
-        : form.type === 'matching'
-          ? form.pairs.filter((p) => p.left_text.trim() && p.right_text.trim()).map((p) => `${p.left_text.trim()} - ${p.right_text.trim()}`)
-          : []
-      const correctAnswer = needsOptions
-        ? filledOptions.map((o, i) => (o.is_correct ? letters[i] ?? '' : '')).filter(Boolean).join(',')
-        : form.type === 'true_false'
-          ? form.tf_answer ? 'Benar' : 'Salah'
-          : form.sa_accepted
-      const result = await aiExplain({
+      const draft = await veyraBuildExplanation({
         questionText: stripHtml(form.text),
         optionsText,
         correctAnswer,
         type: form.type,
-        depth: 'brief',
       })
-      setForm((p) => ({ ...p, explanation: result.explanation }))
-      toast.success('Pembahasan AI dimasukkan. Periksa sebelum menyimpan.')
+      setForm((p) => ({ ...p, explanation: draft }))
+      toast.success('Draf pembahasan dimasukkan. Sunting sebelum menyimpan.')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Gagal membuat pembahasan.')
+      const fallback = buildExplanationDraft({
+        questionText: stripHtml(form.text),
+        optionsText,
+        correctAnswer,
+        type: form.type,
+      })
+      setForm((p) => ({ ...p, explanation: fallback }))
+      toast.success(err instanceof Error ? `${err.message} Draf lokal dimasukkan sebagai gantinya.` : 'Draf lokal dimasukkan sebagai gantinya.')
     } finally {
-      setAiExplainLoading(false)
+      setExplaining(false)
     }
   }
 
@@ -827,7 +863,7 @@ function QuestionEditorModal({
               <Input label="Minimal Kata" type="number" min={0} value={form.min_words} onChange={(e) => setForm((p) => ({ ...p, min_words: Number(e.target.value) }))} />
               <Input label="Maksimal Kata" type="number" min={0} value={form.max_words} onChange={(e) => setForm((p) => ({ ...p, max_words: Number(e.target.value) }))} hint="0 = tanpa batas" />
             </div>
-            <Textarea label="Rubrik Penilaian (untuk AI & referensi guru)" placeholder="cth: dinilai dari kelengkapan argumen, ketepatan konsep, dan keruntutan." value={form.rubric} onChange={(e) => setForm((p) => ({ ...p, rubric: e.target.value }))} />
+            <Textarea label="Rubrik Penilaian (referensi guru)" placeholder="cth: dinilai dari kelengkapan argumen, ketepatan konsep, dan keruntutan." value={form.rubric} onChange={(e) => setForm((p) => ({ ...p, rubric: e.target.value }))} />
           </fieldset>
         )}
 
@@ -841,11 +877,11 @@ function QuestionEditorModal({
           <Button
             size="sm"
             variant="outline"
-            icon={<Sparkles className="h-3.5 w-3.5" />}
-            loading={aiExplainLoading}
-            onClick={() => void handleAiExplain()}
+            icon={<FileText className="h-3.5 w-3.5" />}
+            loading={explaining}
+            onClick={() => void handleDraftExplanation()}
           >
-            Buatkan Pembahasan dengan AI
+            Buatkan Pembahasan (Veyra AI)
           </Button>
         </div>
       </div>
@@ -908,7 +944,7 @@ function ImportQuestionsModal({ bankId, bankTitle, onClose, onImported }: { bank
     let done = 0
     let fail = 0
     const errors: { row: number; msg: string }[] = []
-    for (const row of validRows) {
+    for (const [rowIdx, row] of validRows.entries()) {
       try {
         const data = row.data as Record<string, string>
         const rawType = String(data.type ?? '').trim().toLowerCase()
@@ -959,6 +995,7 @@ function ImportQuestionsModal({ bankId, bankTitle, onClose, onImported }: { bank
           explanation,
           scoring_rule: scoringRule,
           options,
+          sort_order: (done + rowIdx) * 10,
         } as never)
         done++
       } catch (e) {

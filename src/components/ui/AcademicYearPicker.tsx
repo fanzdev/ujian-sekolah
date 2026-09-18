@@ -9,7 +9,7 @@ function currentJakartaYear(): number {
   }
 }
 
-export function academicYearOptions(past = 5, future = 5): { value: string; label: string }[] {
+export function academicYearOptions(past = 1, future = 5): { value: string; label: string }[] {
   const y = currentJakartaYear()
   const out: { value: string; label: string }[] = []
   for (let start = y - past; start <= y + future; start++) {

@@ -38,7 +38,7 @@ Panduan lengkap tiap langkah ada di bawah. 👇
 | C | [Setup Supabase + API Key](#c-setup-supabase--api-key) | Dapatkan URL & anon key |
 | D | [Jalankan Website Lokal](#d-jalankan-website-lokal) | `npm run dev` step-by-step |
 | E | [Admin Pertama](#e-membuat-akun-admin-pertama) | Akun super admin pertama |
-| F | [AI Essay Grading (OpenRouter)](#f-ai-essay-grading-openrouter-multi-api-key) | Multi API key + rotasi otomatis |
+| F | [Asisten Lokal Gratis](#f-asisten-lokal-gratis-tanpa-api-key) | Rekap, nilai essay, draf pembahasan tanpa setup |
 | G | [Deploy ke GitHub Pages](#g-deploy-ke-github-pages-online) | Online gratis permanen |
 | H | [Environment Variables](#h-environment-variables) | Tabel lengkap semua variabel |
 | I | [Struktur Folder](#i-struktur-folder) | Peta kode proyek |
@@ -56,7 +56,7 @@ Panduan lengkap tiap langkah ada di bawah. 👇
 - Bank Soal & Ujian seluruh sekolah
 - Hasil & Laporan · **Import CSV/Excel** dengan validasi & progress bar · **Export CSV/Excel/PDF**
 - Audit Log & Log Pelanggaran Ujian
-- Pengaturan: logo, warna tema, nama aplikasi, default ujian, keamanan, **pool API Key AI**
+- Pengaturan: logo, warna tema, nama aplikasi, default ujian, keamanan
 
 ### 🟢 Guru
 - Bank Soal dengan **6 tipe soal**: Pilihan Ganda · PG Kompleks · Benar/Salah · Menjodohkan · Isian Singkat · Essay
@@ -65,7 +65,7 @@ Panduan lengkap tiap langkah ada di bawah. 👇
 - Randomisasi urutan soal & opsi (unik per siswa, konsisten saat refresh)
 - PIN ujian, batas percobaan, passing grade, aturan anti-curang
 - Monitoring peserta · Hasil, ranking & analisis butir soal
-- **Penilaian essay**: saran nilai AI (OpenRouter) + nilai final manual guru — nilai guru selalu yang dipakai
+- **Penilaian essay**: saran nilai otomatis lokal + nilai final manual guru — nilai guru selalu yang dipakai
 
 ### 🔵 Siswa
 - Satu akun untuk semua ujian · hanya melihat ujian untuk kelas/jurusannya
@@ -107,7 +107,7 @@ Deteksi pindah tab / keluar fokus / keluar fullscreen → warning bertingkat →
 | **Row Level Security** | Batas keamanan utama: admin penuh, guru miliknya, siswa datanya sendiri |
 | **Postgres Functions (RPC)** | Mesin ujian di server: mulai attempt, autosave, submit + koreksi objektif otomatis, hitung pelanggaran |
 | **Storage** | Bucket `media`: logo, gambar/audio/video soal, snapshot kamera opsional |
-| **Edge Functions (Deno)** | `manage-user` (kelola akun oleh admin) · `grade-essay` (AI grading via OpenRouter) |
+| **Edge Functions (Deno)** | `manage-user` (kelola akun oleh admin) |
 
 ### Infrastruktur
 **GitHub Pages** (hosting statis gratis) · **GitHub Actions** (CI/CD otomatis) · **ESLint** (kualitas kode)
@@ -260,11 +260,17 @@ Jika ingin membuat admin tanpa wizard, `scripts/create-admin.sql` tetap berfungs
 
 ---
 
-## F. Fitur AI — DiHapus
+## F. Asisten Lokal Gratis (Tanpa API Key)
 
-Fitur AI (**AI Grading**, **Chat AI**, **Laporan AI**) sudah dihapus total dari aplikasi. Tidak perlu konfigurasi API key AI (OpenRouter dst.) — folder Edge Function `chat-ai`/`grade-essay` dijim kantana dan tabel/kolom AI sudah dibersikhanan via migrasi `supabase/migrations/00035_remove_ai.sql`.
+Semua fitur AI berbayar yang butuh API key (generate soal AI, nilai essay AI, analisis AI via Edge Function `ai-proxy`) sudah dihapus total. Tidak ada setup, tidak ada secrets, tidak ada biaya.
 
-Penilaian essay tetap berjalan **manual** dari halaman *Penilaian Essay* (guru beri nilai final & umpan balik langsung).
+Sebagai gantinya tersedia asisten lokal gratis yang berjalan 100% di browser:
+
+- **Rekap Otomatis** di halaman Laporan: ringkasan rata-rata, ketuntasan KKM, sebaran nilai, soal tersulit, dan rekomendasi tindak lanjut.
+- **Nilai Otomatis** di halaman Penilaian Essay: saran skor 0–100 dari kecocokan kata kunci soal, panjang jawaban, dan struktur kalimat. Hanya saran awal, nilai final tetap keputusan guru.
+- **Draf Pembahasan** di editor Bank Soal: template pembahasan dari kunci jawaban yang tinggal disunting guru.
+
+Pembersihan data AI lama ditangani migrasi `supabase/migrations/00035_remove_ai.sql`.
 
 ---
 
@@ -330,16 +336,14 @@ Checklist lengkap: [`docs/TESTING.md`](docs/TESTING.md).
 ├── docs/                            # dokumentasi teknis (setup, deploy, security, testing)
 ├── scripts/create-admin.sql         # bootstrap admin pertama
 ├── supabase/
-│   ├── migrations/                  # 00001–00006 (schema → RLS → seed → AI keys)
+│   ├── migrations/                  # 00001–00006 (schema → RLS → seed)
 │   └── functions/
-│       ├── manage-user/index.ts     #   kelola akun (verifikasi JWT admin)
-│       └── grade-essay/index.ts     #   AI grading + ROTASI MULTI API KEY
+│       └── manage-user/index.ts     #   kelola akun (verifikasi JWT admin)
 ├── src/
 │   ├── components/
 │   │   ├── ui/                      # Button, Input, Modal, DataTable, Badge, dst.
 │   │   ├── layout/                  # Sidebar, Topbar, shell dashboard
-│   │   ├── exam/                    # Timer, Navigator, CameraMonitor, ViolationFlash
-│   │   └── settings/AiKeysPanel.tsx # Panel pool API Key AI
+│   │   └── exam/                    # Timer, Navigator, CameraMonitor, ViolationFlash
 │   ├── features/exam/               # useExamEngine (state machine ujian) + review
 │   ├── hooks/                       # useAuth, useToast, useConfirm, useAsync…
 │   ├── lib/                         # utils, datetime WIB, sanitize, constants
@@ -351,7 +355,7 @@ Checklist lengkap: [`docs/TESTING.md`](docs/TESTING.md).
 │   │   ├── exam/                    # ExamRunnerPage (halaman mengerjakan)
 │   │   └── auth/ system/            # login, setup, 404
 │   ├── routes/                      # route tree + guard per role
-│   ├── services/                    # akses data per domain (exams, ai-keys, dst.)
+│   ├── services/                    # akses data per domain (exams, local-assist, dst.)
 │   └── types/models.ts              # tipe domain aplikasi
 ├── index.html                       # entry HTML + skrip restore redirect Pages
 └── vite.config.ts                   # base '/ujian/' + generator dist/404.html
@@ -369,7 +373,6 @@ Checklist lengkap: [`docs/TESTING.md`](docs/TESTING.md).
 | XSS | DOMPurify pada semua rich text |
 | Privilege escalation | RLS semua tabel + trigger anti-edit-role + verifikasi role di Edge Function |
 | Duplicate submission | Row-lock + cek status attempt di server |
-| API Key AI bocor | Disimpan di tabel admin-only (RLS); Edge Function membaca via service role |
 | Secret di repo | Hanya anon key publik di frontend; `.env` diblokir git; service role hidup di runtime function |
 
 > Deteksi curang (tab/fokus/fullscreen) bersifat *indikator* — **tidak ada sistem yang bisa mencegah curang 100%**, dan aplikasi tidak mengklaim demikian.
@@ -388,8 +391,6 @@ Rincian: [`docs/SECURITY.md`](docs/SECURITY.md).
 | Login "Username/password salah" | Admin belum dibuat → jalankan `scripts/create-admin.sql` |
 | Login "Profil tidak ditemukan" | Migrasi belum lengkap → ulangi C.3 urutan 1–6 |
 | Tombol tambah siswa error | Deploy `manage-user`: `supabase functions deploy manage-user` |
-| Tombol AI: "Belum ada API Key OpenRouter" | Tambahkan key di Pengaturan → AI Grading (bagian F) |
-| Tombol AI: "Semua API Key gagal" | Semua key limit/invalid → cek status merah di panel AI, tambah/perbarui key |
 | Error "row-level security" | Akses di luar wewenang — perilaku benar; cek kolom `role` user |
 | Asset 404 pasca-deploy | Hard refresh (Ctrl+F5); nama file asset di-hash Vite sehingga cache aman |
 
@@ -399,7 +400,7 @@ Rincian: [`docs/SECURITY.md`](docs/SECURITY.md).
 
 | Dokumen | Isi |
 |---|---|
-| [`docs/SUPABASE_SETUP.md`](docs/SUPABASE_SETUP.md) | Setup Supabase detail + AI keys |
+| [`docs/SUPABASE_SETUP.md`](docs/SUPABASE_SETUP.md) | Setup Supabase detail |
 | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Panduan deployment GitHub Pages |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Arsitektur & keputusan teknis |
 | [`docs/SECURITY.md`](docs/SECURITY.md) | Model ancaman & mitigasi |

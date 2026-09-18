@@ -2,6 +2,7 @@ import { supabase } from './client'
 import type { SchoolSettings, SystemSettingsMap } from '@/types/models'
 import { getDefaultLogo, resolveLogoUrl, sanitizeLogoUrl } from '@/lib/logo'
 import { findPreset } from '@/lib/themePresets'
+import { invokeEdge, EdgeInvokeError } from './client'
 
 export async function fetchSchoolSettings(): Promise<SchoolSettings> {
   const { data, error } = await supabase
@@ -86,6 +87,46 @@ export async function upsertSystemSetting(key: string, value: Record<string, unk
     .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' })
   if (error) throw error
   void import('./audit.service').then((m) => m.logAudit('CHANGE_SETTINGS', 'system_setting', key))
+}
+
+export interface AiConfig {
+  configured: boolean
+  provider: 'gemini' | 'openrouter' | 'groq'
+  baseUrl: string
+  model: string
+  key: string
+  temperature?: number
+}
+
+export async function fetchAiConfig(): Promise<AiConfig | null> {
+  const { data, error } = await supabase.rpc('get_ai_config')
+  if (error) throw error
+  return data ?? null
+}
+
+export async function saveAiConfig(config: Omit<AiConfig, 'configured'>): Promise<void> {
+  try {
+    const result = await invokeEdge<{ ok: boolean; message: string }>(
+      'ai-proxy',
+      {
+        feature: 'save-ai-config',
+        config: {
+          provider: config.provider,
+          baseUrl: config.baseUrl,
+          model: config.model,
+          apiKey: config.key,
+          temperature: config.temperature ?? 0.2,
+        },
+      },
+      { timeoutMs: 15000 },
+    )
+    if (!result.ok) throw new Error(result.message || 'Gagal menyimpan konfigurasi AI.')
+  } catch (err) {
+    if (err instanceof EdgeInvokeError) {
+      throw new Error(err.message || 'Gagal menyimpan konfigurasi AI.')
+    }
+    throw err
+  }
 }
 
 const RGB_CACHE: Record<string, string> = {}
