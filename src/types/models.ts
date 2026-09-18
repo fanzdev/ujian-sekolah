@@ -346,7 +346,7 @@ export interface AvailableExam {
 
 export interface ClientOption {
   id: string
-  text: string
+  text: string | null
   media_url: string | null
   is_correct?: boolean | null
 }

@@ -86,7 +86,7 @@ export default function AttemptReview({ payload }: { payload: AttemptPayload; on
                 Kunci:{' '}
                 {(q.options ?? [])
                   .filter((o) => o.is_correct)
-                  .map((o) => strip(o.text))
+                  .map((o) => strip(o.text ?? ''))
                   .join('; ')}
               </p>
             )}
@@ -151,7 +151,7 @@ function AnswerPreview({ question, answer }: { question: ClientQuestion; answer:
     const ids = Array.isArray(answer) ? (answer as string[]) : [String(answer)]
     const texts = (question.options ?? [])
       .filter((o) => ids.includes(o.id))
-      .map((o) => strip(o.text))
+      .map((o) => strip(o.text ?? ''))
     return <p className="mt-1 text-xs font-medium text-slate-700">{texts.join('; ') || JSON.stringify(answer)}</p>
   }
 

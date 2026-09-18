@@ -22,7 +22,7 @@ export function PageHeader({
             </div>
           )}
           <div>
-            <h1 className="text-xl font-bold leading-tight tracking-tight text-slate-900 dark:text-white sm:text-2xl">{title}</h1>
+            <h1 className="truncate text-xl font-bold leading-tight tracking-tight text-slate-900 dark:text-white sm:text-2xl">{title}</h1>
             {subtitle && <p className="mt-1 max-w-[60ch] text-sm leading-relaxed text-slate-500 dark:text-slate-400">{subtitle}</p>}
           </div>
         </div>

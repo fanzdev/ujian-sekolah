@@ -198,9 +198,13 @@ export default function ExamRunnerPage() {
               <Button onClick={engine.next} className="w-full sm:w-auto">
                 Berikutnya <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
-            ) : (
+            ) : engine.stats.unanswered === 0 ? (
               <Button variant="primary" icon={<Send className="h-4 w-4" />} onClick={() => setConfirmOpen(true)} className="w-full sm:w-auto">
                 Kumpulkan Ujian
+              </Button>
+            ) : (
+              <Button variant="outline" disabled className="w-full sm:w-auto text-slate-400">
+                Jawab semua soal untuk mengumpulkan
               </Button>
             )}
           </div>
@@ -240,9 +244,15 @@ export default function ExamRunnerPage() {
                 <p className="text-center text-[11px] font-medium tracking-wide text-slate-400">Klik nomor untuk lompat • Tandai ragu untuk review</p>
               </div>
             </div>
-            <Button variant="primary" size="lg" className="w-full shadow-lg shadow-primary-600/15 hover:shadow-xl hover:shadow-primary-600/20 hover:-translate-y-0.5 transition-all" icon={<Send className="h-4 w-4" />} onClick={() => setConfirmOpen(true)}>
-              Kumpulkan Ujian
-            </Button>
+            {engine.stats.unanswered === 0 ? (
+              <Button variant="primary" size="lg" className="w-full shadow-lg shadow-primary-600/15 hover:shadow-xl hover:shadow-primary-600/20 hover:-translate-y-0.5 transition-all" icon={<Send className="h-4 w-4" />} onClick={() => setConfirmOpen(true)}>
+                Kumpulkan Ujian
+              </Button>
+            ) : (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-xs font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-500">
+                {engine.stats.unanswered} soal belum dijawab · isi semua untuk mengumpulkan
+              </div>
+            )}
           </div>
         </aside>
       </main>
@@ -386,7 +396,7 @@ function AnswerInput({
     case 'multiple_choice':
       return (
         <OptionList
-          options={(question.options ?? []).map((o) => ({ id: o.id, text: o.text, media_url: o.media_url }))}
+          options={(question.options ?? []).map((o) => ({ id: o.id, text: (o.text ?? '').trim() || '(tanpa teks)', media_url: o.media_url }))}
           selectedId={typeof answer === 'string' ? answer : null}
           onSelect={(id) => onAnswer(id)}
           multi={false}
@@ -398,7 +408,7 @@ function AnswerInput({
       return (
         <>
           <OptionList
-            options={(question.options ?? []).map((o) => ({ id: o.id, text: o.text, media_url: o.media_url }))}
+            options={(question.options ?? []).map((o) => ({ id: o.id, text: (o.text ?? '').trim() || '(tanpa teks)', media_url: o.media_url }))}
             selectedIds={selected}
             onSelectMulti={(ids) => onAnswer(ids)}
             multi
@@ -551,7 +561,11 @@ function OptionList({
 
   return (
     <div role="radiogroup" aria-multiselectable={multi} className="space-y-2.5">
-      {options.map((opt, i) => {
+      {options.length === 0 ? (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-medium text-amber-700 dark:border-amber-800/40 dark:bg-amber-500/10 dark:text-amber-300">
+          Opsi jawaban tidak tersedia. Hubungi pengawas ujian.
+        </p>
+      ) : options.map((opt, i) => {
         const active = selected.includes(opt.id)
         return (
           <button
@@ -589,7 +603,7 @@ function OptionList({
               )}
             </span>
             <span className="min-w-0 flex-1">
-              <RichContent html={opt.text} />
+              <RichContent html={opt.text ?? ''} />
               {opt.media_url && <img src={opt.media_url} alt="" loading="lazy" className="mt-2 max-h-40 rounded-lg object-contain" />}
             </span>
           </button>

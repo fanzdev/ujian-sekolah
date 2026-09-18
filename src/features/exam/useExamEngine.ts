@@ -54,8 +54,10 @@ export function useExamEngine(attemptId: string) {
   const submittingRef = useRef(false)
   const lastViolationAt = useRef<Record<string, number>>({})
   const onlineRef = useRef(navigator.onLine)
+  const remainingSecondsRef = useRef<number | null>(null)
 
   answersRef.current = answers
+  remainingSecondsRef.current = remainingSeconds
 
   const load = useCallback(async () => {
     setPhase('loading')
@@ -69,6 +71,12 @@ export function useExamEngine(attemptId: string) {
       }
 
       if (p.attempt.status !== 'in_progress') {
+        setPayload(p)
+        setPhase('submitted')
+        return
+      }
+
+      if (p.remaining_seconds <= 0) {
         setPayload(p)
         setPhase('submitted')
         return
@@ -122,17 +130,23 @@ export function useExamEngine(attemptId: string) {
 
 
 
+  const initialTickDoneRef = useRef(false)
+
   // ---------------- countdown (server-synced) ----------------
   useEffect(() => {
     if (!payload || phase !== 'running') return
+    initialTickDoneRef.current = false
     const deadlineMs = new Date(payload.attempt.deadline).getTime()
     const tick = () => {
       const now = Date.now() + offsetRef.current
       const left = Math.max(0, Math.floor((deadlineMs - now) / 1000))
       setRemainingSeconds(left)
       if (left <= 0 && !submittingRef.current) {
-        void doSubmit(true)
+        if (initialTickDoneRef.current) {
+          void doSubmit(true)
+        }
       }
+      initialTickDoneRef.current = true
       // periodic server resync every 5 minutes keeps clock drift near zero
       if ((left + 1) % 300 === 0) {
         void getServerTimeOffset().then((o) => (offsetRef.current = o)).catch(() => undefined)
@@ -374,7 +388,7 @@ export function useExamEngine(attemptId: string) {
       return !!(d.fullscreenElement || d.webkitFullscreenElement || d.mozFullScreenElement)
     }
 
-    void recordSecurityEvent(attemptId, 'EXAM_RESUME', 'INFO', { remaining: remainingSeconds }, getDeviceId())
+    void recordSecurityEvent(attemptId, 'EXAM_RESUME', 'INFO', { remaining: remainingSecondsRef.current }, getDeviceId())
     void flushSecurityQueue(attemptId)
 
     const onVisibility = () => {
@@ -484,7 +498,7 @@ export function useExamEngine(attemptId: string) {
       window.removeEventListener('online', onOnline)
       window.clearInterval(devtoolsInterval)
     }
-  }, [phase, payload, attemptId, remainingSeconds, triggerViolation])
+  }, [phase, payload, attemptId, triggerViolation])
 
   // ---------------- derived ----------------
   const order = useMemo(() => payload?.order ?? [], [payload])

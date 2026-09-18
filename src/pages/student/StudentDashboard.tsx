@@ -108,7 +108,7 @@ export default function StudentDashboard() {
   return (
     <>
       <PageHeader
-        title={`Halo${profile ? `, ${profile.full_name.split(' ')[0]}` : ''}`}
+        title={`Halo${profile ? `, ${profile.full_name}` : ''}`}
         subtitle={
           d?.studentInfo
             ? `${d.studentInfo.classes?.name ?? 'Tanpa kelas'}${d.studentInfo.nis ? ` · NIS ${d.studentInfo.nis}` : ''} · ${todayLabel}`

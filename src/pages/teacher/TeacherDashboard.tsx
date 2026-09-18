@@ -48,7 +48,7 @@ export default function TeacherDashboard() {
   return (
     <>
       <PageHeader
-        title={`Assalamu'alaikum${profile ? `, ${profile.full_name.split(' ')[0]}` : ''}`}
+        title={`Assalamu'alaikum${profile ? `, ${profile.full_name}` : ''}`}
         subtitle={new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' }).format(new Date())}
         icon={<LayoutDashboard className="h-5 w-5" />}
       />

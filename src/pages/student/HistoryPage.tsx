@@ -28,8 +28,7 @@ export default function HistoryPage() {
 
   const visibleRows = (query.data ?? []).filter((a) => {
     if (a.status === 'in_progress') return true
-    const st = (a.exams as any)?.status
-    return st === 'published' || st === 'completed'
+    return a.status === 'submitted' || a.status === 'auto_submitted' || a.status === 'graded'
   })
   const rows = visibleRows
   const filtered = tab === 'all' ? rows : rows.filter((a) => a.results?.some((r) => r.final_score !== null))

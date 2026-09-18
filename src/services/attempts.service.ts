@@ -104,6 +104,17 @@ export async function getAttemptPayload(attemptId: string): Promise<AttemptPaylo
   payload.answers = normalizedAnswers
 
   payload.remaining_seconds = Math.max(0, Math.round(Number(payload.remaining_seconds) || 0))
+
+  for (const qid of Object.keys(payload.questions ?? {})) {
+    const q = payload.questions[qid]
+    if (q?.options) {
+      q.options = q.options.map((o: { id: string; text: string | null; media_url: string | null }) => ({
+        ...o,
+        text: typeof o.text === 'string' ? o.text.trim() : '',
+      })).filter((o: { id: string; text: string }) => o.text.length > 0 || o.id !== undefined)
+    }
+  }
+
   return payload as AttemptPayload
 }
 
