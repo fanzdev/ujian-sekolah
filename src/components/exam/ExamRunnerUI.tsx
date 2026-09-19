@@ -146,7 +146,7 @@ export function NavigatorLegend({ stats }: { stats: { answered: number; unanswer
 export function ViolationFlash({ count, limit }: { count: number; limit: number }) {
   const remaining = limit - count
   return (
-    <div className="fixed top-16 left-1/2 z-[90] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 animate-scale-in">
+    <div className="fixed inset-x-4 top-16 z-[90] mx-auto w-auto -translate-y-0 animate-scale-in sm:max-w-md">
       <div role="alert" className="flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 shadow-2xl">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:text-white">
           <AlertTriangle className="h-5 w-5" />

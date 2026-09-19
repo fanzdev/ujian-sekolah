@@ -70,6 +70,10 @@ export function useExamEngine(attemptId: string) {
         throw new Error('Data ujian tidak lengkap. Hubungi admin.')
       }
 
+      if (p.exam.status !== 'published') {
+        throw new Error('Ujian ini belum diaktifkan oleh pengajar.')
+      }
+
       if (p.attempt.status !== 'in_progress') {
         setPayload(p)
         setPhase('submitted')

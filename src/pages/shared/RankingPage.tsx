@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Trophy, ImageDown, Search, Medal } from 'lucide-react'
 import { useAsync, useDebounce, useDocumentTitle } from '@/hooks/useAsync'
 import { useToast } from '@/hooks/useToast'
@@ -6,13 +6,14 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
+import { Modal } from '@/components/ui/Modal'
 import { Select } from '@/components/ui/Input'
 import { DataTable } from '@/components/ui/DataTable'
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/ui/Feedback'
 import { listExams } from '@/services/exams.service'
 import { listClasses } from '@/services/academics.service'
 import { getExamClassRanking, type ClassRankingRow } from '@/services/attempts.service'
-import { downloadTop3Image } from '@/services/ranking-image.service'
+import { downloadTop3Image, generateTop3ImageDataURL } from '@/services/ranking-image.service'
 import { formatNumber } from '@/lib/utils'
 import { friendlyError } from '@/lib/errors'
 
@@ -23,6 +24,10 @@ export default function RankingPage() {
   const [classFilter, setClassFilter] = useState('')
   const [search, setSearch] = useState('')
   const [downloading, setDownloading] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const [previewError, setPreviewError] = useState<string | null>(null)
   const debounced = useDebounce(search)
 
   const examsQuery = useAsync(() => listExams({ pageSize: 200 }), [])
@@ -81,6 +86,26 @@ export default function RankingPage() {
 
   const handleDownloadImage = async () => {
     if (filtered.length === 0 || downloading) return
+    setPreviewOpen(true)
+    setPreviewUrl(null)
+    setPreviewError(null)
+    setPreviewLoading(true)
+    try {
+      const url = await generateTop3ImageDataURL({
+        examTitle: activeExam?.title ?? 'Peringkat Ujian',
+        classLabel: activeClassLabel,
+        rows: filtered,
+      })
+      setPreviewUrl(url)
+    } catch (err) {
+      setPreviewError(friendlyError(err))
+    } finally {
+      setPreviewLoading(false)
+    }
+  }
+
+  const doDownload = async () => {
+    if (!previewUrl || downloading) return
     setDownloading(true)
     try {
       await downloadTop3Image({
@@ -93,6 +118,7 @@ export default function RankingPage() {
       toast.error(friendlyError(err))
     } finally {
       setDownloading(false)
+      setPreviewOpen(false)
     }
   }
 
@@ -211,6 +237,108 @@ export default function RankingPage() {
       <p className="mt-3 text-xs leading-relaxed text-slate-400">
         Peringkat dihitung otomatis dari nilai akhir skala 0-100. Gunakan filter kelas untuk peringkat per kelas atau biarkan Semua Kelas untuk peringkat gabungan. Tombol Unduh Gambar menyimpan desain Top 3 (4:5, HD) sesuai warna tema dan logo sekolah.
       </p>
+
+      <RankingPreviewModal
+        open={previewOpen}
+        previewUrl={previewUrl}
+        previewLoading={previewLoading}
+        previewError={previewError}
+        onClose={() => setPreviewOpen(false)}
+        onDownload={doDownload}
+        examTitle={activeExam?.title ?? 'Peringkat Ujian'}
+        classLabel={activeClassLabel}
+      />
     </>
+  )
+}
+
+function RankingPreviewModal({
+  open,
+  previewUrl,
+  previewLoading,
+  previewError,
+  onClose,
+  onDownload,
+  examTitle,
+  classLabel,
+}: {
+  open: boolean
+  previewUrl: string | null
+  previewLoading: boolean
+  previewError: string | null
+  onClose: () => void
+  onDownload: () => void
+  examTitle: string
+  classLabel: string
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const imgRef = useRef<HTMLImageElement>(null)
+
+  useEffect(() => {
+    if (!previewUrl || !canvasRef.current) return
+    const canvas = canvasRef.current
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    const img = imgRef.current
+    if (!img) return
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+  }, [previewUrl])
+
+  return (
+    <Modal open={open} onClose={onClose} size="lg" ariaLabel="Pratinjau Peringkat">
+      <div className="space-y-5 px-6 py-5">
+        <div className="text-center">
+          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Pratinjau Gambar Peringkat</p>
+          <p className="mt-1 text-xs text-slate-400">{examTitle} · {classLabel}</p>
+        </div>
+
+        {previewLoading ? (
+          <div className="flex items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 py-16 dark:border-slate-700 dark:bg-slate-800/50">
+            <div className="flex flex-col items-center gap-3">
+              <svg className="h-8 w-8 animate-spin text-primary-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <p className="text-xs text-slate-400">Menyiapkan pratinjau...</p>
+            </div>
+          </div>
+        ) : previewError ? (
+          <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-5 text-center dark:border-rose-800/40 dark:bg-rose-500/10">
+            <p className="text-sm font-semibold text-rose-700 dark:text-rose-300">Gagal memuat pratinjau</p>
+            <p className="mt-1 text-xs text-rose-500">{previewError}</p>
+          </div>
+        ) : previewUrl ? (
+          <div className="flex justify-center overflow-auto">
+            <div className="relative">
+              <canvas
+                ref={canvasRef}
+                width={432}
+                height={540}
+                className="h-[540px] w-[216px] rounded-xl shadow-lg"
+                style={{ imageRendering: 'auto' }}
+              />
+              <img ref={imgRef} src={previewUrl} alt="" className="hidden" />
+            </div>
+          </div>
+        ) : null}
+
+        {!previewLoading && !previewError && (
+          <p className="text-center text-xs text-slate-400">
+            Ukuran gambar: 1080 × 1350 px (rasio 4:5, HD)
+          </p>
+        )}
+      </div>
+
+      <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:bg-slate-800 dark:text-slate-200">
+        <Button variant="ghost" onClick={onClose}>Tutup</Button>
+        <Button
+          icon={<ImageDown className="h-4 w-4" />}
+          onClick={onDownload}
+          disabled={!previewUrl || previewLoading}
+        >
+          Unduh Gambar
+        </Button>
+      </div>
+    </Modal>
   )
 }

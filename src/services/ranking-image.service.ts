@@ -84,6 +84,30 @@ export async function downloadTop3Image(input: {
   rows: Top3Row[]
   fileName?: string
 }): Promise<void> {
+  const dataUrl = await generateTop3ImageDataURL(input)
+  const slug = (input.fileName || input.examTitle).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'peringkat'
+  const a = document.createElement('a')
+  a.href = dataUrl
+  a.download = `top3-${slug}.png`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+}
+
+export async function generateTop3ImageDataURL(input: {
+  examTitle: string
+  classLabel: string
+  rows: Top3Row[]
+}): Promise<string> {
+  const canvas = await buildTop3Canvas(input)
+  return canvas.toDataURL('image/png')
+}
+
+async function buildTop3Canvas(input: {
+  examTitle: string
+  classLabel: string
+  rows: Top3Row[]
+}): Promise<HTMLCanvasElement> {
   const settings = await fetchSchoolSettings().catch(() => null)
   const primary = settings?.primary_color && /^#[0-9a-fA-F]{6}$/.test(settings.primary_color) ? settings.primary_color : '#0D868F'
   const secondary = settings?.secondary_color && /^#[0-9a-fA-F]{6}$/.test(settings.secondary_color) ? settings.secondary_color : '#2DD4BF'
@@ -227,14 +251,7 @@ export async function downloadTop3Image(input: {
   const today = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' }).format(new Date())
   ctx.fillText(`${appName} · ${today}`, W / 2, H - 64)
 
-  const url = canvas.toDataURL('image/png')
-  const a = document.createElement('a')
-  const slug = (input.fileName || input.examTitle).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'peringkat'
-  a.href = url
-  a.download = `top3-${slug}.png`
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
+  return canvas
 }
 
 function splitName(ctx: CanvasRenderingContext2D, name: string, maxWidth: number, maxLines: number): string[] {

@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
-import { GraduationCap, Plus, Pencil, Trash2, KeyRound } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { GraduationCap, Plus, Pencil, Trash2, KeyRound, Printer, Download } from 'lucide-react'
 import { useAsync, useDebounce, useDocumentTitle } from '@/hooks/useAsync'
 import { useToast } from '@/hooks/useToast'
 import { useConfirm } from '@/hooks/useConfirm'
@@ -25,6 +26,7 @@ import { friendlyError } from '@/lib/errors'
 import { randomCode } from '@/lib/utils'
 import { formatDate } from '@/lib/datetime'
 import type { Student } from '@/types/models'
+import { downloadIdCard, generateIdCardPreviewDataURL, generateIdCardPrintDataURLs } from '@/services/id-card.service'
 
 export default function StudentsPage() {
   const [search, setSearch] = useState('')
@@ -39,6 +41,15 @@ export default function StudentsPage() {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const [resetTarget, setResetTarget] = useState<{ profileId: string; name: string } | null>(null)
+  const [previewStudent, setPreviewStudent] = useState<Student | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const [previewError, setPreviewError] = useState<string | null>(null)
+  const [downloadBusy, setDownloadBusy] = useState(false)
+  const [printingAll, setPrintingAll] = useState(false)
+  const [printCards, setPrintCards] = useState<string[] | null>(null)
+  const printRequested = useRef(false)
+  const printSheetRef = useRef<HTMLDivElement | null>(null)
 
   const query = useAsync(
     () =>
@@ -50,9 +61,77 @@ export default function StudentsPage() {
     [debounced, classFilter, departmentFilter, page],
   )
 
+  useEffect(() => {
+    const done = () => {
+      document.body.classList.remove('printing-idcards')
+      setPrintCards(null)
+    }
+    window.addEventListener('afterprint', done)
+    return () => window.removeEventListener('afterprint', done)
+  }, [])
+
+  useEffect(() => {
+    if (!printRequested.current || !printCards) return
+    printRequested.current = false
+    let cancelled = false
+    const wait = async () => {
+      const nodes = printSheetRef.current?.querySelectorAll('img') ?? []
+      await Promise.all(Array.from(nodes).map((im) => im.decode().catch(() => undefined)))
+      if (cancelled) return
+      document.body.classList.add('printing-idcards')
+      window.print()
+      setPrintingAll(false)
+    }
+    const t = window.setTimeout(() => void wait(), 300)
+    return () => { cancelled = true; window.clearTimeout(t) }
+  }, [printCards])
+
   if (query.error) return <ErrorState message={query.error} onRetry={query.reload} />
 
   const [studentsResult, classes, departments] = query.data ?? [{ rows: [], total: 0 }, [], []]
+
+  const openPreview = async (s: Student) => {
+    setPreviewStudent(s)
+    setPreviewUrl(null)
+    setPreviewError(null)
+    setPreviewLoading(true)
+    try {
+      const url = await generateIdCardPreviewDataURL(s)
+      setPreviewUrl(url)
+    } catch (err) {
+      setPreviewError(friendlyError(err))
+    } finally {
+      setPreviewLoading(false)
+    }
+  }
+
+  const doDownload = async () => {
+    if (!previewStudent || downloadBusy) return
+    setDownloadBusy(true)
+    try {
+      await downloadIdCard(previewStudent)
+      toast.success('ID Card berhasil diunduh.')
+      setPreviewStudent(null)
+    } catch (err) {
+      toast.error(friendlyError(err))
+    } finally {
+      setDownloadBusy(false)
+    }
+  }
+
+  const doPrintAll = async () => {
+    if (printingAll) return
+    setPrintingAll(true)
+    try {
+      const all = await listStudents({ page: 1, pageSize: 500 })
+      const urls = await generateIdCardPrintDataURLs(all.rows)
+      printRequested.current = true
+      setPrintCards(urls)
+    } catch (err) {
+      toast.error(friendlyError(err))
+      setPrintingAll(false)
+    }
+  }
 
   return (
     <>
@@ -60,7 +139,19 @@ export default function StudentsPage() {
         title="Data Siswa"
         subtitle={`${studentsResult.total} siswa terdaftar`}
         icon={<GraduationCap className="h-5 w-5" />}
-        actions={<Button icon={<Plus className="h-4 w-4" />} onClick={() => setCreateOpen(true)}>Tambah Siswa</Button>}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              loading={printingAll}
+              icon={<Printer className="h-4 w-4" />}
+              onClick={() => void doPrintAll()}
+            >
+              {printingAll ? 'Menyiapkan...' : 'Cetak Semua ID Card'}
+            </Button>
+            <Button icon={<Plus className="h-4 w-4" />} onClick={() => setCreateOpen(true)}>Tambah Siswa</Button>
+          </div>
+        }
       />
 
       <Card>
@@ -185,6 +276,13 @@ export default function StudentsPage() {
                       <button onClick={() => setEditingStudent(s)} title="Ubah data" className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-500/10 dark:hover:text-sky-400">
                         <Pencil className="h-4 w-4" />
                       </button>
+                      <button
+                        title="Pratinjau & unduh kartu identitas"
+                        onClick={() => void openPreview(s)}
+                        className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400"
+                      >
+                        <Download className="h-4 w-4" />
+                      </button>
                       <button onClick={() => setResetTarget({ profileId: s.profile_id!, name: s.profiles?.full_name ?? '' })} title="Reset password" className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-500/10 dark:hover:text-violet-300">
                         <KeyRound className="h-4 w-4" />
                       </button>
@@ -213,7 +311,7 @@ export default function StudentsPage() {
                       </button>
                     </div>
                   ),
-                  headerClassName: 'text-right w-36',
+                  headerClassName: 'text-right w-44',
                 },
               ]}
             />
@@ -245,8 +343,37 @@ export default function StudentsPage() {
       />
 
       <ResetPasswordModal target={resetTarget} onClose={() => setResetTarget(null)} />
+
+      <IdCardPreviewModal
+        student={previewStudent}
+        previewUrl={previewUrl}
+        previewLoading={previewLoading}
+        previewError={previewError}
+        downloading={downloadBusy}
+        onClose={() => setPreviewStudent(null)}
+        onDownload={() => void doDownload()}
+      />
+
+      {printCards && printCards.length > 0 && createPortal(
+        <div ref={printSheetRef} className="idcard-print-sheet" aria-hidden>
+          {chunkSheets(printCards).map((sheet, p) => (
+            <div key={p} className="idcard-print-page">
+              {sheet.map((url, i) => (
+                <img key={i} src={url} alt="" className="idcard-print-card" />
+              ))}
+            </div>
+          ))}
+        </div>,
+        document.body,
+      )}
     </>
   )
+}
+
+function chunkSheets<T>(items: T[]): T[][] {
+  const out: T[][] = []
+  for (let i = 0; i < items.length; i += 9) out.push(items.slice(i, i + 9))
+  return out
 }
 
 interface FormState {
@@ -528,6 +655,81 @@ function ResetPasswordModal({ target, onClose }: { target: { profileId: string; 
       <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:bg-slate-800 dark:text-slate-200">
         <Button variant="ghost" onClick={onClose}>Batal</Button>
         <Button onClick={submit} loading={saving}>Reset Password</Button>
+      </div>
+    </Modal>
+  )
+}
+
+function IdCardPreviewModal({
+  student,
+  previewUrl,
+  previewLoading,
+  previewError,
+  downloading,
+  onClose,
+  onDownload,
+}: {
+  student: Student | null
+  previewUrl: string | null
+  previewLoading: boolean
+  previewError: string | null
+  downloading: boolean
+  onClose: () => void
+  onDownload: () => void
+}) {
+  if (!student) return null
+
+  return (
+    <Modal open={student !== null} onClose={onClose} size="md" ariaLabel="Pratinjau Kartu Identitas">
+      <div className="space-y-5 px-6 py-5">
+        <div className="text-center">
+          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+            Pratinjau Kartu Identitas
+          </p>
+          <p className="mt-1 text-xs text-slate-400">{student.profiles?.full_name ?? '-'} · {student.classes?.name ?? '-'}</p>
+        </div>
+
+        {previewLoading ? (
+          <div className="flex items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 py-16 dark:border-slate-700 dark:bg-slate-800/50">
+            <div className="flex flex-col items-center gap-3">
+              <svg className="h-8 w-8 animate-spin text-primary-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <p className="text-xs text-slate-400">Menyiapkan pratinjau...</p>
+            </div>
+          </div>
+        ) : previewError ? (
+          <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-5 text-center dark:border-rose-800/40 dark:bg-rose-500/10">
+            <p className="text-sm font-semibold text-rose-700 dark:text-rose-300">Gagal memuat pratinjau</p>
+            <p className="mt-1 text-xs text-rose-500">{previewError}</p>
+          </div>
+        ) : previewUrl ? (
+          <div className="flex justify-center">
+            <img
+              src={previewUrl}
+              alt="Pratinjau kartu identitas"
+              className="h-[440px] w-[250px] rounded-xl object-contain shadow-lg"
+            />
+          </div>
+        ) : null}
+
+        {!previewLoading && !previewError && (
+          <p className="text-center text-xs text-slate-400">
+            Ukuran kartu: 50 × 88 mm · Format PNG resolusi tinggi
+          </p>
+        )}
+      </div>
+
+      <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:bg-slate-800 dark:text-slate-200">
+        <Button variant="ghost" onClick={onClose}>Tutup</Button>
+        <Button
+          icon={<Download className="h-4 w-4" />}
+          onClick={onDownload}
+          loading={downloading}
+          disabled={!previewUrl || previewLoading}
+        >
+          Unduh Kartu
+        </Button>
       </div>
     </Modal>
   )

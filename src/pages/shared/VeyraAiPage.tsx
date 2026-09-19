@@ -34,15 +34,21 @@ export default function VeyraAiPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shrink-0">
           <Bot className="w-6 h-6 text-white" />
         </div>
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Veyra AI</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">Asisten cerdas untuk guru SMK AL-FATA</p>
         </div>
-        <Badge tone="purple" className="text-xs">V2.0</Badge>
       </div>
+      <button
+        onClick={() => { setActiveTab("setup"); setResult(null) }}
+        className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+      >
+        <Settings className="w-4 h-4" />
+        Setup AI
+      </button>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {TABS.map((tab) => {

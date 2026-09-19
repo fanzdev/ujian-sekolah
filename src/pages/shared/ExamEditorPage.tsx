@@ -585,6 +585,28 @@ function QuestionsStep({
     })
   }
 
+  const bulkAddQuestions = async () => {
+    if (!examId) return
+    try {
+      const banks = await listBanks({ pageSize: 100 })
+      const picked: typeof items = []
+      for (const b of banks.rows) {
+        const qs = await listQuestions({ bankId: b.id, pageSize: 500 })
+        for (const q of qs.rows) {
+          picked.push({
+            question_id: q.id,
+            position: picked.length,
+            points: null,
+            question: { id: q.id, text: q.text, points: Number(q.points), type: q.type, difficulty: q.difficulty },
+          })
+        }
+      }
+      addQuestions(picked)
+    } catch {
+      void 0
+    }
+  }
+
   const save = async (): Promise<boolean> => {
     if (!examId) return false
     setSaving(true)
@@ -657,7 +679,7 @@ function QuestionsStep({
               <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 dark:border-sky-800/50 dark:bg-sky-500/10">
                 <p className="text-sm font-semibold text-sky-800 dark:text-sky-200">Bank memiliki {availableCountQuery.data} soal, tapi ujian ini masih 0 soal.</p>
                 <p className="mt-1 text-xs text-sky-700 dark:text-sky-300">Klik tombol di bawah untuk isi otomatis semua soal dari bank, atau pilih manual.</p>
-                <Button size="sm" className="mt-3" icon={<Plus className="h-4 w-4" />} onClick={() => setQuestionPickerOpen(true)}>Pilih Soal {availableCountQuery.data} dari Bank</Button>
+                <Button size="sm" className="mt-3" icon={<Plus className="h-4 w-4" />} onClick={bulkAddQuestions}>Pilih Soal {availableCountQuery.data} dari Bank</Button>
               </div>
             )}
             {items.length === 0 && (availableCountQuery.data ?? 0) === 0 && (
@@ -838,8 +860,8 @@ function QuestionsStep({
           onClose={() => setQuestionPickerOpen(false)}
           onAdd={(q) => {
             addQuestions([q])
-            setQuestionPickerOpen(false)
           }}
+          onBulkAdd={bulkAddQuestions}
         />
       )}
       {previewOpen && examId && (
@@ -1296,11 +1318,13 @@ function QuestionPicker({
   existingIds,
   onClose,
   onAdd,
+  onBulkAdd,
 }: {
   examId: string
   existingIds: string[]
   onClose: () => void
   onAdd: (q: { question_id: string; position: number; points: number | null; question: { id: string; text: string; points: number; type: string; difficulty: string } }) => void
+  onBulkAdd?: () => void
 }) {
   const toast = useToast()
   const [banks, setBanks] = useState<Awaited<ReturnType<typeof listBanks>>['rows']>([])
@@ -1399,7 +1423,12 @@ function QuestionPicker({
       </div>
       <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/60">
         <span className="text-xs text-slate-500">{existingIds.length} soal sudah dipilih</span>
-        <Button variant="ghost" onClick={onClose}>Tutup</Button>
+        <div className="flex gap-2">
+          {onBulkAdd && (
+            <Button variant="outline" size="sm" onClick={onBulkAdd}>Tambah Semua</Button>
+          )}
+          <Button variant="ghost" onClick={onClose}>Tutup</Button>
+        </div>
       </div>
     </Modal>
   )

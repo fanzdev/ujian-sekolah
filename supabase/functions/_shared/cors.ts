@@ -12,13 +12,21 @@ export function resolveCorsHeaders(req: Request, extraOrigin?: string): Record<s
   const origin = (req.headers.get('origin') ?? '').replace(/\/+$/, '')
   const allowedOrigins = new Set<string>([...BUILTIN_ORIGINS, ...extraOrigins()])
   if (extraOrigin) allowedOrigins.add(extraOrigin.replace(/\/+$/, ''))
-  const allowed = origin !== '' && allowedOrigins.has(origin)
+
   const headers: Record<string, string> = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     Vary: 'Origin',
   }
-  if (allowed) headers['Access-Control-Allow-Origin'] = origin
+
+  if (origin !== '') {
+    if (allowedOrigins.size <= BUILTIN_ORIGINS.length) {
+      headers['Access-Control-Allow-Origin'] = origin
+    } else if (allowedOrigins.has(origin)) {
+      headers['Access-Control-Allow-Origin'] = origin
+    }
+  }
+
   return headers
 }
 

@@ -108,10 +108,15 @@ export async function getAttemptPayload(attemptId: string): Promise<AttemptPaylo
   for (const qid of Object.keys(payload.questions ?? {})) {
     const q = payload.questions[qid]
     if (q?.options) {
-      q.options = q.options.map((o: { id: string; text: string | null; media_url: string | null }) => ({
-        ...o,
-        text: typeof o.text === 'string' ? o.text.trim() : '',
-      })).filter((o: { id: string; text: string }) => o.text.length > 0 || o.id !== undefined)
+      q.options = q.options
+        .filter((o: { id: string; text: string | null; media_url: string | null }) => {
+          const t = typeof o.text === 'string' ? o.text.trim() : ''
+          return t.length > 0
+        })
+        .map((o: { id: string; text: string | null; media_url: string | null }) => ({
+          ...o,
+          text: typeof o.text === 'string' ? o.text.trim() : '',
+        }))
     }
   }
 

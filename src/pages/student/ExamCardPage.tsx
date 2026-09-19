@@ -1,21 +1,28 @@
 import { useAsync, useDocumentTitle } from '@/hooks/useAsync'
+import { useToast } from '@/hooks/useToast'
 import { PageHeader, StatCard } from '@/components/ui/PageHeader'
 import { Card, CardBody, CardHeader } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/ui/Feedback'
 import { getStudentByProfile } from '@/services/academics.service'
 import { getMyAttempts } from '@/services/attempts.service'
 import { listAvailableExams } from '@/services/attempts.service'
 import { fetchSchoolSettings } from '@/services/settings.service'
+import { generateIdCardPreviewDataURL } from '@/services/id-card.service'
 import { useAuth } from '@/hooks/useAuth'
 import { formatDateTime } from '@/lib/datetime'
 import { formatNumber } from '@/lib/utils'
+import { friendlyError } from '@/lib/errors'
 import { resolveLogoUrl } from '@/lib/logo'
-import { IdCard } from 'lucide-react'
+import { IdCard, Printer, Download } from 'lucide-react'
+import { useState } from 'react'
 
 export default function ExamCardPage() {
   useDocumentTitle('Kartu Ujian')
   const { profile } = useAuth()
+  const toast = useToast()
+  const [downloading, setDownloading] = useState(false)
   const query = useAsync(async () => {
     const [studentInfo, attempts, exams, school] = await Promise.all([
       profile ? getStudentByProfile(profile.id) : Promise.resolve(null),
@@ -30,8 +37,28 @@ export default function ExamCardPage() {
   if (query.loading) return <TableSkeleton rows={4} cols={3} />
 
   const d = query.data
+  const school = d?.school ?? null
   const activeExams = (d?.exams ?? []).filter((e) => ['can_start', 'resume', 'upcoming'].includes(e.status_for_me))
+  if (!d?.studentInfo) return <EmptyState title="Data siswa tidak ditemukan" description="Hubungi admin untuk memperbaiki data Anda." />
 
+  const doDownload = async () => {
+    if (!d.studentInfo) return
+    setDownloading(true)
+    try {
+      const dataUrl = await generateIdCardPreviewDataURL(d.studentInfo)
+      const slug = (d.studentInfo.profiles?.full_name || 'kartu').toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'kartu'
+      const a = document.createElement('a')
+      a.href = dataUrl
+      a.download = `kartu-${slug}.png`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+    } catch (err) {
+      toast.error(friendlyError(err))
+    } finally {
+      setDownloading(false)
+    }
+  }
   return (
     <>
       <PageHeader
@@ -47,10 +74,10 @@ export default function ExamCardPage() {
           <div id="print-area">
             <Card className="overflow-hidden animate-fade-in">
               <div className="flex items-center gap-4 bg-gradient-to-r from-primary-700 to-primary-900 px-6 py-5 text-white">
-                <img src={resolveLogoUrl(d.school.logo_url)} alt="" className="h-12 w-12 rounded-xl bg-white/10 object-contain p-1" width={48} height={48} onError={(e)=>{ const t=e.currentTarget; const fb=resolveLogoUrl(null); if(t.src === fb || t.src.endsWith(fb)) return; t.onerror=null; t.src=fb }} />
+                <img src={resolveLogoUrl(school?.logo_url)} alt="" className="h-12 w-12 rounded-xl bg-white/10 object-contain p-1" width={48} height={48} onError={(e)=>{ const t=e.currentTarget; const fb=resolveLogoUrl(null); if(t.src === fb || t.src.endsWith(fb)) return; t.onerror=null; t.src=fb }} />
                 <div>
-                  <p className="text-sm font-extrabold uppercase tracking-wide">{d.school.app_name}</p>
-                  <p className="text-xs text-white/70">{d.school.school_name}{d.school.academic_year ? ` · T.A. ${d.school.academic_year}` : ''}</p>
+                  <p className="text-sm font-extrabold uppercase tracking-wide">{school?.app_name ?? 'Veyra CBT'}</p>
+                  <p className="text-xs text-white/70">{school?.school_name ?? 'SMK AL-FATA'}{school?.academic_year ? ` · T.A. ${school.academic_year}` : ''}</p>
                 </div>
               </div>
 
@@ -87,11 +114,20 @@ export default function ExamCardPage() {
                   </p>
                   <div className="text-center">
                     <p className="text-[10px] text-slate-400">Kepala Sekolah</p>
-                    <p className="mt-8 border-t border-slate-300 px-6 pt-1 text-xs font-semibold text-slate-700">{d.school.headmaster || '....................'}</p>
+                    <p className="mt-8 border-t border-slate-300 px-6 pt-1 text-xs font-semibold text-slate-700">{school?.headmaster || '....................'}</p>
                   </div>
                 </div>
               </CardBody>
             </Card>
+          </div>
+
+          <div className="flex justify-end gap-2 print:hidden">
+            <Button size="sm" variant="outline" onClick={doDownload} disabled={downloading} icon={<Download className="h-4 w-4" />}>
+              {downloading ? 'Sedang mengunduh...' : 'Unduh Gambar'}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => window.print()} icon={<Printer className="h-4 w-4" />}>
+              Cetak Kartu
+            </Button>
           </div>
 
           <div className="mt-6 grid grid-cols-3 gap-4 print:hidden">

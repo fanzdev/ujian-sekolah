@@ -184,6 +184,45 @@
   }
 }
 
+.idcard-print-sheet {
+  display: none;
+}
+
+@page idcard-sheet {
+  size: A4;
+  margin: 9mm 10mm;
+}
+
+@media print {
+  body.printing-idcards #root {
+    display: none !important;
+  }
+  body.printing-idcards .idcard-print-sheet {
+    display: block !important;
+  }
+  body.printing-idcards .idcard-print-sheet,
+  body.printing-idcards .idcard-print-sheet * {
+    visibility: visible !important;
+  }
+  body.printing-idcards .idcard-print-page {
+    page: idcard-sheet;
+    display: grid;
+    grid-template-columns: repeat(3, 50mm);
+    gap: 6mm 5mm;
+    justify-content: center;
+    page-break-after: always;
+  }
+  body.printing-idcards .idcard-print-page:last-child {
+    page-break-after: auto;
+  }
+  body.printing-idcards .idcard-print-card {
+    width: 50mm;
+    height: 88mm;
+    outline: 0.3mm dashed #94a3b8;
+    outline-offset: 1.2mm;
+  }
+}
+
 /* ================================================================
    DARK MODE — global overrides
    Strategi: remap utility Tailwind yang umum dipakai komponen agar

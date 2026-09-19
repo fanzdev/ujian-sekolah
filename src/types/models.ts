@@ -397,6 +397,7 @@ export interface AttemptPayload {
     violation_limit: number
     max_attempts: number
     allow_outside_schedule: boolean
+    status: ExamStatus
     starts_at: string
     ends_at: string
   }
