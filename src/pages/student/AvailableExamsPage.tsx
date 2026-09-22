@@ -149,11 +149,11 @@ function ExamGroup({
                     </Button>
                   </Link>
                 ) : (
-                  <Link to={`/student/exams/${exam.id}`} className="block">
-                    <Button className="w-full" variant="outline" disabled={exam.status_for_me === 'no_attempts'}>
-                      {exam.status_for_me === 'upcoming' ? 'Lihat Detail' : exam.status_for_me === 'closed' ? 'Sudah Berakhir' : 'Kesempatan Habis'}
+                  <div className="block">
+                    <Button className="w-full" variant="outline" disabled={exam.status_for_me === 'upcoming' || exam.status_for_me === 'no_attempts'}>
+                      {exam.status_for_me === 'upcoming' ? 'Ujian Belum di Mulai' : exam.status_for_me === 'closed' ? 'Sudah Berakhir' : 'Kesempatan Habis'}
                     </Button>
-                  </Link>
+                  </div>
                 )}
               </div>
             </div>

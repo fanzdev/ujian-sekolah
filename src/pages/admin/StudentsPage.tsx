@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { GraduationCap, Plus, Pencil, Trash2, KeyRound, Printer, Download } from 'lucide-react'
+import { GraduationCap, Plus, Pencil, Trash2, KeyRound, Printer, Download, School, CalendarDays, MapPin, UserCircle, BookOpen } from 'lucide-react'
 import { useAsync, useDebounce, useDocumentTitle } from '@/hooks/useAsync'
 import { useToast } from '@/hooks/useToast'
 import { useConfirm } from '@/hooks/useConfirm'
@@ -26,7 +26,10 @@ import { friendlyError } from '@/lib/errors'
 import { randomCode } from '@/lib/utils'
 import { formatDate } from '@/lib/datetime'
 import type { Student } from '@/types/models'
+import type { SchoolSettings } from '@/types/models'
 import { downloadIdCard, generateIdCardPreviewDataURL, generateIdCardPrintDataURLs } from '@/services/id-card.service'
+import { fetchSchoolSettings } from '@/services/settings.service'
+import { resolveLogoUrl, sanitizeLogoUrl } from '@/lib/logo'
 
 export default function StudentsPage() {
   const [search, setSearch] = useState('')
@@ -661,76 +664,202 @@ function ResetPasswordModal({ target, onClose }: { target: { profileId: string; 
 }
 
 function IdCardPreviewModal({
-  student,
-  previewUrl,
-  previewLoading,
-  previewError,
-  downloading,
-  onClose,
-  onDownload,
-}: {
-  student: Student | null
-  previewUrl: string | null
-  previewLoading: boolean
-  previewError: string | null
-  downloading: boolean
-  onClose: () => void
-  onDownload: () => void
-}) {
-  if (!student) return null
+   student,
+   previewUrl,
+   previewLoading,
+   previewError,
+   downloading,
+   onClose,
+   onDownload,
+ }: {
+   student: Student | null
+   previewUrl: string | null
+   previewLoading: boolean
+   previewError: string | null
+   downloading: boolean
+   onClose: () => void
+   onDownload: () => void
+ }) {
+  const [settings, setSettings] = useState<SchoolSettings | null>(null)
 
-  return (
-    <Modal open={student !== null} onClose={onClose} size="md" ariaLabel="Pratinjau Kartu Identitas">
-      <div className="space-y-5 px-6 py-5">
-        <div className="text-center">
-          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-            Pratinjau Kartu Identitas
-          </p>
-          <p className="mt-1 text-xs text-slate-400">{student.profiles?.full_name ?? '-'} · {student.classes?.name ?? '-'}</p>
-        </div>
+  useEffect(() => {
+    if (student) {
+      fetchSchoolSettings().then(setSettings).catch(() => void 0)
+    }
+  }, [student])
 
-        {previewLoading ? (
-          <div className="flex items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 py-16 dark:border-slate-700 dark:bg-slate-800/50">
-            <div className="flex flex-col items-center gap-3">
-              <svg className="h-8 w-8 animate-spin text-primary-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              <p className="text-xs text-slate-400">Menyiapkan pratinjau...</p>
-            </div>
-          </div>
-        ) : previewError ? (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-5 text-center dark:border-rose-800/40 dark:bg-rose-500/10">
-            <p className="text-sm font-semibold text-rose-700 dark:text-rose-300">Gagal memuat pratinjau</p>
-            <p className="mt-1 text-xs text-rose-500">{previewError}</p>
-          </div>
-        ) : previewUrl ? (
-          <div className="flex justify-center">
-            <img
-              src={previewUrl}
-              alt="Pratinjau kartu identitas"
-              className="h-[440px] w-[250px] rounded-xl object-contain shadow-lg"
-            />
-          </div>
-        ) : null}
+   if (!student) return null
 
-        {!previewLoading && !previewError && (
-          <p className="text-center text-xs text-slate-400">
-            Ukuran kartu: 50 × 88 mm · Format PNG resolusi tinggi
-          </p>
-        )}
-      </div>
+   const s = settings
+   const primary = s?.primary_color && /^#[0-9a-fA-F]{6}$/.test(s.primary_color) ? s.primary_color : '#0D868F'
+   const secondary = s?.secondary_color || '#2DD4BF'
+   const schoolLogo = s && sanitizeLogoUrl(s.logo_url) ? resolveLogoUrl(s.logo_url) : null
+   const fullName = student.profiles?.full_name ?? '-'
+   const nis = student.nis ?? '-'
+   const nisn = student.nisn ?? '-'
+   const kelas = student.classes?.name ?? '-'
+   const jurusan = student.classes?.departments?.name ?? '-'
+   const kota = s?.city ?? ''
+   const tapel = s?.academic_year ? `T.A. ${s.academic_year}` : ''
 
-      <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:bg-slate-800 dark:text-slate-200">
-        <Button variant="ghost" onClick={onClose}>Tutup</Button>
-        <Button
-          icon={<Download className="h-4 w-4" />}
-          onClick={onDownload}
-          loading={downloading}
-          disabled={!previewUrl || previewLoading}
-        >
-          Unduh Kartu
-        </Button>
-      </div>
-    </Modal>
-  )
-}
+   return (
+     <Modal open={student !== null} onClose={onClose} size="lg" ariaLabel="Pratinjau Kartu Identitas">
+       <div className="px-6 pt-5 pb-2">
+         <div
+           className="relative overflow-hidden rounded-2xl px-5 py-4 text-white"
+           style={{ background: `linear-gradient(135deg, ${primary}, ${secondary})` }}
+         >
+           <div className="pointer-events-none absolute inset-0" aria-hidden>
+             <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10 blur-2xl animate-blob" />
+             <div className="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-white/8 blur-xl animate-blob" style={{ animationDelay: '-4s' }} />
+           </div>
+           <div className="relative flex items-center gap-3">
+             {schoolLogo && (
+               <img src={schoolLogo} alt="Logo" className="h-9 w-9 rounded-lg bg-white object-contain p-0.5 shadow-sm" width={36} height={36} />
+             )}
+             <div>
+               <p className="text-sm font-black tracking-tight">{s?.school_name ?? 'SMK AL-FATA'}</p>
+               <p className="text-[11px] font-semibold uppercase tracking-[0.12em] opacity-75">{s?.app_name ?? 'CBT'}</p>
+             </div>
+             <div className="ml-auto text-right">
+               <p className="text-[11px] font-bold opacity-80">{kota}</p>
+               {tapel && <p className="text-[11px] opacity-65">{tapel}</p>}
+             </div>
+           </div>
+         </div>
+       </div>
+
+       <div className="flex gap-5 px-6 py-5">
+         <div className="flex-1">
+           {previewLoading ? (
+             <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed py-16 text-center" style={{ borderColor: primary + '33', background: primary + '08' }}>
+               <div className="flex h-12 w-12 items-center justify-center rounded-full" style={{ background: primary + '18' }}>
+                 <svg className="h-6 w-6 animate-spin" style={{ color: primary }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                 </svg>
+               </div>
+               <p className="text-xs font-semibold" style={{ color: primary }}>Menyiapkan kartu…</p>
+             </div>
+           ) : previewError ? (
+             <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-8 text-center dark:border-rose-800/40 dark:bg-rose-500/10">
+               <p className="text-sm font-semibold text-rose-700 dark:text-rose-300">Gagal membuat kartu</p>
+               <p className="mt-1 text-xs text-rose-500">{previewError}</p>
+             </div>
+           ) : previewUrl ? (
+             <div className="relative mx-auto w-fit">
+               <div
+                 className="absolute -inset-3 -z-10 rounded-3xl blur-xl opacity-40"
+                 style={{ background: `linear-gradient(135deg, ${primary}, ${secondary})` }}
+                 aria-hidden
+               />
+               <img
+                 src={previewUrl}
+                 alt="Pratinjau kartu identitas"
+                 className="mx-auto block h-[420px] w-[240px] rounded-2xl object-contain shadow-2xl"
+               />
+             </div>
+           ) : null}
+           <p className="mt-3 text-center text-[11px] text-slate-400">50 × 88 mm · PNG resolusi tinggi</p>
+         </div>
+
+         <div className="flex w-52 shrink-0 flex-col gap-3">
+           <div
+             className="rounded-2xl border p-4 text-white"
+             style={{ background: `linear-gradient(160deg, ${primary}, ${primary}dd)`, borderColor: 'rgba(255,255,255,0.15)' }}
+           >
+             <div className="flex items-center gap-2 mb-3">
+               <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-white/20">
+                 <UserCircle className="h-4 w-4 text-white" />
+               </div>
+               <p className="text-[10px] font-black uppercase tracking-[0.14em] opacity-75">Data Siswa</p>
+             </div>
+             <div className="space-y-2">
+               <div>
+                 <p className="text-[10px] font-semibold uppercase tracking-wider opacity-50">Nama Lengkap</p>
+                 <p className="mt-0.5 text-xs font-extrabold leading-snug">{fullName}</p>
+               </div>
+               <div className="grid grid-cols-2 gap-2">
+                 <div>
+                   <p className="text-[10px] font-semibold uppercase tracking-wider opacity-50">NIS</p>
+                   <p className="mt-0.5 font-mono text-xs font-bold">{nis}</p>
+                 </div>
+                 <div>
+                   <p className="text-[10px] font-semibold uppercase tracking-wider opacity-50">NISN</p>
+                   <p className="mt-0.5 font-mono text-xs font-bold">{nisn}</p>
+                 </div>
+               </div>
+             </div>
+           </div>
+
+           <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3.5 dark:border-white/10 dark:bg-white/[0.03]">
+             <div className="flex items-center gap-2 mb-2.5">
+               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl" style={{ background: primary + '18' }}>
+                 <BookOpen className="h-3.5 w-3.5" style={{ color: primary }} />
+               </div>
+               <p className="text-[10px] font-black uppercase tracking-[0.14em]" style={{ color: primary }}>Akademik</p>
+             </div>
+             <div className="space-y-1.5">
+               <div className="flex items-center gap-2">
+                 <School className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                 <div>
+                   <p className="text-[10px] text-slate-400">Kelas</p>
+                   <p className="text-xs font-bold">{kelas}</p>
+                 </div>
+               </div>
+               <div className="flex items-center gap-2">
+                 <BookOpen className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                 <div>
+                   <p className="text-[10px] text-slate-400">Jurusan</p>
+                   <p className="text-xs font-bold">{jurusan}</p>
+                 </div>
+               </div>
+               {kota && (
+                 <div className="flex items-center gap-2">
+                   <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                   <div>
+                     <p className="text-[10px] text-slate-400">Kota</p>
+                     <p className="text-xs font-bold">{kota}</p>
+                   </div>
+                 </div>
+               )}
+             </div>
+           </div>
+
+           <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3.5 dark:border-white/10 dark:bg-white/[0.03]">
+             <div className="flex items-center gap-2 mb-2">
+               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl" style={{ background: primary + '18' }}>
+                 <CalendarDays className="h-3.5 w-3.5" style={{ color: primary }} />
+               </div>
+               <p className="text-[10px] font-black uppercase tracking-[0.14em]" style={{ color: primary }}>Identitas Sekolah</p>
+             </div>
+             <div className="space-y-1.5">
+               <p className="text-xs font-extrabold leading-snug">{s?.school_name ?? 'SMK AL-FATA'}</p>
+               <p className="text-[11px] text-slate-400">{s?.app_name ?? 'CBT'} · {kota}</p>
+               {tapel && <p className="text-[11px] text-slate-400">{tapel}</p>}
+               {s?.headmaster && (
+                 <p className="text-[11px] text-slate-500 dark:text-white/50">Kepsek: <span className="font-semibold text-slate-700 dark:text-white/70">{s.headmaster}</span></p>
+               )}
+             </div>
+           </div>
+         </div>
+       </div>
+
+       <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:border-white/5 dark:bg-white/[0.02]">
+         <p className="text-[11px] text-slate-400">Format cetak: PNG 50×88mm · High-DPI</p>
+         <div className="flex gap-2">
+           <Button variant="ghost" onClick={onClose}>Tutup</Button>
+           <Button
+             icon={<Download className="h-4 w-4" />}
+             onClick={onDownload}
+             loading={downloading}
+             disabled={!previewUrl || previewLoading}
+             style={{ background: `linear-gradient(135deg, ${primary}, ${secondary})` }}
+             className="border-0 text-white hover:opacity-95"
+           >
+             Unduh Kartu
+           </Button>
+         </div>
+       </div>
+     </Modal>
+   )
+ }

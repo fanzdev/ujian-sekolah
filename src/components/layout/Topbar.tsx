@@ -405,11 +405,14 @@ export function BrandMark({ appName, schoolName }: { appName?: string; schoolNam
     )
   }, [])
   return (
-    <div className="flex items-center gap-3 px-2">
-      <img src={logo ? resolveLogoUrl(logo) : fallbackLogo} alt={`Logo ${appName ?? 'Veyra CBT'}`} className="h-9 w-9 shrink-0 rounded-lg bg-white object-contain p-1 shadow-sm ring-1 ring-white/20" width={36} height={36} onError={(e)=>{ const t=e.currentTarget; const fb=fallbackLogo; try { if(new URL(t.src, location.href).pathname === new URL(fb, location.href).pathname) return; } catch { if(t.src === fb) return; } t.onerror=null; t.src=fb }} />
+    <div className="group flex items-center gap-3 px-2">
+      <div className="relative">
+        <span className="absolute inset-0 rounded-xl bg-white/30 opacity-60 blur-md transition-opacity group-hover:opacity-90" aria-hidden />
+        <img src={logo ? resolveLogoUrl(logo) : fallbackLogo} alt={`Logo ${appName ?? 'Veyra CBT'}`} className="relative h-9 w-9 shrink-0 rounded-xl bg-white object-contain p-1 shadow-lg ring-1 ring-white/30 transition-transform duration-300 group-hover:scale-105" width={36} height={36} onError={(e)=>{ const t=e.currentTarget; const fb=fallbackLogo; try { if(new URL(t.src, location.href).pathname === new URL(fb, location.href).pathname) return; } catch { if(t.src === fb) return; } t.onerror=null; t.src=fb }} />
+      </div>
       <div className="min-w-0 leading-tight">
-        <p className="truncate text-sm font-bold text-white">{schoolName ?? 'SMK AL-FATA'}</p>
-        <p className="truncate text-[11px] font-medium text-white/60">{appName ?? 'Veyra CBT'}</p>
+        <p className="truncate text-sm font-extrabold tracking-tight text-white">{schoolName ?? 'SMK AL-FATA'}</p>
+        <p className="truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">{appName ?? 'Veyra CBT'}</p>
       </div>
     </div>
   )

@@ -3,7 +3,7 @@ import { useRef, useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom'
 import {
    ArrowLeft, Plus, Pencil, Trash2, HelpCircle, Image as ImageIcon,
-   UploadCloud, X, Download, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Zap, FileText, Bot,
+   UploadCloud, X, Download, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Zap, FileText,
    GripVertical,
  } from 'lucide-react'
 import { useAsync, useDebounce, useDocumentTitle } from '@/hooks/useAsync'
@@ -23,8 +23,6 @@ import { stripHtml } from '@/lib/sanitize'
 import { uploadMedia } from '@/services/storage.service'
 import { parseAnyFile, validateRows, soalRowSchema, downloadTemplateCsv, downloadTemplateExcel, importKindMeta, type ImportRowResult } from '@/services/import.service'
 import { buildExplanationDraft } from '@/services/local-assist.service'
-import { veyraBuildExplanation } from '@/services/veyra-ai.service'
-import { VeyraAiModal } from '@/components/ai/VeyraAiModal'
 import type { Difficulty, Question, QuestionType } from '@/types/models'
 
 type Mode = 'bank' | 'all'
@@ -50,7 +48,6 @@ export default function BankQuestionsPage({ mode = 'bank' }: { mode?: Mode }) {
   const [newQuestionNum, setNewQuestionNum] = useState(1)
   const [editQuestionNum, setEditQuestionNum] = useState(1)
   const [importOpen, setImportOpen] = useState(false)
-  const [veyraOpen, setVeyraOpen] = useState(false)
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null)
   const tableAreaRef = useRef<HTMLDivElement>(null)
@@ -134,13 +131,6 @@ export default function BankQuestionsPage({ mode = 'bank' }: { mode?: Mode }) {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            icon={<Bot className="h-4 w-4" />}
-            onClick={() => setVeyraOpen(true)}
-          >
-            Veyra AI
-          </Button>
           {bankId && (
             <Button
               variant="outline"
@@ -332,16 +322,6 @@ export default function BankQuestionsPage({ mode = 'bank' }: { mode?: Mode }) {
           }}
         />
       )}
-      {veyraOpen && (
-        <VeyraAiModal
-          onClose={() => setVeyraOpen(false)}
-          onSaved={(newBankId) => {
-            setVeyraOpen(false)
-            query.reload()
-            navigate(`/${role}/question-banks/${newBankId}`)
-          }}
-        />
-      )}
       {importOpen && bankId && (
         <ImportQuestionsModal
           bankId={bankId}
@@ -420,7 +400,7 @@ function QuestionEditorModal({
         : form.sa_accepted
     setExplaining(true)
     try {
-      const draft = await veyraBuildExplanation({
+      const draft = buildExplanationDraft({
         questionText: stripHtml(form.text),
         optionsText,
         correctAnswer,
@@ -428,15 +408,6 @@ function QuestionEditorModal({
       })
       setForm((p) => ({ ...p, explanation: draft }))
       toast.success('Draf pembahasan dimasukkan. Sunting sebelum menyimpan.')
-    } catch (err) {
-      const fallback = buildExplanationDraft({
-        questionText: stripHtml(form.text),
-        optionsText,
-        correctAnswer,
-        type: form.type,
-      })
-      setForm((p) => ({ ...p, explanation: fallback }))
-      toast.success(err instanceof Error ? `${err.message} Draf lokal dimasukkan sebagai gantinya.` : 'Draf lokal dimasukkan sebagai gantinya.')
     } finally {
       setExplaining(false)
     }
@@ -881,7 +852,7 @@ function QuestionEditorModal({
             loading={explaining}
             onClick={() => void handleDraftExplanation()}
           >
-            Buatkan Pembahasan (Veyra AI)
+            Buatkan Draf Pembahasan
           </Button>
         </div>
       </div>

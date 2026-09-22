@@ -147,7 +147,7 @@ export function SplashScreen({ visible }: { visible: boolean }) {
       </div>
 
       <div className="absolute bottom-5 flex flex-col items-center gap-1.5 px-4 text-center" style={{ transition: 'opacity 560ms ease 200ms', opacity: visible ? 1 : 0 }}>
-        <p className="font-mono text-[10px] tracking-[0.14em] text-white/35">{branding?.school_name ?? 'SMK AL-FATA'} • v1.0 • Profesional • Aman • Cepat</p>
+        <p className="font-mono text-[10px] tracking-[0.14em] text-white/35">{branding?.school_name ?? 'SMK AL-FATA'}</p>
         <p className="font-mono text-[11px] text-white/45">© 2026 {branding?.app_name ?? 'Veyra CBT'}</p>
       </div>
 

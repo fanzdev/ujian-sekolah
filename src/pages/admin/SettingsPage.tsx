@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Settings, Palette, ShieldCheck, Save, Camera, Server, Trash2, AlertTriangle, Skull, Plus, X } from 'lucide-react'
+import { Settings, Palette, ShieldCheck, Save, Camera, Server, Trash2, AlertTriangle, Skull, Plus, X, Sparkles, Download } from 'lucide-react'
 import { useConfirm } from '@/hooks/useConfirm'
 import { useAsync, useDocumentTitle } from '@/hooks/useAsync'
 import { useToast } from '@/hooks/useToast'
@@ -229,11 +229,69 @@ function BrandingPanel() {
     toast.success('Logo default (logo.webp) diterapkan. Klik Simpan untuk menyimpan.')
   }
 
+  const logoUrl = sanitizeLogoUrl(form.logo_url) ? resolveLogoUrl(form.logo_url) : getDefaultLogo()
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader title="Identitas Sekolah" subtitle="Diterapkan pada seluruh aplikasi termasuk halaman login & splash screen." />
         <CardBody className="space-y-6">
+          <div className="relative overflow-hidden rounded-2xl border border-white/10 p-6" style={{ background: `linear-gradient(135deg, ${effectivePrimary}22 0%, ${effectiveSecondary}18 100%)` }}>
+            <div className="pointer-events-none absolute inset-0" aria-hidden>
+              <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full opacity-20 blur-2xl animate-blob" style={{ background: `radial-gradient(circle, ${effectivePrimary}, transparent 70%)` }} />
+              <div className="absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-white/10 blur-3xl animate-blob" style={{ animationDelay: '-5s' }} />
+              {Array.from({ length: 6 }).map((_, i) => (
+                <span key={i} className="absolute h-1.5 w-1.5 rounded-full bg-white/40 animate-twinkle" style={{ left: `${10 + (i * 67) % 80}%`, top: `${8 + (i * 43) % 84}%`, animationDelay: `${(i % 4) * 0.6}s` }} />
+              ))}
+            </div>
+            <div className="relative flex items-start gap-5">
+              <div className="relative shrink-0">
+                <div
+                  className="flex h-24 w-24 items-center justify-center rounded-3xl border-2 border-dashed shadow-xl transition-all duration-500 hover:scale-105"
+                  style={{ background: `linear-gradient(135deg, ${effectivePrimary}18, ${effectiveSecondary}12)`, borderColor: effectivePrimary + '55' }}
+                >
+                  <img
+                    src={logoUrl}
+                    alt="Logo"
+                    className="h-18 w-18 rounded-2xl object-contain p-1.5"
+                    width={80}
+                    height={80}
+                    onError={(e) => { const t = e.currentTarget; const fb = getDefaultLogo(); if (t.src === fb || t.src.endsWith(fb)) return; t.onerror = null; t.src = fb }}
+                  />
+                </div>
+                <div
+                  className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full text-white shadow-md"
+                  style={{ background: `linear-gradient(135deg, ${effectivePrimary}, ${effectiveSecondary})` }}
+                >
+                  {logoUploading ? (
+                    <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83" /></svg>
+                  ) : (
+                    <Camera className="h-3.5 w-3.5" />
+                  )}
+                </div>
+              </div>
+              <div className="flex min-w-0 flex-1 flex-col gap-3">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.14em]" style={{ color: effectivePrimary }}>Logo Aplikasi</p>
+                  <p className="mt-0.5 text-xs text-slate-400 dark:text-white/50">PNG/WebP · 512×512 · maks 1MB · transparan disarankan</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <label className="group relative inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold text-white shadow-lg transition-all duration-200 hover:-translate-y-px hover:shadow-xl" style={{ background: `linear-gradient(135deg, ${effectivePrimary}, ${effectiveSecondary})` }}>
+                    {logoUploading ? 'Mengunggah…' : <><Sparkles className="h-3.5 w-3.5" /> Upload Logo</>}
+                    <input type="file" accept="image/*" className="hidden" disabled={logoUploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadLogo(f); e.target.value = '' }} />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={useDefaultLogo}
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-600 transition-all hover:-translate-y-px hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 dark:border-white/10 dark:bg-white/[0.05] dark:text-white/70 dark:hover:bg-white/[0.08]"
+                  >
+                    <Download className="h-3.5 w-3.5" /> Logo Default
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <Input label="Nama Aplikasi" value={form.app_name} onChange={(e) => setForm({ ...form, app_name: e.target.value })} required placeholder="Veyra CBT" />
             <Input label="Nama Sekolah" value={form.school_name} onChange={(e) => setForm({ ...form, school_name: e.target.value })} required placeholder="SMK AL-FATA" />
@@ -594,28 +652,6 @@ function BrandingPanel() {
                 <p className="mt-1 text-[11px] leading-snug text-[#6B7A7F] dark:text-white/50">`--c-sidebar-bg` / `--c-sidebar-gradient`. Tambah di card Sidebar.</p>
               </div>
             </div>
-          </div>
-
-          <div className="space-y-3">
-            <label className="label-base">Logo Aplikasi</label>
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <img src={sanitizeLogoUrl(form.logo_url) ? resolveLogoUrl(form.logo_url) : getDefaultLogo()} alt="Logo" className="h-20 w-20 rounded-xl border border-slate-200 bg-white object-contain p-2 shadow-sm dark:border-slate-700 dark:bg-slate-900" width={80} height={80} onError={(e)=>{ const t=e.currentTarget; const fb=getDefaultLogo(); if(t.src === fb || t.src.endsWith(fb)) return; t.onerror=null; t.src=fb }} />
-                <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm ring-2 ring-white dark:ring-slate-900">
-                  <span className="text-xs font-bold leading-none">{logoUploading ? '…' : '+'}</span>
-                </span>
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="cursor-pointer rounded-lg bg-primary-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-primary-700">
-                  {logoUploading ? 'Mengunggah…' : 'Upload Logo'}
-                  <input type="file" accept="image/*" className="hidden" disabled={logoUploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadLogo(f); e.target.value = '' }} />
-                </label>
-                <button type="button" onClick={useDefaultLogo} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">
-                  Pakai Logo Default
-                </button>
-              </div>
-            </div>
-            <p className="text-[11px] text-slate-400">Rekomendasi: PNG/WebP 512×512, kotak, maks 1MB.</p>
           </div>
 
           <div className="flex justify-end border-t border-slate-100 pt-4">

@@ -29,7 +29,7 @@ export async function rpc<T = unknown>(fn: string, args: Record<string, unknown>
   return data as T
 }
 
-type EdgeName = 'manage-user' | 'ai-proxy'
+type EdgeName = 'manage-user'
 
 export type EdgeErrorKind = 'cors_or_network' | 'timeout' | 'not_deployed' | 'server' | 'unknown'
 
@@ -80,7 +80,7 @@ export async function invokeEdge<T>(name: EdgeName, body: Record<string, unknown
       if (error.message?.includes('Failed to fetch') || error.message?.includes('fetch failed') || error.message?.includes('Failed to send a request')) {
         throw new EdgeInvokeError(
           'cors_or_network',
-          `Browser gagal menghubungi Edge Function "${name}".${error.message?.includes('belum dikonfigurasi') ? ' Edge Function belum di-deploy.' : ' Biasanya karena CORS, ekstensi/adblock, atau jaringan.'} Buka halaman Veyra AI → tab Setup, pastikan konfigurasi sudah tersimpan. Jika masih gagal, buka Console (F12) untuk detail error.`,
+          `Browser gagal menghubungi Edge Function "${name}".${error.message?.includes('belum dikonfigurasi') ? ' Edge Function belum di-deploy.' : ' Biasanya karena CORS, ekstensi/adblock, atau jaringan.'} Periksa konfigurasi Edge Function di dashboard Supabase. Jika masih gagal, buka Console (F12) untuk detail error.`,
           status,
         )
       }
@@ -106,13 +106,13 @@ export async function invokeEdge<T>(name: EdgeName, body: Record<string, unknown
     if (message.includes('Failed to fetch') || message.includes('fetch failed') || message.includes('NetworkError')) {
       throw new EdgeInvokeError(
         'cors_or_network',
-        `Browser gagal menghubungi Edge Function "${name}" (${(elapsed / 1000).toFixed(1)} dtk). Response diblokir browser — biasanya CORS Edge Function, ekstensi/adblock, atau jaringan.${cause !== '' ? ` Penyebab teknis: ${cause}.` : ''} Buka halaman Veyra AI → tab Setup untuk memastikan konfigurasi sudah tersimpan dengan benar.`,
+        `Browser gagal menghubungi Edge Function "${name}" (${(elapsed / 1000).toFixed(1)} dtk). Response diblokir browser — biasanya CORS Edge Function, ekstensi/adblock, atau jaringan.${cause !== '' ? ` Penyebab teknis: ${cause}.` : ''} Periksa konfigurasi Edge Function di dashboard Supabase.`,
       )
     }
     if (message.includes('Failed to send a request')) {
       throw new EdgeInvokeError(
         'cors_or_network',
-        `Browser gagal menghubungi Edge Function "${name}" (${(elapsed / 1000).toFixed(1)} dtk).${cause !== '' ? ` Penyebab teknis: ${cause}.` : ''} Buka halaman Veyra AI → tab Setup untuk memastikan Edge Function sudah terdeploy dan konfigurasi sudah tersimpan.`,
+        `Browser gagal menghubungi Edge Function "${name}" (${(elapsed / 1000).toFixed(1)} dtk).${cause !== '' ? ` Penyebab teknis: ${cause}.` : ''} Pastikan Edge Function sudah terdeploy di dashboard Supabase.`,
       )
     }
     throw new EdgeInvokeError('unknown', message)

@@ -578,8 +578,21 @@ function QuestionsStep({
   const addQuestions = (picked: typeof items) => {
     setItems((prev) => {
       const existing = new Set(prev.map((i) => i.question_id))
-      const additions = picked.filter((p) => !existing.has(p.question_id)).map((p, idx) => ({ ...p, position: prev.length + idx }))
-      const next = [...prev, ...additions]
+      const additions = picked.filter((p) => !existing.has(p.question_id))
+      if (additions.length === 0) return prev
+      const isEssay = (q: typeof additions[0]) => q.question.type === 'essay'
+      const nonEssay = [...prev.filter((i) => !isEssay(i)), ...additions.filter((a) => !isEssay(a))]
+      const essay = [...prev.filter((i) => isEssay(i)), ...additions.filter((a) => isEssay(a))]
+      const merged = [...nonEssay, ...essay]
+      const seen = new Set<string>()
+      const deduped: typeof items = []
+      for (const item of merged) {
+        if (!seen.has(item.question_id)) {
+          seen.add(item.question_id)
+          deduped.push(item)
+        }
+      }
+      const next = deduped.map((item, idx) => ({ ...item, position: idx }))
       if (additions.length > 0) setHasUnsaved(true)
       return next
     })

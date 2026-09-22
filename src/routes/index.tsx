@@ -45,7 +45,6 @@ const ResultsPage = lazy(() => import('@/pages/shared/ResultsPage'))
 const ReportsPage = lazy(() => import('@/pages/shared/ReportsPage'))
 const RankingPage = lazy(() => import('@/pages/shared/RankingPage'))
 const MonitoringPage = lazy(() => import('@/pages/shared/MonitoringPage'))
-const VeyraAiPage = lazy(() => import('@/pages/shared/VeyraAiPage'))
 
 const ExamRunnerPage = lazy(() => import('@/pages/exam/ExamRunnerPage'))
 
@@ -101,7 +100,6 @@ export function AppRoutes() {
           <Route path="/teacher/ranking" element={<S><RankingPage /></S>} />
           <Route path="/teacher/grading" element={<S><GradingQueuePage /></S>} />
           <Route path="/teacher/reports" element={<S><ReportsPage /></S>} />
-          <Route path="/teacher/veyra-ai" element={<S><VeyraAiPage /></S>} />
           <Route path="/teacher/profile" element={<S><ProfilePage /></S>} />
           <Route path="/teacher/security" element={<S><ProfilePage tab="security" /></S>} />
         </Route>
@@ -128,7 +126,6 @@ export function AppRoutes() {
           <Route path="/admin/audit-logs" element={<S><AuditLogsPage /></S>} />
           <Route path="/admin/violation-logs" element={<S><ViolationsPage /></S>} />
           <Route path="/admin/settings" element={<S><SettingsPage /></S>} />
-          <Route path="/admin/veyra-ai" element={<S><VeyraAiPage /></S>} />
           <Route path="/admin/profile" element={<S><ProfilePage /></S>} />
           <Route path="/admin/security" element={<S><ProfilePage tab="security" /></S>} />
         </Route>

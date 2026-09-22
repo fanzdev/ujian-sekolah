@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PencilRuler, Save, Search, Clock3, CheckCircle2, GraduationCap, Filter, Bot, Loader2 } from 'lucide-react'
+import { PencilRuler, Save, Search, Clock3, CheckCircle2, GraduationCap, Filter } from 'lucide-react'
 import { useAsync, useDebounce, useDocumentTitle } from '@/hooks/useAsync'
 import { useToast } from '@/hooks/useToast'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -12,8 +12,6 @@ import { Modal } from '@/components/ui/Modal'
 import { EmptyState, ErrorState, Spinner } from '@/components/ui/Feedback'
 import { listEssayQueue, getEssayDetail, gradeEssayFinal } from '@/services/grading.service'
 import { listExams } from '@/services/exams.service'
-import { suggestEssayScore } from '@/services/local-assist.service'
-import { veyraGradeEssay, VeyraAiError } from '@/services/veyra-ai.service'
 import { useAuth } from '@/hooks/useAuth'
 
 type QueueItem = Awaited<ReturnType<typeof listEssayQueue>>[number]
@@ -147,32 +145,6 @@ function GradingModal({ item, onClose, onSaved }: { item: QueueItem; onClose: ()
   const [score, setScore] = useState<number | ''>(item.final_score !== null ? Number(item.final_score) : '')
   const [feedback, setFeedback] = useState(item.final_feedback ?? '')
   const [saving, setSaving] = useState(false)
-  const [gradingAI, setGradingAI] = useState(false)
-
-  const applyAISuggestion = async () => {
-    if (detailQuery.loading || !detailQuery.data) return
-    setGradingAI(true)
-    try {
-      const questionText = detailQuery.data.questionText.replace(/<[^>]*>/g, '').trim()
-      const answerText = detailQuery.data.answerText.trim()
-      if (answerText.length < 10) { toast.error('Jawaban siswa terlalu pendek.'); return }
-      try {
-        const res = await veyraGradeEssay({ questionText, answerText, maxScore: 100 })
-        setScore(res.score)
-        setFeedback(res.feedback)
-        toast.success('Nilai AI berhasil diberikan.')
-      } catch (err) {
-        if (err instanceof VeyraAiError && err.kind === 'unavailable') {
-          const local = suggestEssayScore({ questionText, answerText, maxScore: 100 })
-          setScore(local.score)
-          setFeedback(local.feedback)
-          toast.info('Mode lokal aktif. Nilai AI belum tersedia di server.')
-        } else {
-          toast.error(err instanceof Error ? err.message : 'Gagal menilai dengan AI.')
-        }
-      }
-    } finally { setGradingAI(false) }
-  }
 
   if (detailQuery.loading || !detailQuery.data) {
     return (
@@ -240,7 +212,6 @@ function GradingModal({ item, onClose, onSaved }: { item: QueueItem; onClose: ()
 
       <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:border-white/5 dark:bg-white/[0.03]">
         <Button variant="ghost" onClick={onClose}>Batal</Button>
-        <Button variant="outline" onClick={applyAISuggestion} disabled={gradingAI} icon={gradingAI ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}>{gradingAI ? 'Menilai...' : 'Nilai dengan AI'}</Button>
         <Button onClick={saveFinal} loading={saving} icon={<Save className="h-4 w-4" />} style={{ background: 'var(--app-gradient, var(--c-primary-600))' }} className="border-0 text-white hover:opacity-95">Simpan Nilai Final</Button>
       </div>
     </Modal>

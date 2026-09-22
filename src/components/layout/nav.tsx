@@ -20,7 +20,6 @@ import {
   PencilRuler,
   IdCard,
   Trophy,
-  Sparkles,
 } from 'lucide-react'
 
 export interface NavItem {
@@ -44,7 +43,6 @@ const ADMIN_NAV: NavItem[] = [
   { path: '/admin/import-export', label: 'Import / Export', icon: Upload },
   { path: '/admin/audit-logs', label: 'Audit Log', icon: ScrollText },
   { path: '/admin/violation-logs', label: 'Pelanggaran', icon: ShieldAlert },
-  { path: '/admin/veyra-ai', label: 'Veyra AI', icon: Sparkles },
   { path: '/admin/settings', label: 'Pengaturan', icon: Settings },
 ]
 
@@ -57,7 +55,6 @@ const TEACHER_NAV: NavItem[] = [
   { path: '/teacher/results', label: 'Hasil Ujian', icon: ClipboardCheck },
   { path: '/teacher/ranking', label: 'Peringkat', icon: Trophy },
   { path: '/teacher/grading', label: 'Penilaian Essay', icon: CheckSquareIcon },
-  { path: '/teacher/veyra-ai', label: 'Veyra AI', icon: Sparkles },
   { path: '/teacher/reports', label: 'Laporan', icon: BarChart3 },
 ]
 

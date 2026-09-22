@@ -159,6 +159,25 @@
   .rich-content td, .rich-content th { @apply border border-slate-300 px-2 py-1; }
   .rich-content code { @apply bg-slate-100 rounded px-1 py-0.5 text-[13px]; }
   .rich-content pre { @apply bg-slate-900 text-slate-100 rounded-lg p-3 overflow-x-auto text-[13px] my-2; }
+  .stagger > * { animation: rise .55s cubic-bezier(.22,1,.36,1) both; }
+  .stagger > *:nth-child(1) { animation-delay: .02s; }
+  .stagger > *:nth-child(2) { animation-delay: .08s; }
+  .stagger > *:nth-child(3) { animation-delay: .14s; }
+  .stagger > *:nth-child(4) { animation-delay: .2s; }
+  .stagger > *:nth-child(5) { animation-delay: .26s; }
+  .stagger > *:nth-child(6) { animation-delay: .32s; }
+  .stagger > *:nth-child(7) { animation-delay: .38s; }
+  .stagger > *:nth-child(8) { animation-delay: .44s; }
+  .text-gradient-animated { background-size: 200% auto; -webkit-background-clip: text; background-clip: text; color: transparent; animation: gradient-pan 6s ease infinite; }
+  .btn-shine { position: relative; overflow: hidden; }
+  .btn-shine::after { content: ''; position: absolute; inset: 0; transform: translateX(-120%) skewX(-18deg); background: linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent); transition: transform .7s ease; }
+  .btn-shine:hover::after { transform: translateX(120%) skewX(-18deg); }
+  .glass { backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+  .mask-fade-b { -webkit-mask-image: linear-gradient(to bottom, black 55%, transparent); mask-image: linear-gradient(to bottom, black 55%, transparent); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
 
 @media (max-width: 640px) {

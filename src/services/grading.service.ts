@@ -20,81 +20,91 @@ export async function listEssayQueue(params: {
   examId?: string
   search?: string
 }): Promise<EssayQueueItem[]> {
-  let builder = supabase
-    .from('answers')
-    .select(
-      `id, attempt_id, value,
-       questions(id, text, points, type),
-       attempts!inner(
-         id, status,
-         students(profiles(full_name), nis)
-       ),
-       essay_grades(status, final_score, final_feedback, graded_by)`,
-    )
-    .eq('questions.type', 'essay')
-    .in('attempts.status', ['submitted', 'auto_submitted', 'graded'])
+  try {
+    const rpc = supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>
+    const { data, error } = await rpc('list_essay_queue', {
+      p_exam_id: params.examId ?? null,
+      p_search: params.search ?? null,
+    })
+    if (error) throw error
+    if (data && Array.isArray(data) && data.length > 0) return data as EssayQueueItem[]
+  } catch {
+    // RPC not available — fall back to direct query
+  }
+
+  const qBuilder = supabase
+    .from('exam_attempts')
+    .select('id, student_id, status, exam_id')
+    .in('status', ['submitted', 'auto_submitted', 'graded'])
     .limit(300)
+  if (params.examId) qBuilder.eq('exam_id', params.examId)
+  const { data: attempts, error: attErr } = await qBuilder
+  if (attErr) throw attErr
+  const attemptIds = (attempts ?? []).map((a) => a.id as string)
+  if (attemptIds.length === 0) return []
 
-  if (params.examId) builder = builder.eq('attempts.exam_id', params.examId)
+  const { data: essayAns, error: ansErr } = await supabase
+    .from('answers')
+    .select('id, attempt_id, question_id, questions(id, text, points, type)')
+    .in('attempt_id', attemptIds)
+    .eq('questions.type', 'essay')
+  if (ansErr) throw ansErr
+  const essayAttempts = new Set(attemptIds.filter((id) =>
+    (essayAns ?? []).some((a) => (a as Record<string, unknown>).attempt_id === id),
+  ))
 
-  const { data, error } = await builder
-  if (error) throw error
+  const { data: grades, error: gradeErr } = await supabase
+    .from('essay_grades')
+    .select('attempt_id, question_id, status, final_score, final_feedback, graded_by')
+    .in('attempt_id', attemptIds)
+  if (gradeErr) throw gradeErr
+  const gradeMap = new Map<string, (typeof grades)[number]>()
+  for (const g of grades ?? []) {
+    const key = `${g.attempt_id}:${g.question_id}`
+    const existing = gradeMap.get(key)
+    if (!existing || !existing.status || existing.status === 'pending') gradeMap.set(key, g)
+  }
 
-  const rows = ((data as unknown as EssayAnswerRow[]) ?? []).map((r) => {
-    const grade = Array.isArray(r.essay_grades) ? r.essay_grades[0] : r.essay_grades
-    const attempt = Array.isArray(r.attempts) ? r.attempts[0] : r.attempts
-    const student = attempt?.students
-      ? Array.isArray(attempt.students)
-        ? attempt.students[0]
-        : attempt.students
-      : null
-    const profile = student?.profiles
-      ? Array.isArray(student.profiles)
-        ? student.profiles[0]
-        : student.profiles
-      : null
-    const question = Array.isArray(r.questions) ? r.questions[0] : r.questions
-    return {
-      answer_id: r.id,
-      attempt_id: r.attempt_id,
-      question_id: r.question_id,
-      status: grade?.status ?? 'pending',
-      final_score: grade?.final_score ?? null,
-      final_feedback: grade?.final_feedback ?? null,
-      graded_by: grade?.graded_by ?? null,
-      student_name: profile?.full_name ?? '-',
-      student_nis: student?.nis ?? null,
-      question_text: question?.text ?? '',
-      max_points: Number(question?.points ?? 10),
+  const { data: students, error: stuErr } = await supabase
+    .from('students')
+    .select('id, profile_id, nis, profiles(full_name)')
+    .in('id', (attempts ?? []).map((a) => (a as Record<string, unknown>).student_id as string))
+  if (stuErr) throw stuErr
+  const studentMap = new Map<string, (typeof students)[number]>()
+  for (const s of students ?? []) studentMap.set(s.id, s)
+
+  const rows: EssayQueueItem[] = []
+  for (const a of attempts ?? []) {
+    if (!essayAttempts.has(a.id as string)) continue
+    const student = studentMap.get((a as Record<string, unknown>).student_id as string)
+    const profile = student?.profiles as { full_name?: string } | null
+    for (const ans of (essayAns ?? []).filter((x) => (x as Record<string, unknown>).attempt_id === a.id)) {
+      const qd = (ans as Record<string, unknown>).questions as { text?: string; points?: number } | null
+      const gid = ans.question_id as string
+      const g = gradeMap.get(`${a.id}:${gid}`)
+      rows.push({
+        answer_id: ans.id as string,
+        attempt_id: a.id as string,
+        question_id: gid,
+        status: g?.status ?? 'pending',
+        final_score: g?.final_score ?? null,
+        final_feedback: g?.final_feedback ?? null,
+        graded_by: g?.graded_by ?? null,
+        student_name: profile?.full_name ?? '',
+        student_nis: student?.nis ?? null,
+        question_text: qd?.text ?? '',
+        max_points: Number(qd?.points ?? 0),
+      })
     }
-  })
+  }
 
   if (params.search) {
     const s = params.search.toLowerCase()
-    return rows.filter((r) => r.student_name.toLowerCase().includes(s) || (r.student_nis ?? '').includes(s))
+    return rows.filter((r) =>
+      r.student_name.toLowerCase().includes(s) || (r.student_nis ?? '').toLowerCase().includes(s),
+    )
   }
-  return rows.sort((a, b) => a.status.localeCompare(b.status))
-}
-
-interface EssayAnswerRow {
-  id: string
-  attempt_id: string
-  question_id: string
-  value: unknown
-  questions: { id: string; text: string; points: number }[] | { id: string; text: string; points: number }
-  attempts: {
-    id: string
-    status: string
-    students: { profiles: { full_name: string }; nis: string | null }[] | { profiles: { full_name: string }; nis: string | null }
-  }[] | {
-    id: string
-    status: string
-    students: { profiles: { full_name: string }; nis: string | null }[] | { profiles: { full_name: string }; nis: string | null }
-  }
-  essay_grades:
-    | { status: string; final_score: number | null; final_feedback: string | null; graded_by: string | null }[]
-    | { status: string; final_score: number | null; final_feedback: string | null; graded_by: string | null }
-    | null
+  return rows.sort((a, b) => (a.status ?? 'pending').localeCompare(b.status ?? 'pending'))
 }
 
 export async function getEssayDetail(

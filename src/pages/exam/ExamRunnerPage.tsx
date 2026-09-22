@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ChevronLeft, ChevronRight, Flag, Send, WifiOff, AlertCircle,
   Maximize2,
@@ -46,7 +46,38 @@ export default function ExamRunnerPage() {
   }, [])
 
   const [fsLoading, setFsLoading] = useState(false)
-  const [fsBannerDismissed, setFsBannerDismissed] = useState(false)
+  const fsPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    if (engine.phase !== 'running' || !engine.payload?.exam.fullscreen_required) return
+    const stopPoll = () => {
+      if (fsPollRef.current !== null) { clearInterval(fsPollRef.current); fsPollRef.current = null }
+    }
+    if (!isFullscreen) {
+      fsPollRef.current = window.setInterval(() => {
+        if (checkFullscreen()) stopPoll()
+      }, 500) as unknown as ReturnType<typeof setInterval>
+    } else {
+      stopPoll()
+    }
+    return stopPoll
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engine.phase, engine.payload?.exam.fullscreen_required])
+
+  useEffect(() => {
+    const onChange = () => {
+      const nowInFs = checkFullscreen()
+      setIsFullscreen(nowInFs)
+    }
+    document.addEventListener('fullscreenchange', onChange)
+    document.addEventListener('webkitfullscreenchange', onChange as EventListener)
+    document.addEventListener('mozfullscreenchange', onChange as EventListener)
+    return () => {
+      document.removeEventListener('fullscreenchange', onChange)
+      document.removeEventListener('webkitfullscreenchange', onChange as EventListener)
+      document.removeEventListener('mozfullscreenchange', onChange as EventListener)
+    }
+  }, [])
 
   const requestFs = useCallback(async () => {
     if (fsLoading) return
@@ -148,26 +179,25 @@ export default function ExamRunnerPage() {
         <ViolationFlash count={engine.violationFlash.count} limit={engine.violationLimit} />
       )}
 
-      {isFsSupported && !isFullscreen && !fsBannerDismissed && engine.payload?.exam.fullscreen_required && engine.phase === 'running' && (
-        <div className="flex w-full items-center justify-center gap-2 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 ring-1 ring-amber-200 dark:bg-amber-500/15 dark:text-amber-200 dark:ring-amber-500/30">
-          <Maximize2 className="h-3.5 w-3.5 shrink-0" />
-          <span className="flex-1 text-center">Disarankan layar penuh untuk fokus maksimal.</span>
-          <button
-            type="button"
-            onClick={requestFs}
-            disabled={fsLoading}
-            className="shrink-0 rounded-lg bg-amber-600 px-3 py-1 text-xs font-bold text-white hover:bg-amber-700 disabled:opacity-50"
-          >
-            {fsLoading ? 'Memuat...' : 'Masuk Fullscreen'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setFsBannerDismissed(true)}
-            className="shrink-0 rounded-lg px-2 py-1 text-amber-700 hover:bg-amber-100 dark:text-amber-200"
-            aria-label="Tutup"
-          >
-            ✕
-          </button>
+      {engine.payload?.exam.fullscreen_required && !isFullscreen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-md animate-fade-in rounded-2xl bg-white p-6 text-center shadow-2xl dark:bg-slate-900">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30">
+              <Maximize2 className="h-8 w-8 text-primary-600 dark:text-primary-400" />
+            </div>
+            <h2 className="mt-4 text-lg font-bold text-slate-900 dark:text-slate-100">Layar Penuh Diperlukan</h2>
+            <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+              Ujian ini mewajibkan mode layar penuh. Tekan tombol di bawah untuk melanjutkan.
+            </p>
+            <button
+              type="button"
+              onClick={requestFs}
+              disabled={fsLoading}
+              className="mt-6 w-full rounded-xl bg-primary-600 px-6 py-3 text-base font-bold text-white shadow-lg hover:bg-primary-700 disabled:opacity-50"
+            >
+              {fsLoading ? 'Memuat...' : 'Masuk Fullscreen'}
+            </button>
+          </div>
         </div>
       )}
 

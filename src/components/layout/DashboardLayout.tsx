@@ -78,31 +78,51 @@ export function DashboardLayout() {
         <div className="absolute -bottom-32 left-[280px] h-[380px] w-[380px] rounded-full blur-3xl lg:h-[480px] lg:w-[480px]" style={{ background: `linear-gradient(135deg, ${primary}0f, ${secondary}0f, transparent)` }} />
       </div>
       <FullscreenPrompt role={profile.role} />
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col overflow-hidden border-r border-white/10 dark:border-white/8 lg:flex sidebar-panel" style={{ background: `var(--c-sidebar-gradient, ${sidebarBg})` }}>
+      <aside className="sidebar-panel fixed inset-y-0 left-0 z-40 hidden w-64 flex-col overflow-hidden border-r border-white/10 dark:border-white/10 lg:flex" style={{ background: `var(--c-sidebar-gradient, linear-gradient(165deg, ${sidebarBg} 0%, ${sidebarBg} 52%, ${primary} 165%))` }}>
         <div className="relative flex h-full flex-col">
-          <div className="pointer-events-none absolute inset-0 opacity-[0.06]" style={{ backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`, backgroundSize: '20px 20px' }} />
-          <div className="relative flex h-16 items-center border-b border-white/10 px-4">
+          <div className="pointer-events-none absolute inset-0" aria-hidden>
+            <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`, backgroundSize: '20px 20px' }} />
+            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full opacity-25 blur-3xl animate-blob" style={{ background: `radial-gradient(circle, ${secondary}, transparent 70%)` }} />
+            <div className="absolute -bottom-24 -left-20 h-64 w-64 rounded-full bg-white/10 blur-3xl animate-blob" style={{ animationDelay: '-7s' }} />
+            {Array.from({ length: 8 }).map((_, i) => (
+              <span
+                key={i}
+                className="absolute h-1 w-1 rounded-full bg-white animate-twinkle"
+                style={{ left: `${12 + ((i * 53) % 76)}%`, top: `${8 + ((i * 37) % 84)}%`, animationDelay: `${(i % 5) * 0.5}s`, opacity: 0.5 }}
+              />
+            ))}
+            <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/25 to-transparent" />
+          </div>
+          <div className="relative z-10 flex h-16 items-center border-b border-white/10 px-4">
             <BrandMark appName={branding?.app_name} schoolName={branding?.school_name} />
           </div>
-          <SidebarNav items={items} onNavigate={() => setDrawerOpen(false)} />
-          <Link to={`/${profile.role}/profile`} onClick={() => setDrawerOpen(false)} className="relative flex items-center gap-3 border-t border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur transition-colors hover:bg-white/[0.06]">
-            <Avatar name={profile.full_name} src={profile.avatar_url} size="sm" shape="xl" className="shadow-sm ring-1 ring-white/10" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold leading-none text-white">{profile.full_name}</p>
-              <p className="truncate text-xs leading-tight text-white/60" title={extra.email ?? `@${profile.username}`}>{extra.email ?? `@${profile.username}`}</p>
-            </div>
-            <span className="hidden h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-[#0B1E24] shadow-sm sm:flex">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-            </span>
-          </Link>
+          <div className="relative z-10 flex min-h-0 flex-1 flex-col">
+            <SidebarNav items={items} onNavigate={() => setDrawerOpen(false)} />
+          </div>
+          <div className="relative z-10 border-t border-white/10 p-3">
+            <Link to={`/${profile.role}/profile`} onClick={() => setDrawerOpen(false)} className="group flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-3 py-2.5 shadow-lg backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/15">
+              <Avatar name={profile.full_name} src={profile.avatar_url} size="sm" shape="xl" className="shadow-md ring-2 ring-white/30 transition-transform duration-300 group-hover:scale-105" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-extrabold leading-tight tracking-tight text-white">{profile.full_name}</p>
+                <p className="truncate text-[11px] font-medium leading-tight text-white/60" title={extra.email ?? `@${profile.username}`}>{extra.email ?? `@${profile.username}`}</p>
+              </div>
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-[#0B1E24] shadow-md transition-transform duration-300 group-hover:translate-x-0.5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </span>
+            </Link>
+          </div>
         </div>
       </aside>
 
       {drawerOpen && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
           <button aria-label="Tutup menu" onClick={() => setDrawerOpen(false)} className="absolute inset-0 backdrop-blur-sm animate-fade-in" style={{ backgroundColor: `${sidebarBg}99` }} />
-          <div className={cn('absolute inset-y-0 left-0 flex w-[82%] max-w-[300px] flex-col overflow-hidden rounded-r-[24px] shadow-2xl animate-slide-in-right sidebar-panel')} style={{ background: `var(--c-sidebar-gradient, ${sidebarBg})` }}>
-            <div className="pointer-events-none absolute inset-0 opacity-[0.06]" style={{ backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`, backgroundSize: '20px 20px' }} />
+          <div className={cn('sidebar-panel absolute inset-y-0 left-0 flex w-[82%] max-w-[300px] flex-col overflow-hidden rounded-r-[24px] shadow-2xl animate-slide-in-right')} style={{ background: `var(--c-sidebar-gradient, linear-gradient(165deg, ${sidebarBg} 0%, ${sidebarBg} 52%, ${primary} 165%))` }}>
+            <div className="pointer-events-none absolute inset-0" aria-hidden>
+              <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`, backgroundSize: '20px 20px' }} />
+              <div className="absolute -right-16 -top-16 h-52 w-52 rounded-full opacity-25 blur-3xl animate-blob" style={{ background: `radial-gradient(circle, ${secondary}, transparent 70%)` }} />
+              <div className="absolute -bottom-20 -left-16 h-52 w-52 rounded-full bg-white/10 blur-3xl animate-blob" style={{ animationDelay: '-6s' }} />
+            </div>
             <button
               onClick={() => setDrawerOpen(false)}
               aria-label="Tutup"
